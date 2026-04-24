@@ -1,0 +1,11 @@
+{
+  "nav": {
+    "home": "Home",
+    "reels": "Reels",
+    "players": "Players",
+    "about": "About Us",
+    "blogs": "Blogs",
+    "event": "Event",
+    "profile": "Profile"
+  }
+}
