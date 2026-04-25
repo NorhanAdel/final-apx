@@ -13,7 +13,7 @@ export default function Home() {
 
   return (
     <div>
-      <Hero lang={lang} />
+      <Hero />
       <SportsSection lang={lang} />
       <About lang={lang} />
 
