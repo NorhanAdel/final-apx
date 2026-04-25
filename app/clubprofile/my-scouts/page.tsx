@@ -8,6 +8,7 @@ import { useTheme } from "../../context/ThemeContext";
 import { fetchGraphQL } from "../../lib/fetchGraphQL";
 import useTranslate from "../../hooks/useTranslate";
 import { toast } from "sonner";
+import BackButton from "@/app/components/BackButton";
 
 interface Scout {
   id: string;
@@ -181,12 +182,14 @@ export default function MyScoutsPage() {
 
   return (
     <div
-      className={`min-h-screen py-20 px-6 transition ${
+      className={`min-h-screen py-40 px-6 transition ${
         isDark ? "bg-[#020617] text-white" : "bg-gray-100 text-black"
       }`}
     >
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-10">
+          <BackButton className="mb-6" />
+
           <h1 className="text-4xl font-black italic tracking-tighter text-yellow-400 uppercase">
             {t("My Scouts")}
           </h1>

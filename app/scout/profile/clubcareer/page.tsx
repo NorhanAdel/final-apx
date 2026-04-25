@@ -1,249 +1,283 @@
 "use client";
 
-import {
-  User,
-  LayoutGrid,
-  ChevronLeft,
-} from "lucide-react";
-
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useTheme } from "../../../context/ThemeContext";
-import { useEffect, useState } from "react";
+import {
+  Building2,
+  History,
+  ChevronLeft,
+  ChevronRight,
+  Save,
+  Loader2,
+  User,
+} from "lucide-react";
+import { useTheme } from "@/app/context/ThemeContext";
+import useTranslate from "@/app/hooks/useTranslate";
+import { fetchGraphQL } from "@/app/lib/fetchGraphQL";
 import { toast } from "sonner";
+import { UPSERT_CLUB_CAREER } from "@/app/graphql/mutation/Scout.mutations";
+import { GET_MY_CLUB_CAREER } from "@/app/graphql/query/scout.queries";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://72.62.28.146";
-
-/* ================= TRANSLATION ================= */
-
-const T: any = {
-  en: {
-    title: "Club Career",
-    current: "Current Club",
-    previous: "Previous Clubs (comma separated)",
-    previousBtn: "Previous",
-    submit: "Submit",
-    update: "Update",
-    saved: "Saved Successfully",
-    error: "Something went wrong",
-    saving: "Saving...",
-  },
-  ar: {
-    title: "المسيرة الكروية",
-    current: "النادي الحالي",
-    previous: "الأندية السابقة (افصل بينهم بفاصلة)",
-    previousBtn: "رجوع",
-    submit: "إرسال",
-    update: "تحديث",
-    saved: "تم الحفظ بنجاح",
-    error: "حدث خطأ",
-    saving: "جاري الحفظ...",
-  },
-  pt: {
-    title: "Carreira no Clube",
-    current: "Clube Atual",
-    previous: "Clubes Anteriores (separados por vírgula)",
-    previousBtn: "Voltar",
-    submit: "Enviar",
-    update: "Atualizar",
-    saved: "Salvo com sucesso",
-    error: "Algo deu errado",
-    saving: "Salvando...",
-  },
-  zh: {
-    title: "俱乐部生涯",
-    current: "当前俱乐部",
-    previous: "之前俱乐部（用逗号分隔）",
-    previousBtn: "返回",
-    submit: "提交",
-    update: "更新",
-    saved: "保存成功",
-    error: "出错了",
-    saving: "保存中...",
-  },
-};
-
-/* ================= MUTATION ================= */
-
-const UPSERT_SCOUT_CLUB_CAREER = `
-mutation UpsertScoutClubCareer($input: CreateScoutClubCareerInput!) {
-  upsertScoutClubCareer(input: $input) {
-    id
-  }
+interface ClubCareerData {
+  id: string;
+  current_club: string | null;
+  previous_clubs: string | null;
 }
-`;
 
-/* ================= QUERY ================= */
-
-const GET_MY_CAREER = `
-query {
-  myScoutClubCareer {
-    id
-    current_club
-    previous_clubs
-  }
+function Step({
+  icon,
+  active,
+  isDark,
+}: {
+  icon: React.ReactNode;
+  active?: boolean;
+  isDark: boolean;
+}) {
+  return (
+    <div
+      className={`w-12 h-12 rounded-full flex items-center justify-center transition ${
+        active
+          ? "bg-yellow-400 text-black"
+          : isDark
+          ? "bg-gray-700 text-gray-300"
+          : "bg-gray-200 text-gray-500"
+      }`}
+    >
+      {icon}
+    </div>
+  );
 }
-`;
 
-export default function ClubCareer() {
+function Line({ isDark }: { isDark: boolean }) {
+  return (
+    <div className={`w-10 h-[2px] ${isDark ? "bg-gray-500" : "bg-gray-300"}`} />
+  );
+}
+
+export default function ScoutClubCareerPage() {
   const router = useRouter();
   const { theme } = useTheme();
-
-  const lang =
-    typeof window !== "undefined"
-      ? localStorage.getItem("lang") || "en"
-      : "en";
-
-  const t = T[lang];
+  const { t } = useTranslate();
+  const isDark = theme === "dark";
 
   const [loading, setLoading] = useState(false);
-  const [exists, setExists] = useState(false);
-
-  const [form, setForm] = useState({
+  const [pageLoading, setPageLoading] = useState(true);
+  const [formData, setFormData] = useState({
+    current_club: "",
+    previous_clubs: "",
+  });
+  const [originalData, setOriginalData] = useState({
     current_club: "",
     previous_clubs: "",
   });
 
-  /* ================= LOAD ================= */
-
   useEffect(() => {
-    const fetchData = async () => {
-      const res = await fetch(`${API_URL}/graphql`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({ query: GET_MY_CAREER }),
-      });
-
-      const json = await res.json();
-      const data = json?.data?.myScoutClubCareer;
-
-      if (data) {
-        setExists(true);
-        setForm({
-          current_club: data.current_club || "",
-          previous_clubs: data.previous_clubs || "",
-        });
-      }
-    };
-
-    fetchData();
+    fetchClubCareer();
   }, []);
 
-  /* ================= CHANGE ================= */
+  const fetchClubCareer = async () => {
+    setPageLoading(true);
+    try {
+      const result = await fetchGraphQL<{ myScoutClubCareer: ClubCareerData }>(
+        GET_MY_CLUB_CAREER,
+      );
 
-  const handleChange = (e: any) => {
-    setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
+      if (result.data?.myScoutClubCareer) {
+        const data = result.data.myScoutClubCareer;
+        const newData = {
+          current_club: data.current_club || "",
+          previous_clubs: data.previous_clubs || "",
+        };
+        setFormData(newData);
+        setOriginalData(newData);
+      }
+    } catch (error) {
+      console.error("Error fetching club career:", error);
+    } finally {
+      setPageLoading(false);
+    }
   };
 
-  /* ================= SUBMIT ================= */
+  const handleChange = (field: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
-  const handleSubmit = async (e: any) => {
+  const hasChanges = () => {
+    return (
+      formData.current_club !== originalData.current_club ||
+      formData.previous_clubs !== originalData.previous_clubs
+    );
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
 
-    const input = {
-      current_club: form.current_club?.trim(),
-      previous_clubs: form.previous_clubs,
-    };
-
-    const res = await fetch(`${API_URL}/graphql`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-      body: JSON.stringify({
-        query: UPSERT_SCOUT_CLUB_CAREER,
-        variables: { input },
-      }),
-    });
-
-    const json = await res.json();
-
-    if (json?.errors) {
-      toast.error(json.errors[0].message || t.error);
-      setLoading(false);
+    if (!hasChanges()) {
+      router.push("/scout");
       return;
     }
 
-    setExists(true);
-    toast.success(exists ? t.update : t.saved);
+    setLoading(true);
 
-    router.push("/scout/profile");
-    setLoading(false);
+    try {
+      const result = await fetchGraphQL<{
+        upsertScoutClubCareer: ClubCareerData;
+      }>(UPSERT_CLUB_CAREER, {
+        input: {
+          current_club: formData.current_club || null,
+          previous_clubs: formData.previous_clubs || null,
+        },
+      });
+
+      if (result.errors) {
+        toast.error(result.errors[0].message);
+      } else if (result.data?.upsertScoutClubCareer) {
+        const data = result.data.upsertScoutClubCareer;
+        setOriginalData({
+          current_club: data.current_club || "",
+          previous_clubs: data.previous_clubs || "",
+        });
+        toast.success(t("Club career saved successfully!"));
+        router.push("/scout");
+      }
+    } catch (error) {
+      console.error("Error saving club career:", error);
+      toast.error(t("Failed to save club career"));
+    } finally {
+      setLoading(false);
+    }
   };
 
+  if (pageLoading) {
+    return (
+      <div
+        className={`min-h-screen flex items-center justify-center ${
+          isDark ? "bg-[#020617]" : "bg-gray-100"
+        }`}
+      >
+        <Loader2 size={40} className="animate-spin text-yellow-500" />
+      </div>
+    );
+  }
+
   return (
-    <div className={`min-h-screen py-20 flex items-center justify-center
-      ${theme === "dark" ? "bg-[#020617] text-white" : "bg-[#f9fafb] text-black"}`}>
+    <div
+      className={`min-h-screen py-40 transition ${
+        isDark ? "bg-[#020b1c] text-white" : "bg-gray-50 text-black"
+      }`}
+    >
+      <h1 className="text-center text-3xl font-bold mb-10 text-yellow-400">
+        {t("Club Career")}
+      </h1>
 
-      <div className="w-full max-w-4xl px-6 py-10">
-
-        {/* TITLE */}
-        <h1 className="text-center text-3xl font-black italic mb-10 uppercase text-yellow-400">
-          {t.title}
-        </h1>
-
-        {/* ICONS */}
-        <div className="flex items-center justify-center gap-4 mb-12">
-
-          <div className="w-10 h-10 flex items-center justify-center rounded-full bg-[#0f1c3d]">
-            <User size={20} />
-          </div>
-
-          <div className="w-20 h-[1px] bg-gray-500"></div>
-
-          <div className="w-14 h-14 flex items-center justify-center rounded-full bg-yellow-500/20 border border-yellow-500">
-            <LayoutGrid className="text-yellow-500" size={16} />
-          </div>
-
+      <div className="max-w-4xl mx-auto px-6">
+        {/* Step Indicators */}
+        <div className="flex items-center justify-center gap-6 mb-10">
+          <Step icon={<User />} isDark={isDark} />
+          <Line isDark={isDark} />
+          <Step icon={<Building2 />} active isDark={isDark} />
         </div>
 
-        {/* FORM */}
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Current Club */}
+          <div>
+            <label
+              className={`block text-sm font-medium mb-2 ${
+                isDark ? "text-gray-300" : "text-gray-700"
+              }`}
+            >
+              {t("Current Club")}
+            </label>
+            <div
+              className={`flex items-center rounded-xl px-4 py-3 border transition-colors ${
+                isDark
+                  ? "bg-[#0b1736] border-[#1e2d5a] focus-within:border-yellow-400"
+                  : "bg-white border-gray-300 focus-within:border-yellow-400"
+              }`}
+            >
+              <Building2 size={18} className="text-yellow-400 mr-3" />
+              <input
+                type="text"
+                value={formData.current_club}
+                onChange={(e) => handleChange("current_club", e.target.value)}
+                placeholder={t("e.g., Al Ahly SC, Zamalek SC, etc.")}
+                className={`bg-transparent outline-none w-full text-sm ${
+                  isDark
+                    ? "text-white placeholder-gray-500"
+                    : "text-black placeholder-gray-400"
+                }`}
+              />
+            </div>
+          </div>
 
-          <input
-            name="current_club"
-            value={form.current_club}
-            onChange={handleChange}
-            placeholder={t.current}
-            className="w-full px-4 py-4 rounded-xl bg-[#0a0f1e] border border-gray-800 text-white"
-          />
+          {/* Previous Clubs */}
+          <div>
+            <label
+              className={`block text-sm font-medium mb-2 ${
+                isDark ? "text-gray-300" : "text-gray-700"
+              }`}
+            >
+              {t("Previous Clubs")}
+            </label>
+            <div
+              className={`flex items-start rounded-xl px-4 py-3 border transition-colors ${
+                isDark
+                  ? "bg-[#0b1736] border-[#1e2d5a] focus-within:border-yellow-400"
+                  : "bg-white border-gray-300 focus-within:border-yellow-400"
+              }`}
+            >
+              <History size={18} className="text-yellow-400 mr-3 mt-1" />
+              <textarea
+                value={formData.previous_clubs}
+                onChange={(e) => handleChange("previous_clubs", e.target.value)}
+                placeholder={t(
+                  "e.g., Sporting CP, Manchester United, Real Madrid, Juventus",
+                )}
+                rows={4}
+                className={`bg-transparent outline-none w-full text-sm resize-none ${
+                  isDark
+                    ? "text-white placeholder-gray-500"
+                    : "text-black placeholder-gray-400"
+                }`}
+              />
+            </div>
+            <p
+              className={`text-xs mt-1 ${
+                isDark ? "text-gray-500" : "text-gray-400"
+              }`}
+            >
+              {t("Separate clubs with commas (e.g., Club A, Club B, Club C)")}
+            </p>
+          </div>
 
-          <textarea
-            name="previous_clubs"
-            value={form.previous_clubs}
-            onChange={handleChange}
-            placeholder={t.previous}
-            className="w-full h-32 px-4 py-4 rounded-xl bg-[#0a0f1e] border border-gray-800 text-white"
-          />
-
-          {/* BUTTONS */}
           <div className="flex justify-between mt-10">
-
             <button
               type="button"
               onClick={() => router.back()}
-              className="flex items-center gap-2 px-10 py-3 rounded-md font-bold bg-[#081f55] border-x-2 border-yellow-500"
+              className={`flex items-center gap-2 px-6 py-3 rounded-lg border transition ${
+                isDark
+                  ? "text-gray-400 bg-[#090B6E]/20 border-gray-500/30 hover:bg-[#090B6E]/40"
+                  : "text-gray-600 bg-gray-100 border-gray-300 hover:bg-gray-200"
+              }`}
             >
-              <ChevronLeft size={18} />
-              {t.previousBtn}
+              <ChevronLeft size={18} /> {t("Previous")}
             </button>
 
             <button
               type="submit"
               disabled={loading}
-              className="px-14 py-3 rounded-md font-bold bg-yellow-500 text-black"
+              className="flex items-center gap-2 px-6 py-3 rounded-lg bg-yellow-400 text-black font-bold hover:bg-yellow-500 transition disabled:opacity-50"
             >
-              {loading ? t.saving : exists ? t.update : t.submit}
+              {loading ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : (
+                <Save size={18} />
+              )}
+              {loading ? t("Saving...") : t("Save")}
+              <ChevronRight size={18} />
             </button>
-
           </div>
-
         </form>
-
       </div>
     </div>
   );

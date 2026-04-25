@@ -7,12 +7,15 @@ import {
   XCircle,
   Clock,
   ArrowRight,
+  Filter,
+  ChevronDown,
 } from "lucide-react";
 import { GET_MY_TRANSFERS } from "@/app/graphql/query/transfer.queries";
 import { toast } from "sonner";
 import { useTheme } from "@/app/context/ThemeContext";
 import useTranslate from "@/app/hooks/useTranslate";
 import { fetchGraphQL } from "@/app/lib/fetchGraphQL";
+import BackButton from "@/app/components/BackButton";
 
 interface Transfer {
   id: string;
@@ -32,8 +35,10 @@ export default function TransfersPage() {
   const { theme } = useTheme();
   const { t } = useTranslate();
   const [transfers, setTransfers] = useState<Transfer[]>([]);
+  const [filteredTransfers, setFilteredTransfers] = useState<Transfer[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<string>("ALL");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   const fetchTransfers = useCallback(async () => {
     setLoading(true);
@@ -44,6 +49,7 @@ export default function TransfersPage() {
 
       if (result.data?.myTransfers) {
         setTransfers(result.data.myTransfers);
+        setFilteredTransfers(result.data.myTransfers);
       } else if (result.errors) {
         console.error("GraphQL errors:", result.errors);
         toast.error(result.errors[0]?.message || t("Failed to load transfers"));
@@ -60,6 +66,36 @@ export default function TransfersPage() {
     fetchTransfers();
   }, [fetchTransfers]);
 
+  // Apply filter when statusFilter changes
+  useEffect(() => {
+    if (statusFilter === "ALL") {
+      setFilteredTransfers(transfers);
+    } else {
+      const filtered = transfers.filter((transfer) => {
+        const lowerStatus = transfer.status.toLowerCase();
+        const filterLower = statusFilter.toLowerCase();
+        if (filterLower === "completed") {
+          return (
+            lowerStatus.includes("completed") || lowerStatus.includes("مكتمل")
+          );
+        }
+        if (filterLower === "pending") {
+          return (
+            lowerStatus.includes("pending") ||
+            lowerStatus.includes("قيد الانتظار")
+          );
+        }
+        if (filterLower === "cancelled") {
+          return (
+            lowerStatus.includes("cancelled") || lowerStatus.includes("ملغي")
+          );
+        }
+        return false;
+      });
+      setFilteredTransfers(filtered);
+    }
+  }, [statusFilter, transfers]);
+
   const formatDate = (dateString: string) => {
     try {
       return new Date(dateString).toLocaleDateString(undefined, {
@@ -72,7 +108,6 @@ export default function TransfersPage() {
     }
   };
 
-  // Get status color based on status (works for both English and Arabic)
   const getStatusColor = (status: string) => {
     const lowerStatus = status.toLowerCase();
     if (lowerStatus.includes("completed") || lowerStatus.includes("مكتمل")) {
@@ -90,7 +125,6 @@ export default function TransfersPage() {
     return "text-gray-400";
   };
 
-  // Get status icon
   const getStatusIcon = (status: string) => {
     const lowerStatus = status.toLowerCase();
     if (lowerStatus.includes("completed") || lowerStatus.includes("مكتمل")) {
@@ -108,40 +142,46 @@ export default function TransfersPage() {
     return <Clock size={16} className="text-gray-400" />;
   };
 
-  // Filter transfers by status
-  const getFilteredTransfers = () => {
-    if (filter === "ALL") return transfers;
-    const lowerFilter = filter.toLowerCase();
+  const getStatusLabel = (status: string) => {
+    const lowerStatus = status.toLowerCase();
+    if (
+      lowerStatus.includes("pending") ||
+      lowerStatus.includes("قيد الانتظار")
+    ) {
+      return t("Pending");
+    }
+    if (lowerStatus.includes("completed") || lowerStatus.includes("مكتمل")) {
+      return t("Completed");
+    }
+    if (lowerStatus.includes("cancelled") || lowerStatus.includes("ملغي")) {
+      return t("Cancelled");
+    }
+    return status;
+  };
+
+  const getStatusCount = (statusType: string) => {
+    if (statusType === "ALL") return transfers.length;
     return transfers.filter((transfer) => {
       const lowerStatus = transfer.status.toLowerCase();
-      if (lowerFilter === "completed") {
-        return (
-          lowerStatus.includes("completed") || lowerStatus.includes("مكتمل")
-        );
-      }
-      if (lowerFilter === "pending") {
+      if (statusType === "PENDING") {
         return (
           lowerStatus.includes("pending") ||
           lowerStatus.includes("قيد الانتظار")
         );
       }
-      if (lowerFilter === "cancelled") {
+      if (statusType === "COMPLETED") {
+        return (
+          lowerStatus.includes("completed") || lowerStatus.includes("مكتمل")
+        );
+      }
+      if (statusType === "CANCELLED") {
         return (
           lowerStatus.includes("cancelled") || lowerStatus.includes("ملغي")
         );
       }
-      return true;
-    });
+      return false;
+    }).length;
   };
-
-  const filterOptions = [
-    { value: "ALL", label: t("All") },
-    { value: "COMPLETED", label: t("Completed") },
-    { value: "PENDING", label: t("Pending") },
-    { value: "CANCELLED", label: t("Cancelled") },
-  ];
-
-  const filteredTransfers = getFilteredTransfers();
 
   if (loading) {
     return (
@@ -166,6 +206,8 @@ export default function TransfersPage() {
       }`}
     >
       <div className="w-full max-w-4xl p-4 sm:p-10">
+        <BackButton className="mb-6" />
+
         <h1
           className={`text-center text-3xl font-bold mb-6
           ${theme === "dark" ? "text-yellow-400" : "text-[#F0B100]"}`}
@@ -173,24 +215,95 @@ export default function TransfersPage() {
           {t("My Transfers")}
         </h1>
 
-        {/* Filter Tabs */}
-        <div className="flex flex-wrap justify-center gap-2 mb-8">
-          {filterOptions.map((option) => (
+        {/* Status Filter Dropdown */}
+        <div className="flex justify-end mb-6">
+          <div className="relative">
             <button
-              key={option.value}
-              onClick={() => setFilter(option.value)}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition
-                ${
-                  filter === option.value
-                    ? "bg-yellow-500 text-white"
-                    : theme === "dark"
-                    ? "bg-[#021448] text-gray-300 hover:bg-yellow-500/20"
-                    : "bg-gray-100 text-gray-700 hover:bg-yellow-500/20"
-                }`}
+              onClick={() => setIsFilterOpen(!isFilterOpen)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${
+                theme === "dark"
+                  ? "bg-[#0a0f2c] border border-[#1e2a5a] hover:bg-[#1e2a5a]"
+                  : "bg-white border border-gray-200 shadow hover:bg-gray-50"
+              }`}
             >
-              {option.label}
+              <Filter size={16} className="text-yellow-500" />
+              <span className="text-sm font-medium">
+                {statusFilter === "ALL"
+                  ? t("All Statuses")
+                  : statusFilter === "PENDING"
+                  ? t("Pending")
+                  : statusFilter === "COMPLETED"
+                  ? t("Completed")
+                  : t("Cancelled")}
+              </span>
+              <ChevronDown
+                size={16}
+                className={`transition-transform ${
+                  isFilterOpen ? "rotate-180" : ""
+                }`}
+              />
             </button>
-          ))}
+            {isFilterOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setIsFilterOpen(false)}
+                />
+                <div
+                  className={`absolute top-full right-0 mt-2 w-56 rounded-lg shadow-lg overflow-hidden z-20 ${
+                    theme === "dark"
+                      ? "bg-[#0a0f2c] border border-[#1e2a5a]"
+                      : "bg-white border border-gray-200"
+                  }`}
+                >
+                  {["ALL", "PENDING", "COMPLETED", "CANCELLED"].map(
+                    (status) => (
+                      <button
+                        key={status}
+                        onClick={() => {
+                          setStatusFilter(status);
+                          setIsFilterOpen(false);
+                        }}
+                        className={`w-full px-4 py-2 text-left text-sm transition flex items-center justify-between ${
+                          statusFilter === status
+                            ? theme === "dark"
+                              ? "bg-yellow-400/20 text-yellow-400"
+                              : "bg-yellow-50 text-yellow-600"
+                            : theme === "dark"
+                            ? "hover:bg-[#1e2a5a] text-gray-300"
+                            : "hover:bg-gray-50 text-gray-700"
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <span
+                            className={`w-2 h-2 rounded-full ${
+                              status === "PENDING"
+                                ? "bg-yellow-500"
+                                : status === "COMPLETED"
+                                ? "bg-green-500"
+                                : status === "CANCELLED"
+                                ? "bg-red-500"
+                                : "bg-gray-400"
+                            }`}
+                          ></span>
+                          {status === "ALL"
+                            ? t("All Statuses")
+                            : status === "PENDING"
+                            ? t("Pending")
+                            : status === "COMPLETED"
+                            ? t("Completed")
+                            : t("Cancelled")}
+                        </span>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-gray-500/20">
+                          {getStatusCount(status)}
+                        </span>
+                      </button>
+                    ),
+                  )}
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {filteredTransfers.length === 0 ? (
@@ -198,7 +311,17 @@ export default function TransfersPage() {
             className={`text-center py-10 rounded-md
             ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}
           >
-            {t("No transfers found")}
+            {statusFilter === "ALL"
+              ? t("No transfers found")
+              : t(
+                  `No ${getStatusLabel(
+                    statusFilter === "PENDING"
+                      ? "Pending"
+                      : statusFilter === "COMPLETED"
+                      ? "Completed"
+                      : "Cancelled",
+                  ).toLowerCase()} transfers found`,
+                )}
           </div>
         ) : (
           <div className="flex flex-col gap-6">

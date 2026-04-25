@@ -82,3 +82,21 @@ export const GET_MY_PLAYERS = `
     }
   }
 `;
+
+export const GET_CLUB_REQUESTS_FOR_ME = `
+  query ClubRequestsForMe {
+    clubRequestsForMe {
+      id
+      status
+      message
+      club {
+        id
+        user_id
+        club_name
+        country
+        logo_url
+      }
+      created_at
+    }
+  }
+`;

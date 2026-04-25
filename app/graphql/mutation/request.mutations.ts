@@ -65,3 +65,25 @@ export const CANCEL_SCOUT_REQUEST_MUTATION = `
     }
   }
 `;
+
+export const ACCEPT_SCOUT_REQUEST_MUTATION = `
+  mutation AcceptScoutRequest($requestId: String!) {
+    acceptScoutRequest(requestId: $requestId) {
+      id
+      status
+      message
+      created_at
+    }
+  }
+`;
+
+export const REJECT_SCOUT_REQUEST_MUTATION = `
+  mutation RejectScoutRequest($requestId: String!) {
+    rejectScoutRequest(requestId: $requestId) {
+      id
+      status
+      message
+      created_at
+    }
+  }
+`;

@@ -20,17 +20,6 @@ interface WriteReviewProps {
 interface ExistingRating {
   id: string;
   calculated_stars: number;
-  notes: string;
-  scalability: boolean;
-  mental_stability: boolean;
-  soccer_intelligence: boolean;
-  physical_fitness: boolean;
-  technical_skill: boolean;
-  tactical_vision: boolean;
-  republican_influence: boolean;
-}
-
-interface RatingFormData {
   scalability: boolean;
   mental_stability: boolean;
   soccer_intelligence: boolean;
@@ -51,6 +40,8 @@ const SKILL_LABELS = {
   republican_influence: "Republican Influence",
 };
 
+type SkillKey = keyof typeof SKILL_LABELS;
+
 export default function WriteReview({
   playerId,
   onRatingSubmitted,
@@ -63,7 +54,11 @@ export default function WriteReview({
   const [existingRating, setExistingRating] = useState<ExistingRating | null>(
     null,
   );
-  const [formData, setFormData] = useState<RatingFormData>({
+  const [ratingMode, setRatingMode] = useState<"stars" | "skills">("stars");
+  const [selectedStars, setSelectedStars] = useState<number>(0);
+  const [hoveredStars, setHoveredStars] = useState<number>(0);
+  const [notes, setNotes] = useState("");
+  const [skills, setSkills] = useState<Record<SkillKey, boolean>>({
     scalability: false,
     mental_stability: false,
     soccer_intelligence: false,
@@ -71,7 +66,6 @@ export default function WriteReview({
     technical_skill: false,
     tactical_vision: false,
     republican_influence: false,
-    notes: "",
   });
 
   useEffect(() => {
@@ -84,7 +78,9 @@ export default function WriteReview({
         if (result.data?.myRatingForPlayer) {
           const rating = result.data.myRatingForPlayer;
           setExistingRating(rating);
-          setFormData({
+          setSelectedStars(rating.calculated_stars || 0);
+          setNotes(rating.notes || "");
+          setSkills({
             scalability: rating.scalability || false,
             mental_stability: rating.mental_stability || false,
             soccer_intelligence: rating.soccer_intelligence || false,
@@ -92,7 +88,6 @@ export default function WriteReview({
             technical_skill: rating.technical_skill || false,
             tactical_vision: rating.tactical_vision || false,
             republican_influence: rating.republican_influence || false,
-            notes: rating.notes || "",
           });
         }
       } catch (error) {
@@ -102,61 +97,92 @@ export default function WriteReview({
     fetchExistingRating();
   }, [playerId]);
 
-  const calculateStarsFromSkills = (): number => {
-    const skills = Object.keys(SKILL_LABELS) as (keyof typeof SKILL_LABELS)[];
-    return skills.filter((skill) => formData[skill]).length;
+  // دالة لحساب عدد النجوم من المهارات - تستقبل skills كمعامل
+  const calculateStarsFromSkills = (
+    skillsData: Record<SkillKey, boolean>,
+  ): number => {
+    return Object.values(skillsData).filter(Boolean).length;
   };
 
-  const handleSkillChange = (skill: keyof RatingFormData, checked: boolean) => {
-    setFormData((prev) => ({ ...prev, [skill]: checked }));
+  const handleSkillChange = (skill: SkillKey, checked: boolean) => {
+    const newSkills = { ...skills, [skill]: checked };
+    setSkills(newSkills);
+    // حساب النجوم من المهارات الجديدة مباشرة
+    const starsCount = calculateStarsFromSkills(newSkills);
+    setSelectedStars(starsCount);
   };
 
   const handleSelectAll = () => {
-    setFormData((prev) => ({
-      ...prev,
-      scalability: true,
-      mental_stability: true,
-      soccer_intelligence: true,
-      physical_fitness: true,
-      technical_skill: true,
-      tactical_vision: true,
-      republican_influence: true,
-    }));
+    const allTrue = Object.keys(skills).reduce((acc, key) => {
+      acc[key as SkillKey] = true;
+      return acc;
+    }, {} as Record<SkillKey, boolean>);
+    setSkills(allTrue);
+    setSelectedStars(7);
   };
 
   const handleClearAll = () => {
-    setFormData((prev) => ({
-      ...prev,
-      scalability: false,
-      mental_stability: false,
-      soccer_intelligence: false,
-      physical_fitness: false,
-      technical_skill: false,
-      tactical_vision: false,
-      republican_influence: false,
-    }));
+    const allFalse = Object.keys(skills).reduce((acc, key) => {
+      acc[key as SkillKey] = false;
+      return acc;
+    }, {} as Record<SkillKey, boolean>);
+    setSkills(allFalse);
+    setSelectedStars(0);
+  };
+
+  const handleStarClick = (stars: number) => {
+    setSelectedStars(stars);
+    if (ratingMode === "stars") {
+      // عند استخدام وضع النجوم، يتم تعبئة المهارات تلقائياً حسب عدد النجوم
+      const skillKeys = Object.keys(skills) as SkillKey[];
+      const newSkills = { ...skills };
+      for (let i = 0; i < skillKeys.length; i++) {
+        newSkills[skillKeys[i]] = i < stars;
+      }
+      setSkills(newSkills);
+    }
+  };
+
+  const handleModeChange = (mode: "stars" | "skills") => {
+    setRatingMode(mode);
+    if (mode === "stars" && selectedStars > 0) {
+      // مزامنة المهارات مع النجوم المحددة
+      const skillKeys = Object.keys(skills) as SkillKey[];
+      const newSkills = { ...skills };
+      for (let i = 0; i < skillKeys.length; i++) {
+        newSkills[skillKeys[i]] = i < selectedStars;
+      }
+      setSkills(newSkills);
+    } else if (mode === "skills") {
+      // تحديث النجوم بناءً على المهارات الحالية
+      setSelectedStars(calculateStarsFromSkills(skills));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
 
-    const stars = calculateStarsFromSkills();
+    if (selectedStars === 0) {
+      toast.error(t("Please select a rating"));
+      return;
+    }
+
+    setLoading(true);
 
     try {
       if (existingRating?.id) {
         const result = await fetchGraphQL(UPDATE_RATING, {
           id: existingRating.id,
           input: {
-            stars,
-            notes: formData.notes,
-            scalability: formData.scalability,
-            mental_stability: formData.mental_stability,
-            soccer_intelligence: formData.soccer_intelligence,
-            physical_fitness: formData.physical_fitness,
-            technical_skill: formData.technical_skill,
-            tactical_vision: formData.tactical_vision,
-            republican_influence: formData.republican_influence,
+            stars: selectedStars,
+            notes: notes || null,
+            scalability: skills.scalability,
+            mental_stability: skills.mental_stability,
+            soccer_intelligence: skills.soccer_intelligence,
+            physical_fitness: skills.physical_fitness,
+            technical_skill: skills.technical_skill,
+            tactical_vision: skills.tactical_vision,
+            republican_influence: skills.republican_influence,
           },
         });
         if (result.errors) {
@@ -170,15 +196,15 @@ export default function WriteReview({
         const result = await fetchGraphQL(CREATE_RATING, {
           input: {
             player_id: playerId,
-            scalability: formData.scalability,
-            mental_stability: formData.mental_stability,
-            soccer_intelligence: formData.soccer_intelligence,
-            physical_fitness: formData.physical_fitness,
-            technical_skill: formData.technical_skill,
-            tactical_vision: formData.tactical_vision,
-            republican_influence: formData.republican_influence,
-            notes: formData.notes,
-            stars,
+            stars: selectedStars,
+            notes: notes || null,
+            scalability: skills.scalability,
+            mental_stability: skills.mental_stability,
+            soccer_intelligence: skills.soccer_intelligence,
+            physical_fitness: skills.physical_fitness,
+            technical_skill: skills.technical_skill,
+            tactical_vision: skills.tactical_vision,
+            republican_influence: skills.republican_influence,
           },
         });
         if (result.errors) {
@@ -197,7 +223,6 @@ export default function WriteReview({
     }
   };
 
-  const displayStars = calculateStarsFromSkills();
   const modalBg = isDark ? "bg-[#0a1a3a]/95" : "bg-white/95";
   const textColor = isDark ? "text-white" : "text-gray-900";
   const textSecondary = isDark ? "text-gray-300" : "text-gray-600";
@@ -238,11 +263,39 @@ export default function WriteReview({
                 {existingRating ? t("Edit Rating") : t("Rate Player")}
               </h2>
 
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Auto-calculated Stars Preview */}
-                <div
-                  className={`text-center py-4 rounded-xl ${inputBg} border ${borderColor}`}
+              {/* Mode Toggle */}
+              <div className="flex gap-2 mb-6 p-1 rounded-xl bg-gray-200/20">
+                <button
+                  type="button"
+                  onClick={() => handleModeChange("stars")}
+                  className={`flex-1 py-2 rounded-lg font-semibold transition ${
+                    ratingMode === "stars"
+                      ? "bg-yellow-400 text-black"
+                      : isDark
+                      ? "text-gray-400 hover:text-white"
+                      : "text-gray-600 hover:text-black"
+                  }`}
                 >
+                  ⭐ {t("Rate by Stars")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleModeChange("skills")}
+                  className={`flex-1 py-2 rounded-lg font-semibold transition ${
+                    ratingMode === "skills"
+                      ? "bg-yellow-400 text-black"
+                      : isDark
+                      ? "text-gray-400 hover:text-white"
+                      : "text-gray-600 hover:text-black"
+                  }`}
+                >
+                  🎯 {t("Rate by Skills")}
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Star Rating Preview */}
+                <div className="text-center py-4 rounded-xl bg-yellow-400/10 border border-yellow-400/30">
                   <p className={`text-sm ${textSecondary} mb-2`}>
                     {t("Rating Preview")}:
                   </p>
@@ -252,7 +305,7 @@ export default function WriteReview({
                         key={star}
                         size={28}
                         className={`${
-                          star <= displayStars
+                          star <= selectedStars
                             ? "fill-yellow-400 text-yellow-400"
                             : "fill-gray-600 text-gray-600"
                         } transition`}
@@ -260,69 +313,99 @@ export default function WriteReview({
                     ))}
                   </div>
                   <p className={`text-2xl font-bold text-yellow-400 mt-2`}>
-                    {displayStars} / 7
+                    {selectedStars} / 7
                   </p>
                 </div>
 
-                {/* Skills Checkboxes */}
-                <div>
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className={`text-lg font-semibold text-yellow-400`}>
-                      {t("Player Skills")}
-                    </h3>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={handleSelectAll}
-                        className={`text-xs px-3 py-1 rounded-lg ${
-                          isDark
-                            ? "bg-white/10 hover:bg-white/20"
-                            : "bg-gray-100 hover:bg-gray-200"
-                        } ${textColor} transition`}
-                      >
-                        {t("Select All")}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleClearAll}
-                        className={`text-xs px-3 py-1 rounded-lg ${
-                          isDark
-                            ? "bg-white/10 hover:bg-white/20"
-                            : "bg-gray-100 hover:bg-gray-200"
-                        } ${textColor} transition`}
-                      >
-                        {t("Clear All")}
-                      </button>
+                {/* Stars Selection Mode */}
+                {ratingMode === "stars" && (
+                  <div className="text-center py-4 rounded-xl border border-yellow-400/30">
+                    <p className={`text-sm ${textSecondary} mb-4`}>
+                      {t("Click on stars to rate")}:
+                    </p>
+                    <div className="flex items-center justify-center gap-2">
+                      {[1, 2, 3, 4, 5, 6, 7].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => handleStarClick(star)}
+                          onMouseEnter={() => setHoveredStars(star)}
+                          onMouseLeave={() => setHoveredStars(0)}
+                          className="transition-transform hover:scale-110 focus:outline-none"
+                        >
+                          <Star
+                            size={40}
+                            className={`${
+                              star <= (hoveredStars || selectedStars)
+                                ? "fill-yellow-400 text-yellow-400"
+                                : "fill-gray-600 text-gray-600"
+                            } transition-all duration-150`}
+                          />
+                        </button>
+                      ))}
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {Object.entries(SKILL_LABELS).map(([key, label]) => (
-                      <label
-                        key={key}
-                        className={`flex items-center space-x-3 p-3 rounded-xl cursor-pointer transition border ${borderColor} ${inputBg} hover:bg-yellow-400/10`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={
-                            formData[key as keyof RatingFormData] as boolean
-                          }
-                          onChange={(e) =>
-                            handleSkillChange(
-                              key as keyof RatingFormData,
-                              e.target.checked,
-                            )
-                          }
-                          className="w-5 h-5 text-yellow-400 rounded focus:ring-yellow-500"
-                        />
-                        <span className={`${textColor} font-medium`}>
-                          {t(label)}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
+                )}
 
-                {/* Notes */}
+                {/* Skills Selection Mode */}
+                {ratingMode === "skills" && (
+                  <div>
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className={`text-lg font-semibold text-yellow-400`}>
+                        {t("Player Skills")}
+                      </h3>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={handleSelectAll}
+                          className={`text-xs px-3 py-1 rounded-lg ${
+                            isDark
+                              ? "bg-white/10 hover:bg-white/20"
+                              : "bg-gray-100 hover:bg-gray-200"
+                          } ${textColor} transition`}
+                        >
+                          {t("Select All")}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleClearAll}
+                          className={`text-xs px-3 py-1 rounded-lg ${
+                            isDark
+                              ? "bg-white/10 hover:bg-white/20"
+                              : "bg-gray-100 hover:bg-gray-200"
+                          } ${textColor} transition`}
+                        >
+                          {t("Clear All")}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {Object.entries(SKILL_LABELS).map(([key, label]) => (
+                        <label
+                          key={key}
+                          className={`flex items-center space-x-3 p-3 rounded-xl cursor-pointer transition border ${borderColor} ${inputBg} hover:bg-yellow-400/10`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={skills[key as SkillKey]}
+                            onChange={(e) =>
+                              handleSkillChange(
+                                key as SkillKey,
+                                e.target.checked,
+                              )
+                            }
+                            className="w-5 h-5 text-yellow-400 rounded focus:ring-yellow-500"
+                          />
+                          <span className={`${textColor} font-medium`}>
+                            {t(label)}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Notes - Optional */}
                 <div>
                   <label
                     className={`block text-sm font-semibold mb-2 ${labelColor}`}
@@ -333,13 +416,8 @@ export default function WriteReview({
                     </span>
                   </label>
                   <textarea
-                    value={formData.notes}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        notes: e.target.value,
-                      }))
-                    }
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
                     placeholder={t("Write your review here...")}
                     className={`w-full p-3 rounded-xl border ${borderColor} ${inputBg} ${textColor} placeholder:text-gray-500 focus:ring-2 focus:ring-yellow-400 outline-none transition resize-none`}
                     rows={4}
@@ -357,7 +435,7 @@ export default function WriteReview({
                   </button>
                   <button
                     type="submit"
-                    disabled={loading}
+                    disabled={loading || selectedStars === 0}
                     className="flex-1 py-3 px-4 rounded-xl bg-[#0a2a66] text-white font-semibold border-l-4 border-r-4 border-yellow-400 hover:opacity-90 transition disabled:opacity-50 shadow-lg"
                   >
                     {loading

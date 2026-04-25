@@ -25,6 +25,7 @@ import {
   CANCEL_REGISTRATION,
 } from "@/app/graphql/mutation/event.mutations";
 import { toast } from "sonner";
+import BackButton from "@/app/components/BackButton";
 
 interface Event {
   id: string;
@@ -177,34 +178,34 @@ export default function Participation() {
   const [registrationToCancel, setRegistrationToCancel] =
     useState<EventRegistration | null>(null);
 
-const fetchEvents = useCallback(async () => {
-  setLoading(true);
-  try {
-    const result = await fetchGraphQL<{ events: Event[] }>(GET_ALL_EVENTS, {
-      skip: 0,
-      take: 50,
-    });
+  const fetchEvents = useCallback(async () => {
+    setLoading(true);
+    try {
+      const result = await fetchGraphQL<{ events: Event[] }>(GET_ALL_EVENTS, {
+        skip: 0,
+        take: 50,
+      });
 
-    if (result.errors) {
-      console.error("GraphQL errors:", result.errors);
-      toast.error(`API Error: ${result.errors[0].message}`);
-      setEvents([]);
-      return;
-    }
+      if (result.errors) {
+        console.error("GraphQL errors:", result.errors);
+        toast.error(`API Error: ${result.errors[0].message}`);
+        setEvents([]);
+        return;
+      }
 
-    if (result.data?.events) {
-      setEvents(result.data.events);
-    } else {
+      if (result.data?.events) {
+        setEvents(result.data.events);
+      } else {
+        setEvents([]);
+      }
+    } catch (error) {
+      console.error("Error fetching events:", error);
+      toast.error(t("Failed to load events"));
       setEvents([]);
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error("Error fetching events:", error);
-    toast.error(t("Failed to load events"));
-    setEvents([]);
-  } finally {
-    setLoading(false);
-  }
-}, [t]);
+  }, [t]);
 
   const fetchMyRegistrations = useCallback(async () => {
     try {
@@ -295,12 +296,18 @@ const fetchEvents = useCallback(async () => {
       className={`min-h-screen flex flex-col items-center justify-center px-6 py-20 transition
       ${isDark ? "bg-[#020617] text-white" : "bg-gray-100 text-black"}`}
     >
-      <h1
-        className={`text-3xl italic font-bold mb-8
-        ${isDark ? "text-[#FFD700]" : "text-yellow-600"}`}
-      >
-        {t("Participation Event")}
-      </h1>
+      {/* Header with BackButton and Title */}
+      <div className="w-full max-w-4xl relative mb-8">
+        <div className="absolute left-0 top-1/2 -translate-y-1/2">
+          <BackButton />
+        </div>
+        <h1
+          className={`text-3xl italic font-bold text-center
+          ${isDark ? "text-[#FFD700]" : "text-yellow-600"}`}
+        >
+          {t("Participation Event")}
+        </h1>
+      </div>
 
       <div className="flex gap-4 mb-8">
         <button

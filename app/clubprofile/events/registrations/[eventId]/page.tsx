@@ -22,6 +22,7 @@ import {
   GET_EVENT_REGISTRATIONS,
 } from "@/app/graphql/query/event.queries";
 import { UPDATE_REGISTRATION_STATUS } from "@/app/graphql/mutation/event.mutations";
+import BackButton from "@/app/components/BackButton";
 
 interface Registration {
   id: string;
@@ -203,17 +204,7 @@ export default function EventRegistrationsPage() {
       }`}
     >
       <div className="max-w-6xl mx-auto">
-        <button
-          onClick={() => router.back()}
-          className={`flex items-center gap-2 mb-6 px-4 py-2 rounded-md transition ${
-            isDark
-              ? "bg-[#0a1128] hover:bg-[#0f1f4a]"
-              : "bg-white shadow hover:bg-gray-100"
-          }`}
-        >
-          <ArrowLeft size={18} />
-          {t("Back")}
-        </button>
+       <BackButton className="mb-6" />
 
         {event && (
           <div

@@ -27,7 +27,7 @@ mutation CreateScoutProfile($profile_image: Upload, $input: CreateScoutProfileIn
 
 export const UPDATE_SCOUT_PROFILE = `
 mutation UpdateScoutProfile($profile_image: Upload, $input: UpdateScoutProfileInput!) {
-  updateScoutProfile(profile_image: $profile_image, input: $input) {
+  updateMyScoutProfile(profile_image: $profile_image, input: $input) {
     id
   }
 }

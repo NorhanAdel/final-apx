@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useTheme } from "@/app/context/ThemeContext";
+import useTranslate from "@/app/hooks/useTranslate";
 
 interface Player {
   first_name: string;
@@ -30,11 +31,11 @@ export default function PersonalInfo({
   showContact = false,
 }: PersonalInfoProps) {
   const { theme } = useTheme();
+  const { t } = useTranslate();
   const isDark = theme === "dark";
 
   if (!player) return null;
 
-  // Helper function to calculate age from date of birth
   const calculateAge = (birthDate?: string | Date | null): number | null => {
     if (!birthDate) return null;
     const birth = new Date(birthDate);
@@ -51,34 +52,29 @@ export default function PersonalInfo({
   };
 
   const formatDate = (dateString?: string | Date | null) => {
-    if (!dateString) return "N/A";
+    if (!dateString) return t("N/A");
     try {
       return new Date(dateString).toLocaleDateString();
     } catch {
-      return "N/A";
+      return t("N/A");
     }
   };
 
   const textColor = isDark ? "text-gray-300" : "text-gray-700";
-
-  const hasStats =
-    (player.views_count ?? 0) > 0 ||
-    player.trust_level ||
-    (player.country && player.city);
-  const hasBio = !!player.bio;
-
-  // Use age from API if available, otherwise calculate from date_of_birth
   const displayAge = player.age ?? calculateAge(player.date_of_birth);
 
   return (
     <div className="mt-6 space-y-6">
       {/* Bio & Stats Section */}
-      {(hasBio || hasStats) && (
+      {(player.bio ||
+        (player.views_count ?? 0) > 0 ||
+        player.trust_level ||
+        (player.country && player.city)) && (
         <div>
-          {hasBio && (
-            <h3 className="text-yellow-400 font-semibold mb-3">Bio</h3>
+          {player.bio && (
+            <h3 className="text-yellow-400 font-semibold mb-3">{t("Bio")}</h3>
           )}
-          {hasBio && (
+          {player.bio && (
             <p
               className={`text-sm ${
                 isDark ? "text-gray-300" : "text-gray-600"
@@ -89,9 +85,15 @@ export default function PersonalInfo({
           )}
           <div className="flex flex-wrap gap-4 mt-3 text-xs text-gray-400">
             {(player.views_count ?? 0) > 0 && (
-              <span>👁️ {player.views_count} views</span>
+              <span>
+                👁️ {player.views_count} {t("views")}
+              </span>
             )}
-            {player.trust_level && <span>🏆 {player.trust_level} level</span>}
+            {player.trust_level && (
+              <span>
+                🏆 {player.trust_level} {t("level")}
+              </span>
+            )}
             {player.country && player.city && (
               <span>
                 📍 {player.city}, {player.country}
@@ -104,43 +106,46 @@ export default function PersonalInfo({
       {/* Personal Information */}
       <div>
         <h3 className="text-yellow-400 font-semibold mb-3">
-          Personal Information
+          {t("Personal Information")}
         </h3>
         <ul className="space-y-2 text-sm">
           <li className={textColor}>
-            <strong>Full Name:</strong> {player.first_name} {player.last_name}
+            <strong>{t("Full Name")}:</strong> {player.first_name}{" "}
+            {player.last_name}
           </li>
           <li className={textColor}>
-            <strong>Date of Birth:</strong> {formatDate(player.date_of_birth)}
+            <strong>{t("Date of Birth")}:</strong>{" "}
+            {formatDate(player.date_of_birth)}
           </li>
           <li className={textColor}>
-            <strong>Age:</strong> {displayAge ?? "N/A"}
+            <strong>{t("Age")}:</strong> {displayAge ?? t("N/A")}
           </li>
           <li className={textColor}>
-            <strong>Place of Birth:</strong> {player.city || "Unknown"},{" "}
-            {player.country || "Unknown"}
+            <strong>{t("Place of Birth")}:</strong>{" "}
+            {player.city || t("Unknown")}, {player.country || t("Unknown")}
           </li>
           <li className={textColor}>
-            <strong>Nationality:</strong> {player.nationality || "N/A"}
+            <strong>{t("Nationality")}:</strong>{" "}
+            {player.nationality || t("N/A")}
           </li>
           <li className={textColor}>
-            <strong>Height:</strong>{" "}
+            <strong>{t("Height")}:</strong>{" "}
             {player.height_cm
               ? `${(player.height_cm / 100).toFixed(2)} m`
-              : "N/A"}
+              : t("N/A")}
           </li>
           <li className={textColor}>
-            <strong>Weight:</strong>{" "}
-            {player.weight_kg ? `${player.weight_kg} kg` : "N/A"}
+            <strong>{t("Weight")}:</strong>{" "}
+            {player.weight_kg ? `${player.weight_kg} kg` : t("N/A")}
           </li>
           {showContact && (
             <li className={textColor}>
-              <strong>Email:</strong> {player.email_address || "N/A"}
+              <strong>{t("Email")}:</strong> {player.email_address || t("N/A")}
             </li>
           )}
           {showContact && (
             <li className={textColor}>
-              <strong>Phone:</strong> {player.phone || "N/A"}
+              <strong>{t("Phone")}:</strong> {player.phone || t("N/A")}
             </li>
           )}
         </ul>

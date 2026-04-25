@@ -5,7 +5,8 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
 import { useEffect, useRef, useState } from "react";
 import "swiper/css";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, User, LocateFixed } from "lucide-react";
+import { motion } from "framer-motion";
 import { useTheme } from "../context/ThemeContext";
 import useTranslate from "../hooks/useTranslate";
 import { fetchGraphQL } from "../lib/fetchGraphQL";
@@ -21,6 +22,9 @@ interface Transfer {
   completed_at?: string;
   created_at: string;
   playerName?: string;
+  player?: {
+    profile_image_url?: string;
+  };
 }
 
 const ALL_TRANSFERS = `
@@ -50,6 +54,7 @@ const T: any = {
 export default function TransfersSection() {
   const { theme } = useTheme();
   const { lang } = useTranslate();
+  const isDark = theme === "dark";
 
   const t = T[lang] || T.en;
 
@@ -66,14 +71,13 @@ export default function TransfersSection() {
   const fetchTransfers = async () => {
     setLoading(true);
 
-    // 🔥 FIX: removed lang argument
     const res = await fetchGraphQL<{ allTransfers: Transfer[] }>(
       ALL_TRANSFERS,
       {
         filter: {
           status: "Completed",
         },
-      }
+      },
     );
 
     if (res.data?.allTransfers) {
@@ -85,100 +89,122 @@ export default function TransfersSection() {
     setLoading(false);
   };
 
+  if (loading || transfers.length === 0) return null;
+
   return (
-    <section
-      className={`mt-8 pb-16 w-full overflow-hidden transition-all duration-300
-      ${theme === "dark" ? "bg-[#020617] text-white" : "text-[#F0B100]"}`}
-    >
-      <div className="flex items-center justify-between px-4 mb-6">
-        <h2 className="text-2xl font-bold italic uppercase tracking-widest">
+    <div className="mt-14 px-3 sm:px-6 lg:px-10">
+      <div className="flex justify-between items-center mb-6">
+        <motion.h2
+          initial={{ opacity: 0, x: -30 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          className={`text-lg sm:text-2xl font-bold italic tracking-wide ${
+            isDark ? "text-white" : "text-[#F0B100]"
+          }`}
+        >
           {t.title}
-        </h2>
-
+        </motion.h2>
         <div className="flex gap-2">
-          <button ref={prevRef} className="w-10 h-10 border flex items-center justify-center">
-            <ChevronLeft size={20} />
-          </button>
-
-          <button ref={nextRef} className="w-10 h-10 border flex items-center justify-center">
-            <ChevronRight size={20} />
-          </button>
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            className={`prevTransfer w-9 h-9 flex items-center justify-center border rounded-md transition ${
+              isDark
+                ? "bg-[#0b1120] border-[#1e293b] text-white"
+                : "bg-gray-200 border-gray-300 text-black"
+            }`}
+            ref={prevRef}
+          >
+            <ChevronLeft size={16} />
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            className={`nextTransfer w-9 h-9 flex items-center justify-center border rounded-md transition ${
+              isDark
+                ? "bg-[#0b1120] border-[#1e293b] text-white"
+                : "bg-gray-200 border-gray-300 text-black"
+            }`}
+            ref={nextRef}
+          >
+            <ChevronRight size={16} />
+          </motion.button>
         </div>
       </div>
 
-      {loading ? (
-        <p className="text-center">{t.loading}</p>
-      ) : (
-        <div className="px-4">
-          <Swiper
-            modules={[Navigation]}
-            spaceBetween={20}
-            slidesPerView={1.2}
-            onSwiper={(swiper) => {
-              setTimeout(() => {
-                if (
-                  swiper.params.navigation &&
-                  typeof swiper.params.navigation !== "boolean"
-                ) {
-                  swiper.params.navigation.prevEl = prevRef.current;
-                  swiper.params.navigation.nextEl = nextRef.current;
-                  swiper.navigation.destroy();
-                  swiper.navigation.init();
-                  swiper.navigation.update();
-                }
-              });
-            }}
-            breakpoints={{
-              640: { slidesPerView: 2 },
-              1024: { slidesPerView: 3 },
-              1536: { slidesPerView: 4 },
-            }}
-          >
-            {transfers.map((t) => (
-              <SwiperSlide key={t.id}>
+      <Swiper
+        modules={[Navigation]}
+        navigation={{ nextEl: ".nextTransfer", prevEl: ".prevTransfer" }}
+        spaceBetween={20}
+        breakpoints={{
+          0: { slidesPerView: 1.1 },
+          640: { slidesPerView: 1.5 },
+          768: { slidesPerView: 2.2 },
+          1024: { slidesPerView: 3.2 },
+        }}
+      >
+        {transfers.map((transfer) => (
+          <SwiperSlide key={transfer.id}>
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              whileHover={{ scale: 1.04, y: -8 }}
+              transition={{ duration: 0.4 }}
+              className={`rounded-2xl overflow-hidden border shadow-lg transition-all cursor-pointer ${
+                isDark
+                  ? "bg-[#0b1120] border-[#1e293b]"
+                  : "bg-white border-gray-200"
+              }`}
+            >
+              <div className="p-4">
+                <div className="flex justify-between items-center mb-3">
+                  <h3
+                    className={`text-base sm:text-lg font-bold truncate ${
+                      isDark ? "text-white" : "text-black"
+                    }`}
+                  >
+                    {transfer.playerName || transfer.player_id}
+                  </h3>
+                </div>
+
                 <div
-                  className={`p-4 rounded-2xl border flex flex-col items-center gap-4 shadow-xl h-full transition
-                  ${
-                    theme === "dark"
-                      ? "bg-[#0b1a3a] border-[#132a55]"
-                      : "bg-white border-gray-200"
+                  className={`w-full flex items-center justify-between p-3 rounded-xl mb-3
+                  ${isDark ? "bg-[#071126]" : "bg-gray-100"}`}
+                >
+                  <div className="flex flex-col items-center flex-1">
+                    <span className="text-xs text-gray-500">
+                      {transfer.from_club}
+                    </span>
+                  </div>
+
+                  <div className="px-2 text-yellow-500 text-lg font-bold">
+                    →
+                  </div>
+
+                  <div className="flex flex-col items-center flex-1">
+                    <span className="text-xs text-yellow-500 font-semibold">
+                      {transfer.to_club}
+                    </span>
+                  </div>
+                </div>
+
+                <div
+                  className={`flex justify-between items-center text-xs ${
+                    isDark ? "text-gray-400" : "text-gray-500"
                   }`}
                 >
-                  <div className="text-center">
-                    <h3 className="font-black italic text-lg uppercase">
-                      {t.playerName || t.player_id}
-                    </h3>
-
-                    <p className="text-xs mt-1 text-gray-400">
-                      {new Date(t.transfer_date).toLocaleDateString(lang)}
-                    </p>
-                  </div>
-
-                  <div
-                    className={`w-full flex items-center justify-between p-3 rounded-xl
-                    ${theme === "dark" ? "bg-[#071126]" : "bg-gray-100"}`}
-                  >
-                    <div className="flex flex-col items-center flex-1">
-                      <span className="text-xs">{t.from_club}</span>
-                    </div>
-
-                    <div className="px-2 text-[#facc15] text-lg animate-pulse">
-                      →
-                    </div>
-
-                    <div className="flex flex-col items-center flex-1">
-                      <span className="text-xs text-[#facc15]">
-                        {t.to_club}
-                      </span>
-                    </div>
-                  </div>
-
+                  <span className="flex items-center gap-1">
+                    <LocateFixed size={12} className="text-yellow-500" />
+                    {transfer.club_name || transfer.to_club}
+                  </span>
+                  <span>
+                    {new Date(transfer.transfer_date).toLocaleDateString(lang)}
+                  </span>
                 </div>
-              </SwiperSlide>
-            ))}
-          </Swiper>
-        </div>
-      )}
-    </section>
+              </div>
+            </motion.div>
+          </SwiperSlide>
+        ))}
+      </Swiper>
+    </div>
   );
 }

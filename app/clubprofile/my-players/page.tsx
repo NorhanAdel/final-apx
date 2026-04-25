@@ -9,6 +9,7 @@ import { fetchGraphQL } from "../../lib/fetchGraphQL";
 import { toast } from "sonner";
 import { PlayerCard } from "@/app/components/PlayerCard";
 import { GET_INCOMING_PLAYERS } from '@/app/graphql/query/transfer.queries';
+import BackButton from "@/app/components/BackButton";
 
 interface IncomingPlayer {
   player: {
@@ -117,19 +118,20 @@ export default function MyPlayersPage() {
   const getImageUrl = (url: string) => {
     if (!url) return "/placeholder-player.jpg";
     if (url.startsWith("http")) return url;
-    // أضف base URL من الـ environment variables
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
     return `${baseUrl}${url}`;
   };
 
   return (
     <div
-      className={`min-h-screen py-20 px-6 transition ${
+      className={`min-h-screen py-40 px-6 transition ${
         isDark ? "bg-[#020617] text-white" : "bg-gray-100 text-black"
       }`}
     >
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-10">
+          <BackButton className="mb-6" />
+
           <h1 className="text-4xl font-black italic tracking-tighter text-yellow-400 uppercase">
             {t("My Players")}
           </h1>

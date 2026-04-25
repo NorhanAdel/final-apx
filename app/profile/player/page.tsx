@@ -8,23 +8,23 @@ import {
   LayoutGrid,
   Users,
   Trophy,
-  LogOut,
   Share2,
   Mail,
   Phone,
   MapPin,
   ChevronLeft,
   ChevronRight,
-  X,
   FileText,
   ArrowRightLeft,
   Heart,
+  CheckCircle,
+  AlertCircle,
 } from "lucide-react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
 import useTranslate from "../../hooks/useTranslate";
 import { fetchGraphQL } from "../../lib/fetchGraphQL";
@@ -32,6 +32,7 @@ import {
   GET_MY_PLAYER_PROFILE,
   GET_ALL_PLAYERS,
 } from "@/app/graphql/query/player.queries";
+import { LogoutButton } from "@/app/components/LogoutButton";
 
 interface PlayerData {
   id: string;
@@ -47,6 +48,7 @@ interface PlayerData {
   phone?: string;
   country?: string;
   city?: string;
+  is_verified?: boolean;
 }
 
 interface ClubData {
@@ -61,6 +63,7 @@ interface ClubData {
   rating?: number;
   description?: string;
   members_count?: number;
+  is_verified?: boolean;
 }
 
 interface Member {
@@ -69,15 +72,24 @@ interface Member {
   id: string;
 }
 
+interface MenuButton {
+  label: string;
+  icon: React.ReactNode;
+  path?: string;
+  color?: string;
+  action?: () => void;
+}
+
 export default function ClubProfile() {
   const { theme } = useTheme();
   const { t } = useTranslate();
   const router = useRouter();
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [swiperReady, setSwiperReady] = useState(false);
   const [clubData, setClubData] = useState<ClubData | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isVerified, setIsVerified] = useState<boolean>(false);
+  const [hasProfile, setHasProfile] = useState<boolean>(false);
   const prevRef = useRef<HTMLButtonElement>(null);
   const nextRef = useRef<HTMLButtonElement>(null);
 
@@ -97,16 +109,23 @@ export default function ClubProfile() {
         setClubData({
           id: player.id,
           name: `${player.first_name} ${player.last_name}`,
-          email: player.email_address || "email@gmail.com",
-          phone: player.phone || "+966 123456",
-          country: player.country || "Saudi Arabia",
+          email: player.email_address || "",
+          phone: player.phone || "",
+          country: player.country || "",
           city: player.city || "",
           logo_url: player.profile_image_url,
           rating: player.average_rating || 0,
         });
+        setIsVerified(player.is_verified || false);
+        setHasProfile(true);
+      } else {
+        setHasProfile(false);
+        setClubData(null);
       }
     } catch (error) {
       console.error("Error fetching club data:", error);
+      setHasProfile(false);
+      setClubData(null);
     }
   };
 
@@ -119,40 +138,29 @@ export default function ClubProfile() {
         const formattedMembers = result.data.getAllPlayers.data.map(
           (player) => ({
             name: `${player.first_name} ${player.last_name}`,
-            img: player.profile_image_url || "/b2.jpg",
+            img: player.profile_image_url || "",
             id: player.id,
           }),
         );
         setMembers(formattedMembers);
+      } else {
+        setMembers([]);
       }
     } catch (error) {
       console.error("Error fetching members:", error);
-      setMembers([
-        { name: "Ronald Richards", img: "/b2.jpg", id: "1" },
-        { name: "John Doe", img: "/b2.jpg", id: "2" },
-        { name: "Jane Smith", img: "/b2.jpg", id: "3" },
-        { name: "Mike Johnson", img: "/b2.jpg", id: "4" },
-        { name: "Sarah Williams", img: "/b2.jpg", id: "5" },
-        { name: "David Brown", img: "/b2.jpg", id: "6" },
-      ]);
+      setMembers([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    router.push("/auth/login");
-  };
-
   const getFullImageUrl = (url?: string) => {
-    if (!url) return "/Club.jpg";
+    if (!url) return "";
     if (url.startsWith("http")) return url;
     return `${process.env.NEXT_PUBLIC_API_URL}${url}`;
   };
 
-  const menuButtons = [
+  const menuButtons: MenuButton[] = [
     {
       label: t("Requests"),
       icon: <LayoutGrid size={18} />,
@@ -193,12 +201,6 @@ export default function ClubProfile() {
       icon: <Heart size={18} className="text-red-500" />,
       path: "/profile/favouritePlayers",
     },
-    {
-      label: t("Logout"),
-      icon: <LogOut size={18} />,
-      color: "text-red-600",
-      action: () => setShowLogoutModal(true),
-    },
   ];
 
   if (loading) {
@@ -214,9 +216,39 @@ export default function ClubProfile() {
     );
   }
 
+  // If no profile exists, show message to complete registration
+  if (!hasProfile) {
+    return (
+      <div
+        className={`min-h-screen flex flex-col items-center justify-center transition
+        ${
+          theme === "dark" ? "bg-[#020617] text-white" : "bg-white text-black"
+        }`}
+      >
+        <div className="text-center max-w-md px-6">
+          <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-yellow-400/20 flex items-center justify-center">
+            <Users size={48} className="text-yellow-400" />
+          </div>
+          <h2 className="text-2xl font-bold mb-4">
+            {t("Complete Your Profile")}
+          </h2>
+          <p className="text-gray-500 mb-8">
+            {t("Please complete your profile information to continue")}
+          </p>
+          <button
+            onClick={() => router.push("/profile")}
+            className="px-8 py-3 bg-yellow-400 text-black font-semibold rounded-md hover:bg-yellow-500 transition"
+          >
+            {t("Complete Registration")}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
-      className={`min-h-screen flex justify-center py-30 px-4 transition
+      className={`min-h-screen flex justify-center py-40 px-4 transition
       ${theme === "dark" ? "bg-[#020617] text-white" : "bg-white text-black"}`}
     >
       <motion.div
@@ -225,77 +257,28 @@ export default function ClubProfile() {
         transition={{ duration: 0.4 }}
         className="max-w-6xl w-full"
       >
-        {/* ===== Logout Modal ===== */}
-        <AnimatePresence>
-          {showLogoutModal && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
-            >
-              <motion.div
-                initial={{ scale: 0.8, y: 40 }}
-                animate={{ scale: 1, y: 0 }}
-                exit={{ scale: 0.8, y: 40 }}
-                transition={{ duration: 0.3 }}
-                className={`relative w-[90%] max-w-sm p-6 rounded-xl text-center
-                ${theme === "dark" ? "bg-[#050B18]" : "bg-white"}`}
-              >
-                <button
-                  onClick={() => setShowLogoutModal(false)}
-                  className="absolute top-3 right-3"
-                >
-                  <X />
-                </button>
-
-                <h2 className="text-xl font-bold mb-3">{t("Logout")}</h2>
-                <p className="text-gray-400 mb-5">
-                  {t("Are you sure you want to logout?")}
-                </p>
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setShowLogoutModal(false)}
-                    className={`flex-1 py-2 rounded-md transition
-                    ${
-                      theme === "dark"
-                        ? "bg-gray-700 text-white"
-                        : "bg-gray-300 text-black"
-                    }`}
-                  >
-                    {t("Cancel")}
-                  </button>
-                  <button
-                    onClick={handleLogout}
-                    className="flex-1 py-2 bg-red-600 text-white rounded-md hover:scale-105 transition"
-                  >
-                    {t("Logout")}
-                  </button>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         {/* ===== Header ===== */}
         <div className="flex flex-col md:flex-row gap-6 mb-8">
           <motion.div
             whileHover={{ scale: 1.05 }}
-            className="relative w-[320px] h-[320px] rounded-lg overflow-hidden"
+            className="relative w-[320px] h-[320px] rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-800"
           >
-            <Image
-              src={getFullImageUrl(clubData?.logo_url)}
-              fill
-              alt="club"
-              className="object-cover"
-            />
+            {clubData?.logo_url ? (
+              <Image
+                src={getFullImageUrl(clubData.logo_url)}
+                fill
+                alt="club"
+                className="object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <Users size={64} className="text-gray-400" />
+              </div>
+            )}
           </motion.div>
 
           <div className="flex-1 space-y-3">
-            <h1 className="text-3xl font-bold">
-              {clubData?.name || "RONALD CLUB"}
-            </h1>
+            <h1 className="text-3xl font-bold">{clubData?.name || ""}</h1>
 
             {/* 7 Stars Rating */}
             <div className="flex text-yellow-400">
@@ -320,19 +303,40 @@ export default function ClubProfile() {
 
             {/* Info */}
             <div className="text-gray-400 space-y-2">
-              <div className="flex items-center gap-2">
-                <MapPin size={14} />
-                {clubData?.country || t("Saudi Arabia")}
-              </div>
+              {clubData?.country && (
+                <div className="flex items-center gap-2">
+                  <MapPin size={14} />
+                  {clubData.country}
+                </div>
+              )}
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <span className="flex items-center gap-1">
-                  <Mail size={14} /> {clubData?.email}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Phone size={14} /> {clubData?.phone}
-                </span>
+                {clubData?.email && (
+                  <span className="flex items-center gap-1">
+                    <Mail size={14} /> {clubData.email}
+                  </span>
+                )}
+                {clubData?.phone && (
+                  <span className="flex items-center gap-1">
+                    <Phone size={14} /> {clubData.phone}
+                  </span>
+                )}
               </div>
+            </div>
+
+            {/* Verification Status Badge */}
+            <div className="flex justify-start">
+              {isVerified ? (
+                <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-500/20 text-green-500 text-xs">
+                  <CheckCircle size={12} />
+                  {t("Verified Player")}
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-500 text-xs">
+                  <AlertCircle size={12} />
+                  {t("Pending Verification")}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -372,68 +376,79 @@ export default function ClubProfile() {
               <span className={btn.color || "text-yellow-400"}>{btn.icon}</span>
             </motion.button>
           ))}
+
+          {/* Logout Button */}
+          <LogoutButton variant="default" />
         </div>
 
         {/* ===== Members Slider ===== */}
-        <div className="relative px-10">
-          {swiperReady && members.length > 0 && (
-            <Swiper
-              modules={[Navigation]}
-              navigation={{
-                prevEl: prevRef.current,
-                nextEl: nextRef.current,
-              }}
-              spaceBetween={15}
-              slidesPerView={1}
-              breakpoints={{
-                640: { slidesPerView: 2 },
-                768: { slidesPerView: 3 },
-                1024: { slidesPerView: 4 },
-              }}
-              className="overflow-visible"
+        {members.length > 0 && (
+          <div className="relative px-10">
+            {swiperReady && (
+              <Swiper
+                modules={[Navigation]}
+                navigation={{
+                  prevEl: prevRef.current,
+                  nextEl: nextRef.current,
+                }}
+                spaceBetween={15}
+                slidesPerView={1}
+                breakpoints={{
+                  640: { slidesPerView: 2 },
+                  768: { slidesPerView: 3 },
+                  1024: { slidesPerView: 4 },
+                }}
+                className="overflow-visible"
+              >
+                {members.map((m) => (
+                  <SwiperSlide key={m.id}>
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer
+                      ${
+                        theme === "dark"
+                          ? "bg-[#051139] border-gray-700 hover:border-yellow-400"
+                          : "bg-white shadow border-gray-200 hover:border-yellow-400"
+                      }`}
+                      onClick={() => router.push(`/players/${m.id}`)}
+                    >
+                      <div className="w-12 h-12 relative rounded-full overflow-hidden bg-gray-300 dark:bg-gray-700">
+                        {m.img ? (
+                          <Image
+                            src={getFullImageUrl(m.img)}
+                            fill
+                            alt="member"
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Users size={20} className="text-gray-500" />
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-sm font-medium">{m.name}</p>
+                    </motion.div>
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+            )}
+
+            {/* Navigation Buttons */}
+            <button
+              ref={prevRef}
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-black/50 hover:bg-black/70 rounded-full p-2 transition"
             >
-              {members.map((m) => (
-                <SwiperSlide key={m.id}>
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer
-                    ${
-                      theme === "dark"
-                        ? "bg-[#051139] border-gray-700 hover:border-yellow-400"
-                        : "bg-white shadow border-gray-200 hover:border-yellow-400"
-                    }`}
-                    onClick={() => router.push(`/players/${m.id}`)}
-                  >
-                    <div className="w-12 h-12 relative rounded-full overflow-hidden">
-                      <Image
-                        src={getFullImageUrl(m.img)}
-                        fill
-                        alt="member"
-                        className="object-cover"
-                      />
-                    </div>
-                    <p className="text-sm font-medium">{m.name}</p>
-                  </motion.div>
-                </SwiperSlide>
-              ))}
-            </Swiper>
-          )}
+              <ChevronLeft size={24} className="text-white" />
+            </button>
 
-          {/* Navigation Buttons */}
-          <button
-            ref={prevRef}
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-black/50 hover:bg-black/70 rounded-full p-2 transition"
-          >
-            <ChevronLeft size={24} className="text-white" />
-          </button>
-
-          <button
-            ref={nextRef}
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-black/50 hover:bg-black/70 rounded-full p-2 transition"
-          >
-            <ChevronRight size={24} className="text-white" />
-          </button>
-        </div>
+            <button
+              ref={nextRef}
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-black/50 hover:bg-black/70 rounded-full p-2 transition"
+            >
+              <ChevronRight size={24} className="text-white" />
+            </button>
+          </div>
+        )}
       </motion.div>
     </div>
   );

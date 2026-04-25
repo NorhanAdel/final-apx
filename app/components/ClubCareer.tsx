@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { fetchGraphQL } from "@/app/lib/fetchGraphQL";
 import { GET_PLAYER_CLUB_CAREER } from "@/app/graphql/query/player.queries";
 import { useTheme } from "@/app/context/ThemeContext";
+import useTranslate from "@/app/hooks/useTranslate";
 
 interface ClubCareerData {
   id: string;
@@ -18,6 +19,7 @@ interface ClubCareerProps {
 
 export default function ClubCareer({ playerId }: ClubCareerProps) {
   const { theme } = useTheme();
+  const { t } = useTranslate();
   const isDark = theme === "dark";
   const [clubCareer, setClubCareer] = useState<ClubCareerData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -26,90 +28,93 @@ export default function ClubCareer({ playerId }: ClubCareerProps) {
   useEffect(() => {
     const fetchClubCareer = async () => {
       if (!playerId) return;
-
       setLoading(true);
       setError(null);
-
       try {
         const result = await fetchGraphQL<{ playerClubCareer: ClubCareerData }>(
           GET_PLAYER_CLUB_CAREER,
           { playerId },
         );
-
         if (result.errors) {
           console.error("GraphQL Errors:", result.errors);
-          setError("Failed to load club career.");
+          setError(t("Failed to load club career"));
           return;
         }
-
         setClubCareer(result.data?.playerClubCareer || null);
       } catch (err) {
         console.error(err);
-        setError("Failed to load club career.");
+        setError(t("Failed to load club career"));
       } finally {
         setLoading(false);
       }
     };
-
     fetchClubCareer();
-  }, [playerId]);
+  }, [playerId, t]);
 
   const formatDate = (dateString?: string | Date | null) => {
-    if (!dateString) return "N/A";
+    if (!dateString) return t("N/A");
     try {
       return new Date(dateString).toLocaleDateString();
     } catch {
-      return "N/A";
+      return t("N/A");
     }
   };
 
   const textColor = isDark ? "text-gray-300" : "text-gray-700";
   const secondaryTextColor = isDark ? "text-gray-400" : "text-gray-500";
 
-  if (loading)
+  if (loading) {
     return (
       <div className="mt-8 text-left">
-        <h3 className="text-yellow-400 font-semibold mb-3">Club Career</h3>
+        <h3 className="text-yellow-400 font-semibold mb-3">
+          {t("Club Career")}
+        </h3>
         <p className={`${secondaryTextColor} text-center mt-4`}>
-          Loading club career...
+          {t("Loading...")}
         </p>
       </div>
     );
+  }
 
-  if (error)
+  if (error) {
     return (
       <div className="mt-8 text-left">
-        <h3 className="text-yellow-400 font-semibold mb-3">Club Career</h3>
+        <h3 className="text-yellow-400 font-semibold mb-3">
+          {t("Club Career")}
+        </h3>
         <p className="text-red-500 text-center mt-4">{error}</p>
       </div>
     );
+  }
 
-  if (!clubCareer)
+  if (!clubCareer) {
     return (
       <div className="mt-8 text-left">
-        <h3 className="text-yellow-400 font-semibold mb-3">Club Career</h3>
+        <h3 className="text-yellow-400 font-semibold mb-3">
+          {t("Club Career")}
+        </h3>
         <p className={`${secondaryTextColor} text-center mt-4`}>
-          No club career information available.
+          {t("No club career information available")}
         </p>
       </div>
     );
+  }
 
   return (
     <div className="mt-8 text-left">
-      <h3 className="text-yellow-400 font-semibold mb-3">Club Career</h3>
+      <h3 className="text-yellow-400 font-semibold mb-3">{t("Club Career")}</h3>
       <ul className="space-y-2 text-sm">
         <li className={textColor}>
-          <strong>Current Club:</strong> {clubCareer.current_club || "N/A"}
+          <strong>{t("Current Club")}:</strong>{" "}
+          {clubCareer.current_club || t("N/A")}
         </li>
         <li className={textColor}>
-          <strong>Professional Debut:</strong>{" "}
+          <strong>{t("Professional Debut")}:</strong>{" "}
           {formatDate(clubCareer.professional_debut)}
         </li>
         <li className={textColor}>
-          <strong>Previous Clubs:</strong>
-          <p className={`mt-1 ${secondaryTextColor}`}>
-            {clubCareer.previous_clubs || "No previous clubs"}
-          </p>
+          <strong>{t("Previous Clubs")}:</strong>{" "}
+          {clubCareer.previous_clubs || t("No previous clubs")}
         </li>
       </ul>
     </div>

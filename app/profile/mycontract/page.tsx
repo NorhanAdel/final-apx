@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { useTheme } from "@/app/context/ThemeContext";
 import useTranslate from "@/app/hooks/useTranslate";
 import { fetchGraphQL } from "@/app/lib/fetchGraphQL";
+import BackButton from "@/app/components/BackButton";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -152,12 +153,14 @@ export default function MyContractPage() {
 
   return (
     <div
-      className={`min-h-screen py-20 transition
+      className={`min-h-screen py-40 transition
       ${
         theme === "dark" ? "bg-[#020617] text-white" : "bg-gray-100 text-black"
       }`}
     >
       <div className="max-w-4xl mx-auto px-6">
+        <BackButton className="mb-6" />
+
         <h1
           className={`text-3xl font-bold mb-8 text-center
           ${theme === "dark" ? "text-yellow-400" : "text-yellow-600"}`}

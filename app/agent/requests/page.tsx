@@ -29,6 +29,7 @@ import {
 import { fetchGraphQL } from "@/app/lib/fetchGraphQL";
 import { useTheme } from "@/app/context/ThemeContext";
 import useTranslate from "@/app/hooks/useTranslate";
+import BackButton from "@/app/components/BackButton";
 
 interface Player {
   id: string;
@@ -428,6 +429,8 @@ export default function AgentRequests() {
       )}
 
       <div className="max-w-6xl w-full space-y-8 py-20">
+        <BackButton className="mb-6" />
+        
         <h1
           className={`text-center text-4xl font-black italic uppercase mb-10 ${
             isDark ? "text-[#FFD700]" : "text-yellow-600"

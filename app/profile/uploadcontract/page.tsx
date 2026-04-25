@@ -13,6 +13,7 @@ import { GET_MY_CONTRACT } from "@/app/graphql/query/contract.queries";
 import { UPLOAD_SIGNED_CONTRACT } from "@/app/graphql/mutation/contract.mutations";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import BackButton from "@/app/components/BackButton";
 
 interface Contract {
   id: string;
@@ -147,6 +148,8 @@ export default function UploadContractPage() {
       <div className="absolute w-[600px] h-[600px] bg-blue-800/5 blur-[120px] rounded-full -right-20 -bottom-20 pointer-events-none" />
 
       <div className="max-w-5xl w-full relative z-10">
+        <BackButton className="mb-6" />
+
         <h1
           className={`text-4xl font-black italic mb-6 uppercase tracking-tighter text-center
           ${theme === "dark" ? "text-[#FFD700]" : "text-[#F0B100]"}`}

@@ -1,5 +1,3 @@
-// app/components/Navbar.tsx
-
 "use client";
 
 import Image from "next/image";
@@ -93,6 +91,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isLoading: loading, logout } = useAuth();
+  const [mounted, setMounted] = useState(false); // <-- أضف هذا
 
   const [open, setOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
@@ -109,6 +108,11 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
 
   const { theme, toggleTheme } = useTheme();
   const { t, changeLang, lang: currentLang } = useTranslate();
+
+  // <-- حدد mounted=true بعد تحميل العميل
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const fetchSports = async () => {
@@ -435,11 +439,20 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
 
           {renderAuthButton()}
 
+          {/* <-- هنا التعديل الرئيسي */}
           <button
             onClick={toggleTheme}
             className="p-2 rounded-lg hover:bg-white/10 transition-colors"
           >
-            {theme === "dark" ? <Moon size={18} /> : <Sun size={18} />}
+            {mounted ? (
+              theme === "dark" ? (
+                <Moon size={18} />
+              ) : (
+                <Sun size={18} />
+              )
+            ) : (
+              <div className="w-5 h-5" /> // placeholder فارغ أثناء التحميل
+            )}
           </button>
 
           <div className="relative">
@@ -485,8 +498,17 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
         </div>
 
         <div className="md:hidden flex items-center gap-3">
+          {/* <-- وهنا كمان */}
           <button onClick={toggleTheme}>
-            {theme === "dark" ? <Moon size={20} /> : <Sun size={20} />}
+            {mounted ? (
+              theme === "dark" ? (
+                <Moon size={20} />
+              ) : (
+                <Sun size={20} />
+              )
+            ) : (
+              <div className="w-5 h-5" />
+            )}
           </button>
 
           {!activeUser ? (

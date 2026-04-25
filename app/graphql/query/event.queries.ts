@@ -1,8 +1,6 @@
-// app/graphql/query/event.queries.ts
-
 export const GET_ALL_EVENTS = `
-  query GetAllEvents($skip: Int, $take: Int) {
-    events(skip: $skip, take: $take) {
+  query GetAllEvents($status: EventStatus) {
+    events(status: $status) {
       id
       title
       description
@@ -21,8 +19,8 @@ export const GET_ALL_EVENTS = `
 `;
 
 export const GET_EVENTS_BY_STATUS = `
-  query GetEventsByStatus($status: EventStatus!, $skip: Int, $take: Int) {
-    eventsByStatus(status: $status, skip: $skip, take: $take) {
+  query GetEventsByStatus($status: EventStatus!) {
+    eventsByStatus(status: $status) {
       id
       title
       description
@@ -41,8 +39,8 @@ export const GET_EVENTS_BY_STATUS = `
 `;
 
 export const GET_EVENTS_BY_SPORT = `
-  query GetEventsBySport($sportId: ID!, $skip: Int, $take: Int) {
-    eventsBySport(sportId: $sportId, skip: $skip, take: $take) {
+  query GetEventsBySport($sportId: ID!) {
+    eventsBySport(sportId: $sportId) {
       id
       title
       description
@@ -183,6 +181,24 @@ export const GET_MY_EVENTS_WITH_REGISTRATIONS = `
           profile_image_url
         }
       }
+    }
+  }
+`;
+
+export const GET_LATEST_EVENTS = `
+  query GetLatestEvents($limit: Int) {
+    latestEvents(limit: $limit) {
+      id
+      title
+      description
+      location
+      date_start
+      date_end
+      status
+      image_url
+      event_type
+      max_participants
+      created_at
     }
   }
 `;

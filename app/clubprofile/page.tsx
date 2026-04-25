@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
-  Star,
   FileText,
   ArrowLeftRight,
   Megaphone,
@@ -18,11 +17,11 @@ import {
   MapPin,
   ChevronLeft,
   ChevronRight,
-  X,
-  LogOut,
   Handshake,
   Eye,
   Heart,
+  CheckCircle,
+  AlertCircle,
 } from "lucide-react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
@@ -31,6 +30,7 @@ import { fetchGraphQL } from "../lib/fetchGraphQL";
 import { GET_MY_CLUB_PROFILE } from "@/app/graphql/query/club.queries";
 import { GET_ALL_PLAYERS } from "@/app/graphql/query/player.queries";
 import useTranslate from "../hooks/useTranslate";
+import { LogoutButton } from "../components/LogoutButton";
 
 import "swiper/css";
 import "swiper/css/navigation";
@@ -72,14 +72,22 @@ interface GetAllPlayersResponse {
   };
 }
 
+interface MenuButton {
+  label: string;
+  icon: React.ReactNode;
+  path?: string;
+  color?: string;
+  action?: () => void;
+}
+
 export default function ClubProfile() {
   const router = useRouter();
   const { theme } = useTheme();
   const { t } = useTranslate();
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [clubData, setClubData] = useState<ClubProfileData | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasProfile, setHasProfile] = useState<boolean>(false);
 
   const isDark = theme === "dark";
 
@@ -94,10 +102,23 @@ export default function ClubProfile() {
         GET_MY_CLUB_PROFILE,
       );
       if (result.data?.myClubProfile) {
-        setClubData(result.data.myClubProfile);
+        const club = result.data.myClubProfile;
+        // Check if club has completed their profile (has club_name)
+        if (club.club_name) {
+          setClubData(club);
+          setHasProfile(true);
+        } else {
+          setHasProfile(false);
+          setClubData(null);
+        }
+      } else {
+        setHasProfile(false);
+        setClubData(null);
       }
     } catch (error) {
       console.error("Failed to fetch club profile:", error);
+      setHasProfile(false);
+      setClubData(null);
     }
   };
 
@@ -109,9 +130,12 @@ export default function ClubProfile() {
       );
       if (result.data?.getAllPlayers?.data) {
         setPlayers(result.data.getAllPlayers.data);
+      } else {
+        setPlayers([]);
       }
     } catch (error) {
       console.error("Failed to fetch players:", error);
+      setPlayers([]);
     } finally {
       setLoading(false);
     }
@@ -123,7 +147,7 @@ export default function ClubProfile() {
     return `${process.env.NEXT_PUBLIC_API_URL}${url}`;
   };
 
-  const menuButtons = [
+  const menuButtons: MenuButton[] = [
     {
       label: t("Requests"),
       icon: <Handshake size={18} />,
@@ -160,6 +184,11 @@ export default function ClubProfile() {
       path: "/clubprofile/my-scouts",
     },
     {
+      label: t("My Contract"),
+      icon: <FileText size={18} />,
+      path: "/clubprofile/mycontract",
+    },
+    {
       label: t("Participation Prime"),
       icon: <Award size={18} />,
       path: "/clubprofile/participationprime",
@@ -169,19 +198,7 @@ export default function ClubProfile() {
       icon: <Heart size={18} className="text-red-500" />,
       path: "/clubprofile/favouritePlayers",
     },
-    {
-      label: t("Logout"),
-      icon: <LogOut size={18} />,
-      color: "text-red-600",
-      action: () => setShowLogoutModal(true),
-    },
   ];
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    router.push("/login");
-  };
 
   if (loading) {
     return (
@@ -195,60 +212,43 @@ export default function ClubProfile() {
     );
   }
 
+  // If no profile exists, show message to complete registration
+  if (!hasProfile) {
+    return (
+      <div
+        className={`min-h-screen flex flex-col items-center justify-center transition
+        ${isDark ? "bg-[#020617] text-white" : "bg-white text-black"}`}
+      >
+        <div className="text-center max-w-md px-6">
+          <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-yellow-400/20 flex items-center justify-center">
+            <Trophy size={48} className="text-yellow-400" />
+          </div>
+          <h2 className="text-2xl font-bold mb-4">
+            {t("Complete Your Club Profile")}
+          </h2>
+          <p className="text-gray-500 mb-8">
+            {t("Please complete your club profile information to continue")}
+          </p>
+          <button
+            onClick={() => router.push("/clubprofile/profile")}
+            className="px-8 py-3 bg-yellow-400 text-black font-semibold rounded-md hover:bg-yellow-500 transition"
+          >
+            {t("Complete Registration")}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
-      className={`min-h-screen font-sans py-35 px-4 sm:px-6 sm:py-25 md:p-10 flex justify-center relative transition
+      className={`min-h-screen font-sans py-40 px-4 sm:px-6 md:p-10 flex justify-center relative transition
       ${isDark ? "bg-[#020617] text-white" : "bg-gray-100 text-black"}`}
     >
-      {showLogoutModal && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div
-            className={`w-full max-w-sm sm:max-w-md rounded-xl p-6 sm:p-8 relative text-center
-            ${isDark ? "bg-[#050B18]" : "bg-white"}`}
-          >
-            <button
-              onClick={() => setShowLogoutModal(false)}
-              className="absolute top-3 right-3 text-gray-400"
-            >
-              <X size={18} />
-            </button>
-
-            <h2 className="text-xl sm:text-2xl font-bold mb-4">
-              {t("Logout")}
-            </h2>
-
-            <p
-              className={`${
-                isDark ? "text-gray-400" : "text-gray-600"
-              } mb-6 text-sm sm:text-base`}
-            >
-              {t("Are you sure you want to logout?")}
-            </p>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowLogoutModal(false)}
-                className={`${
-                  isDark ? "bg-gray-700 text-white" : "bg-gray-200 text-black"
-                } flex-1 py-2 rounded-md`}
-              >
-                {t("Cancel")}
-              </button>
-              <button
-                onClick={handleLogout}
-                className="flex-1 py-2 bg-red-600 text-white rounded-md"
-              >
-                {t("Logout")}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="max-w-6xl w-full py-16 sm:py-20">
         {/* Club Info */}
         <div className="flex flex-col md:flex-row gap-6 items-center md:items-start mb-6">
-          <div className="relative w-full max-w-[280px] sm:max-w-[320px] md:w-[350px] aspect-square rounded-lg overflow-hidden">
+          <div className="relative w-full max-w-[280px] sm:max-w-[320px] md:w-[350px] aspect-square rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-800">
             {clubData?.logo_url ? (
               <Image
                 src={getFullImageUrl(clubData.logo_url)}
@@ -257,46 +257,45 @@ export default function ClubProfile() {
                 className="object-cover"
               />
             ) : (
-              <div
-                className={`w-full h-full flex items-center justify-center ${
-                  isDark ? "bg-[#0a0f2c]" : "bg-gray-200"
-                }`}
-              >
-                <Trophy size={64} className="text-yellow-400" />
+              <div className="w-full h-full flex items-center justify-center">
+                <Trophy size={64} className="text-gray-400" />
               </div>
             )}
           </div>
 
           <div className="flex-1 text-center md:text-left space-y-3">
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">
-              {clubData?.club_name || "Club Name"}
+              {clubData?.club_name || ""}
             </h1>
-
-            <div className="flex justify-center md:justify-start text-[#FFD700]">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} size={18} fill="currentColor" />
-              ))}
-            </div>
 
             <div
               className={`text-sm ${
                 isDark ? "text-gray-300" : "text-gray-700"
               } space-y-2`}
             >
-              <div className="flex items-center justify-center md:justify-start gap-2">
-                <MapPin size={14} />
-                {clubData?.country || "Country"}
-              </div>
+              {(clubData?.country || clubData?.city) && (
+                <div className="flex items-center justify-center md:justify-start gap-2">
+                  <MapPin size={14} />
+                  {[clubData?.country, clubData?.city]
+                    .filter(Boolean)
+                    .join(", ")}
+                </div>
+              )}
 
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-6 items-center md:items-start">
-                <span className="flex items-center gap-1">
-                  <Mail size={14} />{" "}
-                  {clubData?.email_address || "email@example.com"}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Phone size={14} /> {clubData?.phone || "+123456789"}
-                </span>
-              </div>
+              {(clubData?.email_address || clubData?.phone) && (
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-6 items-center md:items-start">
+                  {clubData?.email_address && (
+                    <span className="flex items-center gap-1">
+                      <Mail size={14} /> {clubData.email_address}
+                    </span>
+                  )}
+                  {clubData?.phone && (
+                    <span className="flex items-center gap-1">
+                      <Phone size={14} /> {clubData.phone}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             {clubData?.bio && (
@@ -308,12 +307,28 @@ export default function ClubProfile() {
                 {clubData.bio}
               </p>
             )}
+
+            {/* Verification Badge */}
+            <div className="flex justify-center md:justify-start mt-2">
+              {clubData?.is_verified ? (
+                <span className="bg-green-500/20 text-green-500 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                  <CheckCircle size={12} />
+                  {t("Verified Club")}
+                </span>
+              ) : (
+                <span className="bg-yellow-500/20 text-yellow-500 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                  <AlertCircle size={12} />
+                  {t("Pending Verification")}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
+        {/* Edit Profile Button with border-x-3 */}
         <button
           onClick={() => router.push("/clubprofile/profile")}
-          className={`w-full py-2.5 rounded-md mb-6 transition
+          className={`w-full py-2.5 rounded-md mb-6 transition border-x-3 border-[#F0B100]
             ${
               isDark
                 ? "bg-[#0A1A44] text-white hover:bg-[#132a66]"
@@ -323,7 +338,7 @@ export default function ClubProfile() {
           {t("Edit Profile")}
         </button>
 
-        {/* Menu Buttons */}
+        {/* Menu Buttons with border-x-3 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-10">
           {menuButtons.map((btn, idx) => (
             <button
@@ -332,7 +347,7 @@ export default function ClubProfile() {
                 if (btn.path) router.push(btn.path);
                 if (btn.action) btn.action();
               }}
-              className={`p-3 rounded-md flex justify-between items-center transition
+              className={`p-3 rounded-md flex justify-between items-center transition border-x-3 border-[#F0B100]
                 ${isDark ? "bg-[#051139]" : "bg-white shadow"}`}
             >
               <span className="text-sm">{btn.label}</span>
@@ -345,6 +360,9 @@ export default function ClubProfile() {
               </span>
             </button>
           ))}
+
+          {/* Logout Button */}
+          <LogoutButton variant="default" />
         </div>
 
         {/* Players Swiper */}
@@ -377,7 +395,7 @@ export default function ClubProfile() {
                     ${isDark ? "bg-[#051139]" : "bg-white shadow"}`}
                     onClick={() => router.push(`/player/${player.id}`)}
                   >
-                    <div className="w-12 h-12 relative rounded-full overflow-hidden">
+                    <div className="w-12 h-12 relative rounded-full overflow-hidden bg-gray-300 dark:bg-gray-700">
                       {player.profile_image_url ? (
                         <Image
                           src={getFullImageUrl(player.profile_image_url)}
@@ -386,8 +404,8 @@ export default function ClubProfile() {
                           className="object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full bg-gray-500 flex items-center justify-center">
-                          <Users size={20} className="text-white" />
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Users size={20} className="text-gray-500" />
                         </div>
                       )}
                     </div>
@@ -395,15 +413,6 @@ export default function ClubProfile() {
                       <p className="text-sm font-medium">
                         {player.first_name} {player.last_name}
                       </p>
-                      <div className="flex items-center gap-1 mt-1">
-                        <Star
-                          size={12}
-                          className="text-yellow-400 fill-yellow-400"
-                        />
-                        <span className="text-xs text-gray-500">
-                          {player.average_rating?.toFixed(1) || "N/A"}
-                        </span>
-                      </div>
                     </div>
                   </div>
                 </SwiperSlide>

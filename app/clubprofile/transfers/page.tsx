@@ -20,9 +20,10 @@ import { toast } from "sonner";
 import { useTheme } from "../../context/ThemeContext";
 import useTranslate from "../../hooks/useTranslate";
 import { fetchGraphQL } from "../../lib/fetchGraphQL";
-import { GET_ALL_TRANSFERS } from "../../graphql/query/transfer.queries";
+import { GET_TRANSFERS_BY_CLUB } from "../../graphql/query/transfer.queries";
 import { GET_DEALS_BY_STATUS } from "@/app/graphql/query/deal.queries";
 import { CREATE_TRANSFER_FROM_DEAL } from "../../graphql/mutation/transfer.mutations";
+import BackButton from "@/app/components/BackButton";
 
 interface Transfer {
   id: string;
@@ -33,11 +34,16 @@ interface Transfer {
   status: string;
   transfer_date: string;
   completed_at: string | null;
-  created_at: string;
-  playerName: string;
-  fromClubName: string;
-  toClubName: string;
   notes: string | null;
+  created_at: string;
+  updated_at: string;
+  player?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    profile_image_url: string;
+    nationality: string;
+  };
 }
 
 interface Deal {
@@ -86,24 +92,26 @@ export default function ClubTransfersPage() {
     }
   }, [t]);
 
-  // Fetch My Transfers
-  // Fetch My Transfers
+  // Fetch My Transfers using getTransfersByClub
   const fetchTransfers = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await fetchGraphQL<{ allTransfers: Transfer[] }>(
-        GET_ALL_TRANSFERS,
-        {},
+      const result = await fetchGraphQL<{ getTransfersByClub: Transfer[] }>(
+        GET_TRANSFERS_BY_CLUB,
       );
-      if (result.data?.allTransfers) {
-        setTransfers(result.data.allTransfers);
-        setFilteredTransfers(result.data.allTransfers);
+      if (result.data?.getTransfersByClub) {
+        setTransfers(result.data.getTransfersByClub);
+        setFilteredTransfers(result.data.getTransfersByClub);
       } else {
-        console.log("No allTransfers in data:", result.data);
+        console.log("No transfers found:", result.data);
+        setTransfers([]);
+        setFilteredTransfers([]);
       }
     } catch (error) {
       console.error("Error fetching transfers:", error);
       toast.error(t("Failed to load transfers"));
+      setTransfers([]);
+      setFilteredTransfers([]);
     } finally {
       setLoading(false);
     }
@@ -218,15 +226,24 @@ export default function ClubTransfersPage() {
     }
   };
 
+  const getPlayerName = (transfer: Transfer) => {
+    if (transfer.player?.first_name && transfer.player?.last_name) {
+      return `${transfer.player.first_name} ${transfer.player.last_name}`;
+    }
+    return t("Player");
+  };
+
   const selectedDeal = deals.find((d) => d.id === selectedDealId);
 
   return (
     <div
-      className={`min-h-screen py-20 px-6 transition ${
+      className={`min-h-screen py-40 px-6 transition ${
         isDark ? "bg-[#020617] text-white" : "bg-gray-100 text-black"
       }`}
     >
       <div className="max-w-6xl mx-auto">
+        <BackButton className="mb-6" />
+
         <h1 className="text-4xl font-black italic tracking-tighter text-yellow-400 uppercase text-center mb-10">
           {t("Transfers")}
         </h1>
@@ -264,7 +281,7 @@ export default function ClubTransfersPage() {
             }`}
           >
             <Building2 size={18} />
-            {t("My Transfers")}
+            {t("Club Transfers")}
           </button>
         </div>
 
@@ -512,7 +529,7 @@ export default function ClubTransfersPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="font-bold text-lg">
-                          {transfer.playerName}
+                          {getPlayerName(transfer)}
                         </h3>
                         <span
                           className={`text-xs px-2 py-1 rounded-full ${getStatusColor(

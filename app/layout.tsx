@@ -36,7 +36,7 @@ export default function RootLayout({
   };
 
   return (
-    <html lang={lang} dir={lang === "ar" ? "rtl" : "ltr"}>
+    <html lang={lang} dir={lang === "ar" ? "rtl" : "ltr"} suppressHydrationWarning>
       <body className={`${cairo.variable} font-sans antialiased`}>
         <GoogleOAuthProvider
           clientId={

@@ -11,6 +11,7 @@ import {
   Plus,
   AlignLeft,
   X,
+  User,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -138,11 +139,6 @@ export default function ClubProfilePage() {
         GET_MY_CLUB_PROFILE,
       );
 
-      console.log("=== FETCH CLUB PROFILE RESPONSE ===");
-      console.log("Full response:", result);
-      console.log("Club data:", result.data?.myClubProfile);
-      console.log("Logo URL:", result.data?.myClubProfile?.logo_url);
-
       if (result.data?.myClubProfile) {
         const profile = result.data.myClubProfile;
         const data = {
@@ -161,13 +157,9 @@ export default function ClubProfilePage() {
           const url = profile.logo_url.startsWith("http")
             ? profile.logo_url
             : `${API_URL}${profile.logo_url}`;
-          console.log("Setting logo preview URL:", url);
           setLogoPreview(url);
-        } else {
-          console.log("No logo_url in response");
         }
       } else {
-        console.log("No profile data in response");
         setInitialData(null);
       }
     } catch (error) {
@@ -188,10 +180,6 @@ export default function ClubProfilePage() {
   const handleLogoChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      console.log("=== LOGO FILE SELECTED ===");
-      console.log("File name:", file.name);
-      console.log("File type:", file.type);
-      console.log("File size:", file.size);
       setLogoFile(file);
       setLogoPreview(URL.createObjectURL(file));
     }
@@ -225,7 +213,6 @@ export default function ClubProfilePage() {
     );
   };
 
-  // app/clubprofile/profile/page.tsx - handleSubmit
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
@@ -247,21 +234,9 @@ export default function ClubProfilePage() {
       bio: formData.bio || undefined,
     };
 
-    // Important: Add logo_image as a File object
     if (logoFile) {
       input.logo_image = logoFile;
-      console.log("Added logo_image to input:", logoFile.name);
     }
-
-    console.log("=== SUBMIT DEBUG ===");
-    console.log("isUpdate:", isUpdate);
-    console.log("input keys:", Object.keys(input));
-    console.log(
-      "input.logo_image:",
-      input.logo_image instanceof File
-        ? `File: ${input.logo_image.name}`
-        : input.logo_image,
-    );
 
     let result;
 
@@ -303,14 +278,30 @@ export default function ClubProfilePage() {
 
   return (
     <div
-      className={`min-h-screen py-20 transition ${
+      className={`min-h-screen py-40 transition ${
         isDark ? "bg-[#020b1c] text-white" : "bg-gray-50 text-black"
       }`}
     >
+      <h1 className="text-center text-3xl font-bold mb-5 text-yellow-400">
+        {t("Club Profile")}
+      </h1>
+      
       <div className="max-w-6xl mx-auto px-6">
-        <h1 className="text-center text-3xl font-bold mb-10 text-yellow-400">
-          {t("Club Profile")}
-        </h1>
+        {/* User Icon at top */}
+        <div className="flex justify-center mb-10">
+          <div
+            className={`w-20 h-20 rounded-full flex items-center justify-center border-2 ${
+              isDark
+                ? "bg-yellow-500/20 border-yellow-500"
+                : "bg-yellow-100 border-yellow-400"
+            }`}
+          >
+            <User
+              className={`${isDark ? "text-yellow-500" : "text-yellow-600"}`}
+              size={30}
+            />
+          </div>
+        </div>
 
         <div className="mb-12">
           <label

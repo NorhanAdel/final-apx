@@ -19,10 +19,11 @@ import {
 } from "@/app/graphql/mutation/ad.mutations";
 import { GET_MY_ADS } from "@/app/graphql/query/ad.queries";
 import { toast } from "sonner";
-import useTranslate from "@/app/hooks/useTranslate";
 import { useTheme } from "@/app/context/ThemeContext";
+import useTranslate from "@/app/hooks/useTranslate";
 import { uploadGraphQL } from "@/app/lib/uploadGraphQL";
 import { fetchGraphQL } from "@/app/lib/fetchGraphQL";
+import BackButton from "@/app/components/BackButton";
 
 interface Ad {
   id: string;
@@ -415,6 +416,8 @@ const handleUpdateAd = async () => {
       ${isDark ? "bg-[#020617] text-white" : "bg-[#f9fafb] text-black"}`}
     >
       <div className="w-full max-w-3xl py-12">
+        <BackButton className="mb-6" />
+        
         <h1
           className={`text-center text-2xl sm:text-3xl font-bold mb-8
           ${isDark ? "text-yellow-400" : "text-[#F0B100]"}`}

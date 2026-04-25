@@ -21,6 +21,7 @@ import {
   GET_EVENTS_BY_SPORT,
   GET_EVENTS_BY_STATUS,
 } from "@/app/graphql/query/event.queries";
+import BackButton from "@/app/components/BackButton";
 
 interface Event {
   id: string;
@@ -205,6 +206,8 @@ export default function ParticipationEvent() {
             : "border border-gray-200 bg-white shadow"
         }`}
       >
+        <BackButton className="mb-6" />
+
         {/* Title */}
         <div className="text-center mb-8">
           <h1

@@ -1,12 +1,14 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 import { MapPin, CalendarDays } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import useTranslate from "../../hooks/useTranslate";
 import { fetchGraphQL } from "../../lib/fetchGraphQL";
+import { GET_EVENT_BY_ID } from "@/app/graphql/query/event.queries";
+import BackButton from "@/app/components/BackButton";
 
 interface Event {
   id: string;
@@ -20,7 +22,7 @@ interface Event {
 
 export default function EventDetails() {
   const { theme } = useTheme();
-  const { lang } = useTranslate();
+  const { t, lang } = useTranslate();
 
   const params = useParams();
   const eventId = params?.id as string;
@@ -28,67 +30,72 @@ export default function EventDetails() {
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [imageError, setImageError] = useState(false);
 
-  useEffect(() => {
+  const fetchEvent = useCallback(async () => {
     if (!eventId) return;
-    fetchEvent();
-  }, [eventId, lang]);
 
-  const fetchEvent = async () => {
     setLoading(true);
     setError("");
 
-    const query = `
-      query GetEvent($id: ID!) {
-        event(id: $id) {
-          id
-          title
-          description
-          location
-          date_start
-          status
-          image_url
-        }
-      }
-    `;
-
     try {
-      const result = await fetchGraphQL<{ event: Event }>(
-        query,
-        { id: eventId }
-      );  
+      const result = await fetchGraphQL<{ event: Event }>(GET_EVENT_BY_ID, {
+        id: eventId,
+      });
 
-      const e = result.data?.event;
+      const fetchedEvent = result.data?.event;
 
-      setEvent(
-        e
-          ? {
-              ...e,
-              image_url: e.image_url || "/b2.jpg",
-              date_start: new Date(e.date_start).toLocaleDateString(lang),
-            }
-          : null
-      );
-    } catch (err: any) {
-      setError(err.message || "Failed to fetch event");
+      if (fetchedEvent) {
+        setEvent({
+          ...fetchedEvent,
+          image_url: fetchedEvent.image_url || "/b2.jpg",
+          date_start: new Date(fetchedEvent.date_start).toLocaleDateString(
+            lang,
+          ),
+        });
+      } else {
+        setEvent(null);
+      }
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to fetch event";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
+  }, [eventId, lang]);
+
+  useEffect(() => {
+    fetchEvent();
+  }, [fetchEvent]);
+
+  const getImageUrl = (url: string | undefined) => {
+    if (!url) return "/b2.jpg";
+    if (url.startsWith("http")) return url;
+    return `${process.env.NEXT_PUBLIC_API_URL}${url}`;
   };
 
   if (loading) {
     return (
-      <div className={`min-h-screen flex items-center justify-center
-        ${theme === "dark" ? "bg-[#020617] text-white" : "bg-gray-100 text-black"}`}>
-        Loading event...
+      <div
+        className={`min-h-screen flex items-center justify-center
+        ${
+          theme === "dark"
+            ? "bg-[#020617] text-white"
+            : "bg-gray-100 text-black"
+        }`}
+      >
+        <div className="w-12 h-12 border-3 border-yellow-400 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className={`min-h-screen flex items-center justify-center text-red-500
-        ${theme === "dark" ? "bg-[#020617]" : "bg-gray-100"}`}>
+      <div
+        className={`min-h-screen flex items-center justify-center text-red-500
+        ${theme === "dark" ? "bg-[#020617]" : "bg-gray-100"}`}
+      >
         {error}
       </div>
     );
@@ -96,87 +103,104 @@ export default function EventDetails() {
 
   if (!event) {
     return (
-      <div className={`min-h-screen flex items-center justify-center
-        ${theme === "dark" ? "bg-[#020617] text-white" : "bg-gray-100 text-black"}`}>
-        Event not found
+      <div
+        className={`min-h-screen flex items-center justify-center
+        ${
+          theme === "dark"
+            ? "bg-[#020617] text-white"
+            : "bg-gray-100 text-black"
+        }`}
+      >
+        {t("eventNotFound")}
       </div>
     );
   }
 
   return (
     <section
-      className={`min-h-screen flex items-center justify-center px-6 py-28 transition
+      className={`min-h-screen px-6 py-40 transition
       ${theme === "dark" ? "bg-[#020617]" : "bg-gray-100"}`}
     >
-      <div
-        className={`max-w-6xl w-full grid md:grid-cols-2 rounded-xl overflow-hidden shadow-2xl border
-        ${
-          theme === "dark"
-            ? "border-blue-900 bg-[#06122a]"
-            : "border-gray-200 bg-white"
-        }`}
-      >
+      <div className="max-w-6xl mx-auto">
+        <BackButton className="mb-6" />
 
-        {/* Image */}
-        <div className="relative h-[100%]">
-          <Image
-            src={
-              event.image_url?.startsWith("http")
-                ? event.image_url
-                : `${process.env.NEXT_PUBLIC_API_URL}${event.image_url}`
-            }
-            alt={event.title}
-            fill
-            className="object-cover"
-          />
-
-          <div
-            className={`absolute inset-0
-            ${
-              theme === "dark"
-                ? "bg-gradient-to-r from-[#020617]/10 via-[#020617]/40 to-[#020617]"
-                : "bg-gradient-to-r from-white/10 via-white/20 to-white"
-            }`}
-          />
-        </div>
-
-        {/* Content */}
         <div
-          className={`relative p-10
-          ${theme === "dark" ? "text-white" : "text-black"}`}
+          className={`grid md:grid-cols-2 rounded-xl overflow-hidden shadow-2xl border
+          ${theme === "dark" ? "border-blue-900" : "border-gray-300"}`}
         >
-          <h1 className="text-3xl font-bold mb-6">{event.title}</h1>
-
-          <div
-            className={`flex flex-wrap gap-4 text-sm mb-6
-            ${theme === "dark" ? "text-gray-300" : "text-gray-600"}`}
-          >
-            <span className="text-orange-400 font-semibold">
-              {event.status}
-            </span>
-
-            <div className="flex items-center gap-2">
-              <MapPin size={16} />
-              <span>{event.location}</span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <CalendarDays size={16} />
-              <span>{event.date_start}</span>
-            </div>
+          {/* Image Section */}
+          <div className="relative h-[400px] md:h-[500px] lg:h-[600px] overflow-hidden bg-gray-900">
+            {!imageError && event.image_url ? (
+              <div className="relative w-full h-full">
+                <Image
+                  src={getImageUrl(event.image_url)}
+                  alt={event.title}
+                  fill
+                  className="object-contain md:object-cover"
+                  onError={() => setImageError(true)}
+                  unoptimized
+                  priority
+                />
+              </div>
+            ) : (
+              <div
+                className={`w-full h-full flex items-center justify-center ${
+                  theme === "dark" ? "bg-[#1a1c24]" : "bg-gray-200"
+                }`}
+              >
+                <span
+                  className={
+                    theme === "dark" ? "text-gray-500" : "text-gray-400"
+                  }
+                >
+                  {t("noImage") || "No image"}
+                </span>
+              </div>
+            )}
           </div>
 
+          {/* Content Section with Scrollbar */}
           <div
-            className={`space-y-4 text-sm leading-relaxed
-            ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`}
+            className={`p-6 md:p-8 lg:p-10 overflow-y-auto max-h-[600px] ${
+              theme === "dark"
+                ? "bg-[#06122a] text-white"
+                : "bg-white text-black"
+            }`}
           >
-            {event.description ? (
-              event.description.split("\n").map((p, i) => (
-                <p key={i}>{p}</p>
-              ))
-            ) : (
-              <p>No description available</p>
-            )}
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-orange-400 mb-4">
+              {event.title}
+            </h1>
+
+            <div
+              className={`flex flex-wrap gap-4 text-sm mb-6 pb-4 border-b ${
+                theme === "dark" ? "border-gray-700/50" : "border-gray-200"
+              }`}
+            >
+              <span className="text-orange-400 font-semibold flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-orange-400"></span>
+                {event.status}
+              </span>
+              <div className="flex items-center gap-2 opacity-70">
+                <MapPin size={16} />
+                <span>{event.location}</span>
+              </div>
+              <div className="flex items-center gap-2 opacity-70">
+                <CalendarDays size={16} />
+                <span>{event.date_start}</span>
+              </div>
+            </div>
+
+            <div className="space-y-4 text-sm md:text-base leading-relaxed">
+              {event.description ? (
+                event.description.split("\n").map((paragraph, i) => (
+                  <p key={i} className="mb-3">
+                    {paragraph}
+                  </p>
+                ))
+              ) : (
+                <p className="opacity-70">{t("noDescription")}</p>
+              )}
+            </div>
           </div>
         </div>
       </div>

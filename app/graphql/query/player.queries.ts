@@ -289,3 +289,9 @@ export const SEARCH_PLAYERS_BY_SPORT = `
     }
   }
 `;
+
+export const GET_TOTAL_PLAYERS_COUNT = `
+  query GetTotalPlayersCount {
+    totalPlayersCount
+  }
+`;

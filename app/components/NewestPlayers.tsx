@@ -1,76 +1,136 @@
 "use client";
 
-import { LocateFixed, Star, ChevronLeft, ChevronRight, User } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  LocateFixed,
+  Star,
+  StarHalf,
+  ChevronLeft,
+  ChevronRight,
+  User,
+} from "lucide-react";
 import Image from "next/image";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
 import "swiper/css";
 import { motion } from "framer-motion";
 import { useTheme } from "../context/ThemeContext";
+import useTranslate from "../hooks/useTranslate";
+import { fetchGraphQL } from "../lib/fetchGraphQL";
+import { GET_ALL_PLAYERS } from "@/app/graphql/query/player.queries";
+
+interface Player {
+  id: string;
+  first_name: string;
+  last_name: string;
+  profile_image_url: string;
+  nationality: string;
+  age: number;
+  average_rating: number;
+}
 
 export default function NewestPlayers() {
   const { theme } = useTheme();
+  const { t } = useTranslate();
+  const isDark = theme === "dark";
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const players = [
-    { name: "Ronaldo", img: "/b2.jpg" },
-    { name: "Luis Diaz", img: "/b3.jpg" },
-    { name: "Milito Rezkou", img: "/r3.png" },
-    { name: "Player Four", img: "/r1.png" },
-    { name: "Player Five", img: "/r2.png" },
-  ];
+  useEffect(() => {
+    fetchPlayers();
+  }, []);
+
+  const fetchPlayers = async () => {
+    try {
+      const result = await fetchGraphQL<{ getAllPlayers: { data: Player[] } }>(
+        GET_ALL_PLAYERS,
+        { skip: 0, take: 10, sortBy: "newest" },
+      );
+      if (result.data?.getAllPlayers?.data) {
+        setPlayers(result.data.getAllPlayers.data);
+      }
+    } catch (error) {
+      console.error("Error fetching players:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getFullImageUrl = (url: string) => {
+    if (!url) return "/b2.jpg";
+    if (url.startsWith("http")) return url;
+    return `${process.env.NEXT_PUBLIC_API_URL}${url}`;
+  };
+
+  // Function to render 7 stars based on rating (0-7 scale)
+  const renderStars = (rating: number = 0) => {
+    const maxStars = 7;
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating - fullStars >= 0.5;
+    const emptyStars = maxStars - fullStars - (hasHalfStar ? 1 : 0);
+
+    return (
+      <div className="flex items-center gap-0.5">
+        {[...Array(fullStars)].map((_, i) => (
+          <Star
+            key={`full-${i}`}
+            size={12}
+            className="fill-yellow-400 text-yellow-400"
+          />
+        ))}
+        {hasHalfStar && (
+          <StarHalf size={12} className="fill-yellow-400 text-yellow-400" />
+        )}
+        {[...Array(emptyStars)].map((_, i) => (
+          <Star key={`empty-${i}`} size={12} className="text-gray-500" />
+        ))}
+      </div>
+    );
+  };
+
+  if (loading || players.length === 0) return null;
 
   return (
     <div className="mt-14 px-3 sm:px-6 lg:px-10">
-
-      {/* Header */}
       <div className="flex justify-between items-center mb-6">
-
         <motion.h2
           initial={{ opacity: 0, x: -30 }}
           whileInView={{ opacity: 1, x: 0 }}
           className={`text-lg sm:text-2xl font-bold italic tracking-wide ${
-            theme === "dark" ? "text-white" : "text-[#F0B100]"
+            isDark ? "text-white" : "text-[#F0B100]"
           }`}
         >
-          Newest Players
+          {t("Newest Players")}
         </motion.h2>
-
         <div className="flex gap-2">
-
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             className={`prevPlayer w-9 h-9 flex items-center justify-center border rounded-md transition ${
-              theme === "dark"
+              isDark
                 ? "bg-[#0b1120] border-[#1e293b] text-white"
                 : "bg-gray-200 border-gray-300 text-black"
             }`}
           >
             <ChevronLeft size={16} />
           </motion.button>
-
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             className={`nextPlayer w-9 h-9 flex items-center justify-center border rounded-md transition ${
-              theme === "dark"
+              isDark
                 ? "bg-[#0b1120] border-[#1e293b] text-white"
                 : "bg-gray-200 border-gray-300 text-black"
             }`}
           >
             <ChevronRight size={16} />
           </motion.button>
-
         </div>
       </div>
 
-      {/* Slider */}
       <Swiper
         modules={[Navigation]}
-        navigation={{
-          nextEl: ".nextPlayer",
-          prevEl: ".prevPlayer",
-        }}
+        navigation={{ nextEl: ".nextPlayer", prevEl: ".prevPlayer" }}
         spaceBetween={20}
         breakpoints={{
           0: { slidesPerView: 1.1 },
@@ -79,98 +139,66 @@ export default function NewestPlayers() {
           1024: { slidesPerView: 3.2 },
         }}
       >
-
-        {players.map((p, i) => (
-          <SwiperSlide key={i}>
+        {players.map((player) => (
+          <SwiperSlide key={player.id}>
             <motion.div
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
               whileHover={{ scale: 1.04, y: -8 }}
               transition={{ duration: 0.4 }}
-              className={`rounded-2xl overflow-hidden border shadow-lg transition-all ${
-                theme === "dark"
+              className={`rounded-2xl overflow-hidden border shadow-lg transition-all cursor-pointer ${
+                isDark
                   ? "bg-[#0b1120] border-[#1e293b]"
                   : "bg-white border-gray-200"
               }`}
+              onClick={() => (window.location.href = `/players/${player.id}`)}
             >
-
-              {/* Image */}
               <div className="relative w-full h-[220px] sm:h-[250px] overflow-hidden">
                 <Image
-                  src={p.img}
-                  alt={p.name}
+                  src={getFullImageUrl(player.profile_image_url)}
+                  alt={player.first_name}
                   fill
                   className="object-cover transition-transform duration-500 hover:scale-110"
                 />
-
-                {/* overlay glow */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
               </div>
-
-              {/* Content */}
               <div className="p-4">
-
-                {/* Name + Stars */}
                 <div className="flex justify-between items-center mb-3">
                   <h3
                     className={`text-base sm:text-lg font-bold truncate ${
-                      theme === "dark" ? "text-white" : "text-black"
+                      isDark ? "text-white" : "text-black"
                     }`}
                   >
-                    {p.name}
+                    {player.first_name} {player.last_name}
                   </h3>
-
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    whileInView={{ scale: 1 }}
-                    transition={{ delay: 0.2 }}
-                    className="flex text-[#FDC700]"
-                  >
-                    {[1, 2, 3, 4, 5].map((s) => (
-                      <Star key={s} size={13} fill="currentColor" />
-                    ))}
+                  <motion.div initial={{ scale: 0 }} whileInView={{ scale: 1 }}>
+                    {renderStars(player.average_rating || 0)}
                   </motion.div>
                 </div>
-
-                {/* Info */}
                 <div
                   className={`flex flex-col gap-2 text-xs ${
-                    theme === "dark" ? "text-gray-400" : "text-gray-600"
+                    isDark ? "text-gray-400" : "text-gray-600"
                   }`}
                 >
-
                   <div className="flex justify-between items-center">
-                    <span
-                      className={`font-semibold ${
-                        theme === "dark" ? "text-gray-400" : "text-gray-500"
-                      }`}
-                    >
-                      Goalkeeper
-                    </span>
-
+                    <span>{t("Player")}</span>
                     <span className="flex items-center">
-                      <LocateFixed size={12} className="text-[#FDC700] mr-1" />
-                      Saudi Arabia
+                      <LocateFixed size={12} className="text-yellow-500 mr-1" />
+                      {player.nationality || t("Unknown")}
                     </span>
                   </div>
-
                   <div className="flex justify-between items-center">
-                    <span className="text-[#FDC700] flex items-center">
+                    <span className="text-yellow-500 flex items-center">
                       <User size={12} className="mr-1" />
-                      412Y
+                      {player.age || 0}Y
                     </span>
                   </div>
-
                 </div>
-
               </div>
-
             </motion.div>
           </SwiperSlide>
         ))}
-
       </Swiper>
-
     </div>
   );
 }

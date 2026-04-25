@@ -2,24 +2,25 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
-import { Check, X, Clock, Calendar } from "lucide-react";
+import { Check, X, Clock, Calendar, Filter, ChevronDown } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import useTranslate from "../../hooks/useTranslate";
 import { fetchGraphQL } from "../../lib/fetchGraphQL";
 import { GET_INCOMING_REQUESTS } from "@/app/graphql/query/request.queries";
 import { RESPOND_TO_REQUEST } from "@/app/graphql/mutation/request.mutations";
 import { toast } from "sonner";
+import BackButton from "@/app/components/BackButton";
 
 interface Request {
   id: string;
-  type: string; // Already translated from backend
-  status: string; // Already translated from backend
+  type: string;
+  status: string;
   sender_id: string;
   sender_role: string;
-  senderName: string; // Already translated from profile
-  playerName: string; // Already translated from profile
+  senderName: string;
+  playerName: string;
   payload: {
-    message?: string; // Will be translated by backend
+    message?: string;
   } | null;
   created_at: string;
   updated_at: string;
@@ -43,8 +44,11 @@ export default function RequestsPage() {
   const { theme } = useTheme();
   const { t } = useTranslate();
   const [requests, setRequests] = useState<Request[]>([]);
+  const [filteredRequests, setFilteredRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   const fetchRequests = useCallback(async () => {
     setLoading(true);
@@ -55,6 +59,7 @@ export default function RequestsPage() {
 
       if (result.data?.myIncomingRequests) {
         setRequests(result.data.myIncomingRequests);
+        setFilteredRequests(result.data.myIncomingRequests);
       }
     } catch (error) {
       console.error("Error fetching requests:", error);
@@ -68,7 +73,22 @@ export default function RequestsPage() {
     fetchRequests();
   }, [fetchRequests]);
 
+  useEffect(() => {
+    if (statusFilter === "ALL") {
+      setFilteredRequests(requests);
+    } else {
+      const filtered = requests.filter((req) => {
+        const lowerStatus = req.status.toLowerCase();
+        const filterLower = statusFilter.toLowerCase();
+        return lowerStatus.includes(filterLower);
+      });
+      setFilteredRequests(filtered);
+    }
+  }, [statusFilter, requests]);
+
   const handleRespond = async (requestId: string, accept: boolean) => {
+    if (processingId) return;
+
     setProcessingId(requestId);
     try {
       const result = await fetchGraphQL<{
@@ -76,8 +96,22 @@ export default function RequestsPage() {
       }>(RESPOND_TO_REQUEST, { input: { request_id: requestId, accept } });
 
       if (result.data?.respondToRequest) {
+        // تحديث حالة الطلب محلياً بدلاً من إعادة الجلب
+        const updatedRequest = result.data.respondToRequest;
+
+        setRequests((prevRequests) =>
+          prevRequests.map((req) =>
+            req.id === requestId
+              ? {
+                  ...req,
+                  status: updatedRequest.status,
+                  updated_at: new Date().toISOString(),
+                }
+              : req,
+          ),
+        );
+
         toast.success(accept ? t("Request accepted") : t("Request rejected"));
-        await fetchRequests();
       } else if (result.errors) {
         toast.error(result.errors[0].message);
       }
@@ -107,7 +141,6 @@ export default function RequestsPage() {
     }
   };
 
-  // Check if request is pending (works for both English and Arabic)
   const isPending = (status: string) => {
     const lowerStatus = status.toLowerCase();
     return (
@@ -115,7 +148,6 @@ export default function RequestsPage() {
     );
   };
 
-  // Get status color based on status text (works for both English and Arabic)
   const getStatusColor = (status: string) => {
     const lowerStatus = status.toLowerCase();
     if (
@@ -133,12 +165,52 @@ export default function RequestsPage() {
     return "text-gray-400";
   };
 
-  // Get type display (already translated from backend)
+  const getStatusLabel = (status: string) => {
+    const lowerStatus = status.toLowerCase();
+    if (
+      lowerStatus.includes("pending") ||
+      lowerStatus.includes("قيد الانتظار")
+    ) {
+      return t("Pending");
+    }
+    if (lowerStatus.includes("accepted") || lowerStatus.includes("مقبول")) {
+      return t("Accepted");
+    }
+    if (lowerStatus.includes("rejected") || lowerStatus.includes("مرفوض")) {
+      return t("Rejected");
+    }
+    return status;
+  };
+
+  const getStatusCount = (statusType: string) => {
+    if (statusType === "ALL") return requests.length;
+    return requests.filter((req) => {
+      const lowerStatus = req.status.toLowerCase();
+      if (statusType === "PENDING") {
+        return (
+          lowerStatus.includes("pending") ||
+          lowerStatus.includes("قيد الانتظار")
+        );
+      }
+      if (statusType === "ACCEPTED") {
+        return (
+          lowerStatus.includes("accepted") || lowerStatus.includes("مقبول")
+        );
+      }
+      if (statusType === "REJECTED") {
+        return (
+          lowerStatus.includes("rejected") || lowerStatus.includes("مرفوض")
+        );
+      }
+      return false;
+    }).length;
+  };
+
   const getTypeDisplay = (type: string) => {
     return type;
   };
 
-  if (loading) {
+  if (loading && requests.length === 0) {
     return (
       <div
         className={`min-h-screen flex items-center justify-center transition
@@ -161,6 +233,8 @@ export default function RequestsPage() {
       }`}
     >
       <div className="w-full max-w-4xl p-4 sm:p-10">
+        <BackButton className="mb-6" />
+
         <h1
           className={`text-center text-3xl font-bold mb-10
           ${theme === "dark" ? "text-yellow-400" : "text-[#F0B100]"}`}
@@ -168,16 +242,117 @@ export default function RequestsPage() {
           {t("Requests")}
         </h1>
 
-        {requests.length === 0 ? (
+        {/* Status Filter */}
+        <div className="flex justify-end mb-6">
+          <div className="relative">
+            <button
+              onClick={() => setIsFilterOpen(!isFilterOpen)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${
+                theme === "dark"
+                  ? "bg-[#0a0f2c] border border-[#1e2a5a] hover:bg-[#1e2a5a]"
+                  : "bg-white border border-gray-200 shadow hover:bg-gray-50"
+              }`}
+            >
+              <Filter size={16} className="text-yellow-500" />
+              <span className="text-sm font-medium">
+                {statusFilter === "ALL"
+                  ? t("All Statuses")
+                  : getStatusLabel(
+                      statusFilter === "PENDING"
+                        ? "Pending"
+                        : statusFilter === "ACCEPTED"
+                        ? "Accepted"
+                        : "Rejected",
+                    )}
+              </span>
+              <ChevronDown
+                size={16}
+                className={`transition-transform ${
+                  isFilterOpen ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+            {isFilterOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setIsFilterOpen(false)}
+                />
+                <div
+                  className={`absolute top-full right-0 mt-2 w-56 rounded-lg shadow-lg overflow-hidden z-20 ${
+                    theme === "dark"
+                      ? "bg-[#0a0f2c] border border-[#1e2a5a]"
+                      : "bg-white border border-gray-200"
+                  }`}
+                >
+                  {["ALL", "PENDING", "ACCEPTED", "REJECTED"].map((status) => (
+                    <button
+                      key={status}
+                      onClick={() => {
+                        setStatusFilter(status);
+                        setIsFilterOpen(false);
+                      }}
+                      className={`w-full px-4 py-2 text-left text-sm transition flex items-center justify-between ${
+                        statusFilter === status
+                          ? theme === "dark"
+                            ? "bg-yellow-400/20 text-yellow-400"
+                            : "bg-yellow-50 text-yellow-600"
+                          : theme === "dark"
+                          ? "hover:bg-[#1e2a5a] text-gray-300"
+                          : "hover:bg-gray-50 text-gray-700"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <span
+                          className={`w-2 h-2 rounded-full ${
+                            status === "PENDING"
+                              ? "bg-yellow-500"
+                              : status === "ACCEPTED"
+                              ? "bg-green-500"
+                              : status === "REJECTED"
+                              ? "bg-red-500"
+                              : "bg-gray-400"
+                          }`}
+                        ></span>
+                        {status === "ALL"
+                          ? t("All Statuses")
+                          : status === "PENDING"
+                          ? t("Pending")
+                          : status === "ACCEPTED"
+                          ? t("Accepted")
+                          : t("Rejected")}
+                      </span>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-gray-500/20">
+                        {getStatusCount(status)}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {filteredRequests.length === 0 ? (
           <div
             className={`text-center py-10 rounded-md
             ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}
           >
-            {t("No requests found")}
+            {statusFilter === "ALL"
+              ? t("No requests found")
+              : t(
+                  `No ${getStatusLabel(
+                    statusFilter === "PENDING"
+                      ? "Pending"
+                      : statusFilter === "ACCEPTED"
+                      ? "Accepted"
+                      : "Rejected",
+                  ).toLowerCase()} requests found`,
+                )}
           </div>
         ) : (
           <div className="flex flex-col gap-6">
-            {requests.map((req) => {
+            {filteredRequests.map((req) => {
               const profileImage = req.sender?.profile_image_url;
               const displayName =
                 req.senderName || req.sender?.first_name || req.sender_id;
@@ -231,7 +406,6 @@ export default function RequestsPage() {
                     {formatDate(req.created_at)}
                   </span>
 
-                  {/* Show accept/reject buttons only for pending requests */}
                   {isPending(req.status) ? (
                     <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto mt-4">
                       <button

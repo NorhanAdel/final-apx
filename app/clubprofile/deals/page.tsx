@@ -27,6 +27,7 @@ import {
   DELETE_DEAL,
 } from "@/app/graphql/mutation/deal.mutations";
 import { toast } from "sonner";
+import BackButton from "@/app/components/BackButton";
 
 interface Deal {
   id: string;
@@ -406,11 +407,13 @@ export default function ClubDealsPage() {
 
   return (
     <div
-      className={`min-h-screen py-20 px-6 transition ${
+      className={`min-h-screen py-40 px-6 transition ${
         isDark ? "bg-[#020617] text-white" : "bg-gray-100 text-black"
       }`}
     >
       <div className="max-w-6xl mx-auto">
+        <BackButton className="mb-6" />
+        
         <h1 className="text-4xl font-black italic tracking-tighter text-yellow-400 uppercase text-center mb-10">
           {t("Deals")}
         </h1>

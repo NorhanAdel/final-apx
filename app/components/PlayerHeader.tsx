@@ -38,7 +38,6 @@ export default function PlayerHeader({ player }: PlayerHeaderProps) {
 
   const averageStars = player.average_rating || 0;
   const maxStars = 7;
-  // Use age from API if available, otherwise calculate from date_of_birth
   const age = player.age || calculateAge(player.date_of_birth);
 
   return (
@@ -64,7 +63,7 @@ export default function PlayerHeader({ player }: PlayerHeaderProps) {
 
         <div className="flex items-center gap-2 text-gray-400">
           <MapPin size={16} className="text-yellow-400" />
-          <span>{player.country || "Unknown"}</span>
+          <span>{player.country || t("Unknown")}</span>
         </div>
 
         {age > 0 && (

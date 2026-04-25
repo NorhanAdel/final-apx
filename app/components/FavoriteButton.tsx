@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Heart } from "lucide-react";
 import { toast } from "sonner";
 import { fetchGraphQL } from "../lib/fetchGraphQL";
@@ -49,52 +49,36 @@ export default function FavoriteButton({
     }
   }, []);
 
-  const fetchFavoriteStatus = useCallback(async () => {
+  // Fetch favorite status - defined inside useEffect to avoid dependency issues
+  useEffect(() => {
     if (!currentUserId) return;
 
-    const currentPlayerId = playerIdRef.current;
-    const statusKey = `favorite_status_${currentUserId}_${currentPlayerId}`;
-    const countKey = `favorite_count_${currentPlayerId}`; // Count doesn't need userId
+    const fetchFavoriteStatus = async () => {
+      const currentPlayerId = playerIdRef.current;
 
-    // First check localStorage for quick display
-    const localStatus = localStorage.getItem(statusKey);
-    const localCount = localStorage.getItem(countKey);
+      try {
+        const [statusResult, countResult] = await Promise.all([
+          fetchGraphQL<{ isFavorite: boolean }>(IS_FAVORITE, {
+            playerId: currentPlayerId,
+          }),
+          fetchGraphQL<{ favoriteCount: number }>(GET_FAVORITE_COUNT, {
+            playerId: currentPlayerId,
+          }),
+        ]);
 
-    if (localStatus !== null) {
-      setIsFavorite(localStatus === "true");
-    }
-    if (localCount !== null) {
-      setFavoriteCount(parseInt(localCount, 10));
-    }
-
-    try {
-      const [statusResult, countResult] = await Promise.all([
-        fetchGraphQL<{ isFavorite: boolean }>(IS_FAVORITE, {
-          playerId: currentPlayerId,
-        }),
-        fetchGraphQL<{ favoriteCount: number }>(GET_FAVORITE_COUNT, {
-          playerId: currentPlayerId,
-        }),
-      ]);
-
-      if (statusResult.data?.isFavorite !== undefined) {
-        setIsFavorite(statusResult.data.isFavorite);
-        localStorage.setItem(statusKey, String(statusResult.data.isFavorite));
+        if (statusResult.data?.isFavorite !== undefined) {
+          setIsFavorite(statusResult.data.isFavorite);
+        }
+        if (countResult.data?.favoriteCount !== undefined) {
+          setFavoriteCount(countResult.data.favoriteCount);
+        }
+      } catch (error) {
+        console.error("Error fetching favorite status:", error);
       }
-      if (countResult.data?.favoriteCount !== undefined) {
-        setFavoriteCount(countResult.data.favoriteCount);
-        localStorage.setItem(countKey, String(countResult.data.favoriteCount));
-      }
-    } catch (error) {
-      console.error("Error fetching favorite status:", error);
-    }
-  }, [currentUserId]);
+    };
 
-  useEffect(() => {
-    if (currentUserId) {
-      fetchFavoriteStatus();
-    }
-  }, [fetchFavoriteStatus, currentUserId]);
+    fetchFavoriteStatus();
+  }, [currentUserId, playerId]); // Re-fetch when playerId or currentUserId changes
 
   const handleToggleFavorite = async () => {
     if (loading) return;
@@ -115,18 +99,13 @@ export default function FavoriteButton({
     const previousStatus = isFavorite;
     const previousCount = favoriteCount;
     const newStatus = !isFavorite;
-    const statusKey = `favorite_status_${currentUserId}_${playerId}`;
-    const countKey = `favorite_count_${playerId}`;
 
     // Optimistic update
     setIsFavorite(newStatus);
-    localStorage.setItem(statusKey, String(newStatus));
-
     const newCount = newStatus
       ? previousCount + 1
       : Math.max(0, previousCount - 1);
     setFavoriteCount(newCount);
-    localStorage.setItem(countKey, String(newCount));
 
     try {
       const result = await fetchGraphQL<{ toggleFavorite: boolean }>(
@@ -140,35 +119,25 @@ export default function FavoriteButton({
         // Rollback on error
         setIsFavorite(previousStatus);
         setFavoriteCount(previousCount);
-        localStorage.setItem(statusKey, String(previousStatus));
-        localStorage.setItem(countKey, String(previousCount));
         toast.error(result.errors[0].message);
       } else if (result.data?.toggleFavorite !== undefined) {
         const finalStatus = result.data.toggleFavorite;
 
-        setIsFavorite(finalStatus);
-        localStorage.setItem(statusKey, String(finalStatus));
-
-        // Fetch fresh count from server to ensure accuracy
-        try {
-          const countResult = await fetchGraphQL<{ favoriteCount: number }>(
-            GET_FAVORITE_COUNT,
-            { playerId },
-          );
-          if (countResult.data?.favoriteCount !== undefined) {
-            setFavoriteCount(countResult.data.favoriteCount);
-            localStorage.setItem(
-              countKey,
-              String(countResult.data.favoriteCount),
+        // If the result doesn't match our optimistic update, correct it
+        if (finalStatus !== newStatus) {
+          setIsFavorite(finalStatus);
+          // Fetch fresh count to ensure accuracy
+          try {
+            const countResult = await fetchGraphQL<{ favoriteCount: number }>(
+              GET_FAVORITE_COUNT,
+              { playerId },
             );
+            if (countResult.data?.favoriteCount !== undefined) {
+              setFavoriteCount(countResult.data.favoriteCount);
+            }
+          } catch (err) {
+            console.error("Error fetching updated count:", err);
           }
-        } catch (err) {
-          console.error("Error fetching updated count:", err);
-          const updatedCount = finalStatus
-            ? previousCount + 1
-            : Math.max(0, previousCount - 1);
-          setFavoriteCount(updatedCount);
-          localStorage.setItem(countKey, String(updatedCount));
         }
 
         toast.success(
@@ -183,8 +152,6 @@ export default function FavoriteButton({
       console.error("Error toggling favorite:", error);
       setIsFavorite(previousStatus);
       setFavoriteCount(previousCount);
-      localStorage.setItem(statusKey, String(previousStatus));
-      localStorage.setItem(countKey, String(previousCount));
       toast.error(t("Failed to update favorite"));
     } finally {
       setLoading(false);

@@ -41,7 +41,6 @@ export const PlayerCard = ({
   const starEmptyColor = isDark
     ? "fill-gray-600 text-gray-600"
     : "fill-gray-300 text-gray-300";
-
   const maxStars = 7;
 
   return (
@@ -59,7 +58,6 @@ export const PlayerCard = ({
           className={`absolute inset-0 bg-gradient-to-t ${gradientFrom} via-transparent to-transparent opacity-90`}
         />
       </div>
-
       <div className="absolute bottom-0 left-0 right-0 p-5">
         <div className="flex items-center justify-between mb-3">
           <h3
@@ -77,7 +75,6 @@ export const PlayerCard = ({
             ))}
           </div>
         </div>
-
         <div
           className={`flex items-center justify-between text-[10px] font-bold italic ${textSecondary}`}
         >

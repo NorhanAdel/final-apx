@@ -75,3 +75,29 @@ export const GET_INCOMING_PLAYERS = `
     }
   }
 `;
+
+
+export const GET_TRANSFERS_BY_CLUB = `
+  query GetTransfersByClub {
+    getTransfersByClub {
+      id
+      player_id
+      from_club
+      to_club
+      club_name
+      status
+      transfer_date
+      completed_at
+      notes
+      created_at
+      updated_at
+      player {
+        id
+        first_name
+        last_name
+        profile_image_url
+        nationality
+      }
+    }
+  }
+`;

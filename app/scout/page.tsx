@@ -4,290 +4,393 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
-  Star,
   Pencil,
-  LayoutGrid,
   Users,
-  Trophy,
-  LogOut,
-  Share2,
   Mail,
   Phone,
   MapPin,
-  X,
-  UserPlus,
-  Heart,
+  ChevronLeft,
+  ChevronRight,
   Award,
-  ClipboardList,
+  Heart,
   Send,
+  ClipboardList,
+  CheckCircle,
+  AlertCircle,
+  FileText,
 } from "lucide-react";
-
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Navigation } from "swiper/modules";
 import { useTheme } from "../context/ThemeContext";
+import { fetchGraphQL } from "../lib/fetchGraphQL";
 import useTranslate from "../hooks/useTranslate";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://72.62.28.146";
+import "swiper/css";
+import "swiper/css/navigation";
+import { MY_SCOUT_PROFILE } from "../graphql/query/scout.queries";
+import { GET_ALL_PLAYERS } from "../graphql/query/player.queries";
+import { LogoutButton } from "../components/LogoutButton";
 
-const T: any = {
-  en: {
-    scout: "Scout",
-    edit: "Edit Profile",
-    logout: "Logout",
-    cancel: "Cancel",
-    sure: "Are you sure?",
-    loading: "Loading...",
-    requests: "Requests",
-    share: "Share AD",
-    fav: "Favourite Players",
-    prime: "Participation Prime",
-  },
-  ar: {
-    scout: "كشاف",
-    edit: "تعديل الملف الشخصي",
-    logout: "تسجيل الخروج",
-    cancel: "إلغاء",
-    sure: "هل أنت متأكد؟",
-    loading: "جاري التحميل...",
-    requests: "الطلبات",
-    share: "مشاركة إعلان",
-    fav: "اللاعبين المفضلين",
-    prime: "المشاركة المميزة",
-  },
-  pt: {
-    scout: "Olheiro",
-    edit: "Editar Perfil",
-    logout: "Sair",
-    cancel: "Cancelar",
-    sure: "Tem certeza?",
-    loading: "Carregando...",
-    requests: "Pedidos",
-    share: "Compartilhar anúncio",
-    fav: "Jogadores favoritos",
-    prime: "Participação Prime",
-  },
-  zh: {
-    scout: "球探",
-    edit: "编辑资料",
-    logout: "退出",
-    cancel: "取消",
-    sure: "你确定吗？",
-    loading: "加载中...",
-    requests: "请求",
-    share: "分享广告",
-    fav: "收藏球员",
-    prime: "高级参与",
-  },
-};
+interface ScoutProfileData {
+  id: string;
+  first_name: string;
+  last_name: string;
+  bio: string;
+  country: string;
+  city: string;
+  nationality: string;
+  email_address: string;
+  phone: string;
+  birth_date: string;
+  profile_image_url: string;
+  is_verified: boolean;
+  created_at: string;
+  updated_at: string;
+}
 
-export default function ClubProfile() {
+interface Player {
+  id: string;
+  first_name: string;
+  last_name: string;
+  profile_image_url: string;
+  nationality: string;
+  date_of_birth: string;
+  age: number;
+}
+
+interface GetAllPlayersResponse {
+  getAllPlayers: {
+    data: Player[];
+    total: number;
+  };
+}
+
+interface MenuButton {
+  label: string;
+  icon: React.ReactNode;
+  path?: string;
+  color?: string;
+  action?: () => void;
+}
+
+export default function ScoutProfilePage() {
   const router = useRouter();
   const { theme } = useTheme();
-  const { lang } = useTranslate();
-
-  const t = T[lang] || T.en;
-
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [profile, setProfile] = useState<any>(null);
+  const { t } = useTranslate();
+  const [scoutData, setScoutData] = useState<ScoutProfileData | null>(null);
+  const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasProfile, setHasProfile] = useState<boolean>(false);
+
+  const isDark = theme === "dark";
 
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-
-      try {
-        const token = localStorage.getItem("token");
-
-        const res = await fetch(`${API_URL}/graphql`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            query: `query { myScoutProfile { id first_name last_name country phone email_address profile_image_url } }`,
-          }),
-        });
-
-        const json = await res.json();
-        setProfile(json?.data?.myScoutProfile || null);
-      } catch {
-        setProfile(null);
-      }
-
-      setLoading(false);
-    };
-
-    load();
+    fetchScoutData();
+    fetchPlayers();
   }, []);
 
-  const dark = {
-    bg: "bg-[#020617] text-white",
-    btn: "bg-[#0A1A44] hover:bg-[#102B70] transition",
-    menu: "bg-[#051139] hover:bg-[#0A1A44] border border-blue-900/30 transition",
-    icon: "text-yellow-400",
+  const fetchScoutData = async () => {
+    try {
+      const result = await fetchGraphQL<{ myScoutProfile: ScoutProfileData }>(
+        MY_SCOUT_PROFILE,
+      );
+      if (result.data?.myScoutProfile) {
+        setScoutData(result.data.myScoutProfile);
+        setHasProfile(true);
+      } else {
+        setHasProfile(false);
+        setScoutData(null);
+      }
+    } catch (error) {
+      console.error("Failed to fetch scout profile:", error);
+      setHasProfile(false);
+      setScoutData(null);
+    }
   };
 
-  const light = {
-    bg: "bg-gray-100 text-black",
-    btn: "bg-blue-600 hover:bg-blue-700 transition",
-    menu: "bg-white hover:bg-gray-200 border border-gray-300 transition",
-    icon: "text-yellow-500",
+  const fetchPlayers = async () => {
+    try {
+      const result = await fetchGraphQL<GetAllPlayersResponse>(
+        GET_ALL_PLAYERS,
+        { skip: 0, take: 10 },
+      );
+      if (result.data?.getAllPlayers?.data) {
+        setPlayers(result.data.getAllPlayers.data);
+      } else {
+        setPlayers([]);
+      }
+    } catch (error) {
+      console.error("Failed to fetch players:", error);
+      setPlayers([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const th = theme === "dark" ? dark : light;
+  const getFullImageUrl = (url: string) => {
+    if (!url) return "";
+    if (url.startsWith("http")) return url;
+    return `${process.env.NEXT_PUBLIC_API_URL}${url}`;
+  };
+
+  const menuButtons: MenuButton[] = [
+    {
+      label: t("Requests"),
+      icon: <ClipboardList size={18} />,
+      path: "/scout/profile/requests",
+    },
+    {
+      label: t("Share AD"),
+      icon: <Send size={18} />,
+      path: "/scout/profile/share",
+    },
+    {
+      label: t("My Players"),
+      icon: <Users size={18} />,
+      path: "/scout/profile/my-players",
+    },
+    {
+      label: t("My Contract"),
+      icon: <FileText size={18} />,
+      path: "/scout/profile/mycontract",
+    },
+    {
+      label: t("Participation Prime"),
+      icon: <Award size={18} />,
+      path: "/scout/profile/participationprime",
+    },
+    {
+      label: t("favoritePlayers"),
+      icon: <Heart size={18} className="text-red-500" />,
+      path: "/scout/profile/favouritePlayers",
+    },
+  ];
 
   if (loading) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${th.bg}`}>
-        {t.loading}
+      <div
+        className={`min-h-screen flex items-center justify-center ${
+          isDark ? "bg-[#020617]" : "bg-gray-100"
+        }`}
+      >
+        <div className="text-yellow-400 animate-pulse">{t("Loading...")}</div>
       </div>
     );
   }
 
-  const imageUrl =
-    profile?.profile_image_url?.trim()
-      ? profile.profile_image_url.startsWith("http")
-        ? profile.profile_image_url
-        : `${API_URL}${profile.profile_image_url}`
-      : "/Club.jpg";
+  // If no profile exists, show message to complete registration
+  if (!hasProfile) {
+    return (
+      <div
+        className={`min-h-screen flex flex-col items-center justify-center transition
+        ${isDark ? "bg-[#020617] text-white" : "bg-gray-100 text-black"}`}
+      >
+        <div className="text-center max-w-md px-6">
+          <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-yellow-400/20 flex items-center justify-center">
+            <Users size={48} className="text-yellow-400" />
+          </div>
+          <h2 className="text-2xl font-bold mb-4">
+            {t("Complete Your Profile")}
+          </h2>
+          <p className={`mb-8 ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+            {t("Please complete your profile information to continue")}
+          </p>
+          <button
+            onClick={() => router.push("/scout/profile")}
+            className="px-8 py-3 bg-yellow-400 text-black font-semibold rounded-md hover:bg-yellow-500 transition"
+          >
+            {t("Complete Registration")}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className={`min-h-screen md:p-10 flex justify-center relative ${th.bg}`}>
-
-      {showLogoutModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
-          <div className="bg-white text-black p-6 rounded-xl w-96 relative text-center">
-
-            <button
-              onClick={() => setShowLogoutModal(false)}
-              className="absolute top-3 right-3"
-            >
-              <X />
-            </button>
-
-            <h2 className="text-2xl font-bold mb-4">{t.logout}</h2>
-            <p className="mb-6">{t.sure}</p>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowLogoutModal(false)}
-                className="flex-1 bg-gray-300 py-2 rounded"
-              >
-                {t.cancel}
-              </button>
-
-              <button className="flex-1 bg-red-600 text-white py-2 rounded">
-                {t.logout}
-              </button>
-            </div>
-
-          </div>
-        </div>
-      )}
-
-      <div className="max-w-6xl py-30 w-full">
-
-        <div className="flex flex-col md:flex-row gap-8 mb-6">
-
-          <div className="relative w-full md:w-[400px] aspect-square rounded-md overflow-hidden border border-blue-900/40">
-            <Image src={imageUrl} fill alt="profile" className="object-cover" unoptimized />
+    <div
+      className={`min-h-screen font-sans py-40 px-4 sm:px-6 md:p-10 flex justify-center relative transition
+      ${isDark ? "bg-[#020617] text-white" : "bg-gray-100 text-black"}`}
+    >
+      <div className="max-w-6xl w-full py-16 sm:py-20">
+        <div className="flex flex-col md:flex-row gap-6 items-center md:items-start mb-6">
+          <div className="relative w-full max-w-[280px] sm:max-w-[320px] md:w-[350px] aspect-square rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-800">
+            {scoutData?.profile_image_url ? (
+              <Image
+                src={getFullImageUrl(scoutData.profile_image_url)}
+                fill
+                alt={`${scoutData.first_name} ${scoutData.last_name}`}
+                className="object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <Users size={64} className="text-gray-400" />
+              </div>
+            )}
           </div>
 
-          <div className="flex-1 space-y-4 pt-4">
-
-            <h1 className="text-4xl font-black uppercase italic">
-              {profile?.first_name} {profile?.last_name}
+          <div className="flex-1 text-center md:text-left space-y-3">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">
+              {scoutData?.first_name} {scoutData?.last_name}
             </h1>
 
-            <div className="flex gap-1 text-yellow-400">
-              {[...Array(7)].map((_, i) => (
-                <Star key={i} size={20} fill="currentColor" />
-              ))}
+            <div
+              className={`text-sm ${
+                isDark ? "text-gray-300" : "text-gray-700"
+              } space-y-2`}
+            >
+              {(scoutData?.country || scoutData?.city) && (
+                <div className="flex items-center justify-center md:justify-start gap-2">
+                  <MapPin size={14} />
+                  {[scoutData?.country, scoutData?.city]
+                    .filter(Boolean)
+                    .join(", ")}
+                </div>
+              )}
+
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-6 items-center md:items-start">
+                {scoutData?.email_address && (
+                  <span className="flex items-center gap-1">
+                    <Mail size={14} /> {scoutData.email_address}
+                  </span>
+                )}
+                {scoutData?.phone && (
+                  <span className="flex items-center gap-1">
+                    <Phone size={14} /> {scoutData.phone}
+                  </span>
+                )}
+              </div>
             </div>
 
-            <div className="space-y-2 text-sm">
+            {scoutData?.bio && (
+              <p
+                className={`text-sm mt-2 ${
+                  isDark ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
+                {scoutData.bio}
+              </p>
+            )}
 
-              <div className="flex items-center gap-2">
-                <Trophy size={16} className={th.icon} />
-                <span className="bg-yellow-400 text-black px-2 text-xs font-bold rounded">
-                  {t.scout}
+            {/* Verification Status Badge */}
+            <div className="flex justify-center md:justify-start">
+              {scoutData?.is_verified ? (
+                <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-500/20 text-green-500 text-xs">
+                  <CheckCircle size={12} />
+                  {t("Verified Scout")}
                 </span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <MapPin size={16} className={th.icon} />
-                {profile?.country}
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Mail size={16} className={th.icon} />
-                {profile?.email_address}
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Phone size={16} className={th.icon} />
-                {profile?.phone}
-              </div>
-
+              ) : (
+                <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-500 text-xs">
+                  <AlertCircle size={12} />
+                  {t("Pending Verification")}
+                </span>
+              )}
             </div>
           </div>
         </div>
 
+        {/* Edit Profile Button with border-x-3 */}
         <button
           onClick={() => router.push("/scout/profile")}
-          className={`w-full ${th.btn} py-3 rounded-md font-black uppercase mb-6 flex justify-center items-center gap-2 text-white`}
+          className={`w-full py-2.5 rounded-md mb-6 transition flex items-center justify-center gap-2 border-x-3 border-[#F0B100]
+            ${
+              isDark
+                ? "bg-[#0A1A44] text-white hover:bg-[#132a66]"
+                : "bg-yellow-300 text-black hover:bg-yellow-400"
+            }`}
         >
-          {t.edit} <Pencil size={18} />
+          <Pencil size={18} />
+          {t("Edit Profile")}
         </button>
 
-        <div className="grid md:grid-cols-2 gap-3 mb-12">
+        {/* Menu Buttons with border-x-3 */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-10">
+          {menuButtons.map((btn, idx) => (
+            <button
+              key={idx}
+              onClick={() => {
+                if (btn.path) router.push(btn.path);
+                if (btn.action) btn.action();
+              }}
+              className={`p-3 rounded-md flex justify-between items-center transition border-x-3 border-[#F0B100]
+                ${isDark ? "bg-[#051139]" : "bg-white shadow"}`}
+            >
+              <span className="text-sm">{btn.label}</span>
+              <span
+                className={
+                  btn.color || (isDark ? "text-yellow-400" : "text-yellow-600")
+                }
+              >
+                {btn.icon}
+              </span>
+            </button>
+          ))}
 
-          <button
-            onClick={() => router.push("/scout/profile/requests")}
-            className={`${th.menu} p-4 flex justify-between rounded-lg`}
-          >
-            <span className="font-bold uppercase text-sm flex items-center gap-2">
-              <ClipboardList size={18} /> {t.requests}
-            </span>
-          </button>
-
-          <button
-            onClick={() => router.push("/scout/profile/share")}
-            className={`${th.menu} p-4 flex justify-between rounded-lg`}
-          >
-            <span className="font-bold uppercase text-sm flex items-center gap-2">
-              <Send size={18} /> {t.share}
-            </span>
-          </button>
-
-          <button
-            onClick={() => router.push("/scout/profile/favouritePlayers")}
-            className={`${th.menu} p-4 flex justify-between rounded-lg`}
-          >
-            <span className="font-bold uppercase text-sm flex items-center gap-2">
-              <Heart size={18} /> {t.fav}
-            </span>
-          </button>
-
-          <button
-            onClick={() => router.push("/ParticipationPrime")}
-            className={`${th.menu} p-4 flex justify-between rounded-lg`}
-          >
-            <span className="font-bold uppercase text-sm flex items-center gap-2">
-              <Award size={18} /> {t.prime}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setShowLogoutModal(true)}
-            className={`${th.menu} p-4 flex justify-between rounded-lg`}
-          >
-            <span className="font-bold uppercase text-sm flex items-center gap-2 text-red-500">
-              <LogOut size={18} /> {t.logout}
-            </span>
-          </button>
-
+          {/* Logout Button */}
+          <LogoutButton variant="default" />
         </div>
 
+        {players.length > 0 && (
+          <div className="relative mt-10">
+            <h2
+              className={`text-xl font-bold mb-4 ${
+                isDark ? "text-white" : "text-gray-800"
+              }`}
+            >
+              {t("Players")}
+            </h2>
+            <Swiper
+              modules={[Navigation]}
+              navigation={{
+                nextEl: ".nextBtn",
+                prevEl: ".prevBtn",
+              }}
+              spaceBetween={15}
+              breakpoints={{
+                0: { slidesPerView: 1.2 },
+                640: { slidesPerView: 2 },
+                1024: { slidesPerView: 3 },
+              }}
+            >
+              {players.map((player) => (
+                <SwiperSlide key={player.id}>
+                  <div
+                    className={`p-4 rounded-xl flex items-center gap-3 cursor-pointer hover:scale-105 transition-transform
+                    ${isDark ? "bg-[#051139]" : "bg-white shadow"}`}
+                    onClick={() => router.push(`/players/${player.id}`)}
+                  >
+                    <div className="w-12 h-12 relative rounded-full overflow-hidden bg-gray-300 dark:bg-gray-700">
+                      {player.profile_image_url ? (
+                        <Image
+                          src={getFullImageUrl(player.profile_image_url)}
+                          fill
+                          alt={`${player.first_name} ${player.last_name}`}
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Users size={20} className="text-gray-500" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">
+                        {player.first_name} {player.last_name}
+                      </p>
+                    </div>
+                  </div>
+                </SwiperSlide>
+              ))}
+            </Swiper>
+
+            <button className="prevBtn hidden sm:block absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-black/50 rounded-full p-2">
+              <ChevronLeft size={24} className="text-white" />
+            </button>
+
+            <button className="nextBtn hidden sm:block absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-black/50 rounded-full p-2">
+              <ChevronRight size={24} className="text-white" />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

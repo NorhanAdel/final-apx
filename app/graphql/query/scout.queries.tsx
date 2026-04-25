@@ -40,3 +40,13 @@ export const GET_ALL_SCOUTS = `
     }
   }
 `;
+
+export const GET_MY_CLUB_CAREER = `
+  query GetMyScoutClubCareer {
+    myScoutClubCareer {
+      id
+      current_club
+      previous_clubs
+    }
+  }
+`;

@@ -92,6 +92,7 @@ export default function VerifyOtpPage() {
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
+
   const otpSchema = useMemo(() => {
     return z.object({
       otp: z.string().length(6, t("Please enter the full 6-digit code")),
@@ -127,11 +128,38 @@ export default function VerifyOtpPage() {
     }
   }, [router, timer]);
 
+  // Extract only digits from input (handles both Arabic and English numbers)
+  const extractDigits = (value: string): string => {
+    // Convert Arabic numerals to English if needed
+    const arabicToEnglish: Record<string, string> = {
+      "٠": "0",
+      "١": "1",
+      "٢": "2",
+      "٣": "3",
+      "٤": "4",
+      "٥": "5",
+      "٦": "6",
+      "٧": "7",
+      "٨": "8",
+      "٩": "9",
+    };
+
+    let result = "";
+    for (const char of value) {
+      if (arabicToEnglish[char]) {
+        result += arabicToEnglish[char];
+      } else if (/[0-9]/.test(char)) {
+        result += char;
+      }
+    }
+    return result;
+  };
+
   // Handle paste event
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
     const pastedData = e.clipboardData.getData("text");
-    const pastedNumbers = pastedData.replace(/\D/g, "").slice(0, 6).split("");
+    const pastedNumbers = extractDigits(pastedData).slice(0, 6).split("");
 
     if (pastedNumbers.length > 0) {
       const newOtp = [...otpValues];
@@ -210,17 +238,19 @@ export default function VerifyOtpPage() {
   };
 
   const handleChange = (value: string, index: number) => {
-    if (isNaN(Number(value)) && value !== "") return;
+    // Extract only digits from the input
+    const digits = extractDigits(value);
+    if (digits.length === 0 && value !== "") return;
 
     const newOtp = [...otpValues];
-    newOtp[index] = value.substring(value.length - 1);
+    newOtp[index] = digits.substring(digits.length - 1);
     setOtpValues(newOtp);
 
     const otpString = newOtp.join("");
     setValue("otp", otpString, { shouldValidate: true });
 
     // Move to next input if value is entered
-    if (value && index < 5) {
+    if (digits && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
   };
@@ -368,13 +398,14 @@ export default function VerifyOtpPage() {
           onSubmit={handleVerify}
           className="w-full max-w-[560px] flex flex-col gap-[30px] sm:gap-[40px]"
         >
-          <div className="grid grid-cols-6 gap-2 w-full">
+          <div className="grid grid-cols-6 gap-2 w-full" dir="ltr">
             {otpValues.map((data, index) => {
               const opacity = 0.1 + index * 0.12;
               return (
                 <input
                   key={index}
                   type="text"
+                  inputMode="numeric"
                   maxLength={1}
                   ref={(el) => {
                     inputRefs.current[index] = el;
@@ -385,6 +416,7 @@ export default function VerifyOtpPage() {
                   onPaste={handlePaste}
                   style={{ backgroundColor: `rgba(2, 20, 72, ${opacity})` }}
                   className="w-full h-16 sm:h-24 text-center text-xl sm:text-3xl font-bold text-white border-l-2 border-r-2 border-yellow-400 rounded-xl outline-none backdrop-blur-md transition-all focus:shadow-[0_0_15px_rgba(250,204,21,0.2)]"
+                  dir="ltr"
                 />
               );
             })}
@@ -399,7 +431,7 @@ export default function VerifyOtpPage() {
             <button
               type="submit"
               disabled={loading || otpValues.join("").length < 6}
-              className="w-full py-2.5 sm:py-3 bg-[#0b2a6b] text-white rounded-xl border-l-4 border-r-4 border-yellow-400 font-semibold hover:opacity-90 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-2.5 sm:py-3 bg-[#0b2a6b] text-white rounded-xl border-l-4 border-r-4 border-yellow-400 font-semibolid hover:opacity-90 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? t("Verifying...") : t("Verify OTP")}
             </button>

@@ -33,6 +33,7 @@ import {
   CANCEL_SCOUT_REQUEST_MUTATION,
 } from "@/app/graphql/mutation/request.mutations";
 import { GET_ALL_SCOUTS } from "@/app/graphql/query/scout.queries";
+import BackButton from "@/app/components/BackButton";
 
 interface Player {
   id: string;
@@ -577,6 +578,8 @@ export default function ClubRequests() {
       )}
 
       <div className="max-w-6xl w-full space-y-8 py-20">
+        <BackButton className="mb-6" />
+
         <h1
           className={`text-center text-4xl font-black italic uppercase mb-10 ${
             isDark ? "text-[#FFD700]" : "text-yellow-600"

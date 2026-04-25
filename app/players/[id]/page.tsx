@@ -92,7 +92,7 @@ interface CurrentUser {
 
 export default function PlayerProfilePage() {
   const { id } = useParams();
-  const { lang } = useTranslate();
+  const { t, lang } = useTranslate();
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
@@ -156,9 +156,7 @@ export default function PlayerProfilePage() {
   };
 
   const handleFavoriteChange = (newStatus: boolean) => {
-    // تحديث محلي دون عمل ريفريش للصفحة
     console.log(`Favorite status changed to: ${newStatus}`);
-    // يمكنك إضافة أي تحديثات محلية أخرى هنا إذا لزم الأمر
   };
 
   if (loading) {
@@ -168,7 +166,7 @@ export default function PlayerProfilePage() {
           isDark ? "bg-[#020617] text-white" : "bg-gray-50 text-black"
         }`}
       >
-        <div className="text-yellow-400">Loading...</div>
+        <div className="text-yellow-400">{t("Loading...")}</div>
       </div>
     );
   }
@@ -180,7 +178,7 @@ export default function PlayerProfilePage() {
           isDark ? "bg-[#020617]" : "bg-gray-50"
         }`}
       >
-        <div className="text-red-500">Player not found</div>
+        <div className="text-red-500">{t("Player not found")}</div>
       </div>
     );
   }
@@ -204,19 +202,17 @@ export default function PlayerProfilePage() {
 
   return (
     <div
-      className={`min-h-screen py-20 transition ${
+      className={`min-h-screen py-40 transition ${
         isDark ? "bg-[#020617] text-white" : "bg-gray-50 text-black"
       }`}
     >
       <div className="max-w-7xl mx-auto px-6 space-y-16">
-        {/* Header and Gallery Row */}
         <div className="grid md:grid-cols-2 gap-10">
           <div className="space-y-6">
             <div className="flex justify-between items-start">
               <div className="flex-1">
                 <PlayerHeader player={player} />
               </div>
-              {/* Favorite Button - بدون ريفريش للصفحة */}
               <FavoriteButton
                 playerId={player.id}
                 onFavoriteChange={handleFavoriteChange}
@@ -227,16 +223,13 @@ export default function PlayerProfilePage() {
           <PlayerGallery player={player} />
         </div>
 
-        {/* Football Info and Club Career Row */}
         <div className="grid md:grid-cols-2 gap-6">
           <FootballInfo playerId={player.id} />
           <ClubCareer playerId={player.id} />
         </div>
 
-        {/* Reels */}
         <ReelsPlayer videos={player.videos || []} playerId={player.id} />
 
-        {/* Ratings and Reviews */}
         <Ratings
           key={refreshRatings}
           ratings={player.ratings || []}

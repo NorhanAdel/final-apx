@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import { fetchGraphQL } from "../../lib/fetchGraphQL";
 import { GET_MY_CONTRACT_TEMPLATE } from "@/app/graphql/query/contract.queries";
 import { toast } from "sonner";
+import BackButton from "@/app/components/BackButton";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -47,12 +48,30 @@ export default function ContractPage() {
   const handleDownload = () => {
     if (templateUrl) {
       console.log("Downloading from:", templateUrl);
+
+      // Create hidden anchor element
       const link = document.createElement("a");
       link.href = templateUrl;
-      link.download = "contract-template.pdf";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      link.download = "contract-template.pdf"; // This forces download instead of open
+      link.target = "_blank";
+
+      // Alternative: Use fetch to get blob and then download
+      fetch(templateUrl)
+        .then((response) => response.blob())
+        .then((blob) => {
+          const blobUrl = window.URL.createObjectURL(blob);
+          const downloadLink = document.createElement("a");
+          downloadLink.href = blobUrl;
+          downloadLink.download = "contract-template.pdf";
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          document.body.removeChild(downloadLink);
+          window.URL.revokeObjectURL(blobUrl);
+        })
+        .catch((error) => {
+          console.error("Error downloading file:", error);
+          toast.error(t("Failed to download contract"));
+        });
     }
   };
 
@@ -81,14 +100,15 @@ export default function ContractPage() {
       {/* Background blur */}
       <div
         className={`absolute w-[800px] h-[800px] rounded-full -left-40 -top-40 blur-[150px]
-        ${theme === "dark" ? "bg-blue-900/10" : "bg-yellow-200/20"}`}
+          ${theme === "dark" ? "bg-blue-900/10" : "bg-yellow-200/20"}`}
       />
       <div
         className={`absolute w-[600px] h-[600px] rounded-full -right-20 -bottom-20 blur-[120px]
-        ${theme === "dark" ? "bg-blue-800/5" : "bg-yellow-300/20"}`}
+          ${theme === "dark" ? "bg-blue-800/5" : "bg-yellow-300/20"}`}
       />
 
       <div className="max-w-5xl w-full relative z-10">
+        <BackButton className="mb-6" />
         <h1
           className={`text-4xl font-black italic mb-12 uppercase tracking-tighter text-center
           ${theme === "dark" ? "text-[#FFD700]" : "text-yellow-600"}`}

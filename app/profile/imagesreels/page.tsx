@@ -109,7 +109,6 @@ function ShareAsReelToggle({
   );
 }
 
-// Title Modal Component
 function TitleModal({
   isOpen,
   onClose,
@@ -207,8 +206,6 @@ export default function ImagesReels() {
   const [togglingReelId, setTogglingReelId] = useState<string | null>(null);
   const [playerProfileId, setPlayerProfileId] = useState<string | null>(null);
   const [hasNewUploads, setHasNewUploads] = useState(false);
-
-  // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [pendingVideoFile, setPendingVideoFile] = useState<File | null>(null);
 
@@ -258,6 +255,29 @@ export default function ImagesReels() {
     fetchInitialData();
   }, [lang]);
 
+  const refreshVideos = async () => {
+    try {
+      const result = await fetchGraphQL<{ myVideos: PlayerVideo[] }>(
+        `query GetMyVideos {
+          myVideos {
+            id
+            video_url
+            title
+            is_reel
+          }
+        }`,
+      );
+      if (result.data?.myVideos) {
+        setReels(result.data.myVideos);
+        if (!video && result.data.myVideos.length > 0) {
+          setVideo(result.data.myVideos[0].video_url);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to refresh videos:", err);
+    }
+  };
+
   const handleToggleReel = async (videoId: string) => {
     setTogglingReelId(videoId);
 
@@ -276,14 +296,11 @@ export default function ImagesReels() {
       if (result.errors) {
         toast.error(result.errors[0].message);
       } else if (result.data) {
-        const newIsReel = result.data.toggleVideoReelStatus.is_reel;
-        setReels((prev) =>
-          prev.map((v) =>
-            v.id === videoId ? { ...v, is_reel: newIsReel } : v,
-          ),
-        );
+        await refreshVideos();
         toast.success(
-          newIsReel ? t("Added to Reels!") : t("Removed from Reels"),
+          result.data.toggleVideoReelStatus.is_reel
+            ? t("Added to Reels!")
+            : t("Removed from Reels"),
         );
       }
     } catch (err) {
@@ -536,7 +553,6 @@ export default function ImagesReels() {
         isDark ? "bg-[#020617] text-white" : "bg-gray-50 text-black"
       }`}
     >
-      {/* Title Modal */}
       <TitleModal
         isOpen={isModalOpen}
         onClose={() => {
@@ -641,16 +657,18 @@ export default function ImagesReels() {
         </div>
 
         <div
+          id="main-video"
           className={`w-full h-[450px] rounded-2xl overflow-hidden mb-6 relative border ${
             isDark ? "bg-black border-[#1e293b]" : "bg-gray-900 border-gray-200"
           }`}
         >
           {video ? (
             <video
+              key={video}
               src={getFullUrl(video)}
               controls
               className="w-full h-full object-contain"
-              key={video}
+              autoPlay
             />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center text-gray-500">
@@ -695,6 +713,7 @@ export default function ImagesReels() {
                   <video
                     src={getFullUrl(r.video_url)}
                     className="w-full h-full object-cover"
+                    preload="metadata"
                   />
                 </div>
                 <button

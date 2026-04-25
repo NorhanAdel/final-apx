@@ -1,7 +1,15 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Check, X, Clock, Calendar, DollarSign } from "lucide-react";
+import {
+  Check,
+  X,
+  Clock,
+  Calendar,
+  DollarSign,
+  Filter,
+  ChevronDown,
+} from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import useTranslate from "../../hooks/useTranslate";
 import { fetchGraphQL } from "../../lib/fetchGraphQL";
@@ -11,6 +19,7 @@ import {
   REJECT_DEAL,
 } from "@/app/graphql/mutation/deal.mutations";
 import { toast } from "sonner";
+import BackButton from "@/app/components/BackButton";
 
 interface Deal {
   id: string;
@@ -34,21 +43,20 @@ export default function DealsPage() {
   const { theme } = useTheme();
   const { t } = useTranslate();
   const [deals, setDeals] = useState<Deal[]>([]);
+  const [filteredDeals, setFilteredDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
-  const [filter, setFilter] = useState<string>("PENDING");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   const fetchDeals = useCallback(async () => {
     setLoading(true);
     try {
-      const variables = filter !== "ALL" ? { status: filter } : {};
-      const result = await fetchGraphQL<{ myDeals: Deal[] }>(
-        GET_MY_DEALS,
-        variables,
-      );
+      const result = await fetchGraphQL<{ myDeals: Deal[] }>(GET_MY_DEALS, {});
 
       if (result.data?.myDeals) {
         setDeals(result.data.myDeals);
+        setFilteredDeals(result.data.myDeals);
       } else if (result.errors) {
         console.error("GraphQL errors:", result.errors);
         toast.error(result.errors[0]?.message || t("Failed to load deals"));
@@ -59,11 +67,25 @@ export default function DealsPage() {
     } finally {
       setLoading(false);
     }
-  }, [t, filter]);
+  }, [t]);
 
   useEffect(() => {
     fetchDeals();
   }, [fetchDeals]);
+
+  // Apply filter when statusFilter changes
+  useEffect(() => {
+    if (statusFilter === "ALL") {
+      setFilteredDeals(deals);
+    } else {
+      const filtered = deals.filter((deal) => {
+        const lowerStatus = deal.status.toLowerCase();
+        const filterLower = statusFilter.toLowerCase();
+        return lowerStatus.includes(filterLower);
+      });
+      setFilteredDeals(filtered);
+    }
+  }, [statusFilter, deals]);
 
   const handleAccept = async (dealId: string) => {
     setProcessingId(dealId);
@@ -129,7 +151,6 @@ export default function DealsPage() {
     }).format(value);
   };
 
-  // Check if deal is pending (works for both English and Arabic)
   const isPending = (status: string) => {
     const lowerStatus = status.toLowerCase();
     return (
@@ -137,7 +158,6 @@ export default function DealsPage() {
     );
   };
 
-  // Get status color based on status text (works for both English and Arabic)
   const getStatusColor = (status: string) => {
     const lowerStatus = status.toLowerCase();
     if (
@@ -158,7 +178,53 @@ export default function DealsPage() {
     return "text-gray-400";
   };
 
-  // Get offer type display
+  const getStatusLabel = (status: string) => {
+    const lowerStatus = status.toLowerCase();
+    if (
+      lowerStatus.includes("pending") ||
+      lowerStatus.includes("قيد الانتظار")
+    ) {
+      return t("Pending");
+    }
+    if (lowerStatus.includes("accepted") || lowerStatus.includes("مقبول")) {
+      return t("Accepted");
+    }
+    if (lowerStatus.includes("rejected") || lowerStatus.includes("مرفوض")) {
+      return t("Rejected");
+    }
+    if (lowerStatus.includes("expired") || lowerStatus.includes("منتهي")) {
+      return t("Expired");
+    }
+    return status;
+  };
+
+  const getStatusCount = (statusType: string) => {
+    if (statusType === "ALL") return deals.length;
+    return deals.filter((deal) => {
+      const lowerStatus = deal.status.toLowerCase();
+      if (statusType === "PENDING") {
+        return (
+          lowerStatus.includes("pending") ||
+          lowerStatus.includes("قيد الانتظار")
+        );
+      }
+      if (statusType === "ACCEPTED") {
+        return (
+          lowerStatus.includes("accepted") || lowerStatus.includes("مقبول")
+        );
+      }
+      if (statusType === "REJECTED") {
+        return (
+          lowerStatus.includes("rejected") || lowerStatus.includes("مرفوض")
+        );
+      }
+      if (statusType === "EXPIRED") {
+        return lowerStatus.includes("expired") || lowerStatus.includes("منتهي");
+      }
+      return false;
+    }).length;
+  };
+
   const getOfferTypeIcon = (type: string) => {
     const lowerType = type.toLowerCase();
     if (lowerType.includes("transfer")) return "🔄";
@@ -166,14 +232,6 @@ export default function DealsPage() {
     if (lowerType.includes("trial")) return "⚽";
     return "📄";
   };
-
-  const filterOptions = [
-    { value: "PENDING", label: t("Pending") },
-    { value: "ACCEPTED", label: t("Accepted") },
-    { value: "REJECTED", label: t("Rejected") },
-    { value: "EXPIRED", label: t("Expired") },
-    { value: "ALL", label: t("All") },
-  ];
 
   if (loading) {
     return (
@@ -198,6 +256,8 @@ export default function DealsPage() {
       }`}
     >
       <div className="w-full max-w-4xl p-4 sm:p-10">
+        <BackButton className="mb-6" />
+        
         <h1
           className={`text-center text-3xl font-bold mb-6
           ${theme === "dark" ? "text-yellow-400" : "text-[#F0B100]"}`}
@@ -205,36 +265,127 @@ export default function DealsPage() {
           {t("Deals")}
         </h1>
 
-        {/* Filter Tabs */}
-        <div className="flex flex-wrap justify-center gap-2 mb-8">
-          {filterOptions.map((option) => (
+        {/* Status Filter Dropdown */}
+        <div className="flex justify-end mb-6">
+          <div className="relative">
             <button
-              key={option.value}
-              onClick={() => setFilter(option.value)}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition
-                ${
-                  filter === option.value
-                    ? "bg-yellow-500 text-white"
-                    : theme === "dark"
-                    ? "bg-[#021448] text-gray-300 hover:bg-yellow-500/20"
-                    : "bg-gray-100 text-gray-700 hover:bg-yellow-500/20"
-                }`}
+              onClick={() => setIsFilterOpen(!isFilterOpen)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${
+                theme === "dark"
+                  ? "bg-[#0a0f2c] border border-[#1e2a5a] hover:bg-[#1e2a5a]"
+                  : "bg-white border border-gray-200 shadow hover:bg-gray-50"
+              }`}
             >
-              {option.label}
+              <Filter size={16} className="text-yellow-500" />
+              <span className="text-sm font-medium">
+                {statusFilter === "ALL"
+                  ? t("All Statuses")
+                  : getStatusLabel(
+                      statusFilter === "PENDING"
+                        ? "Pending"
+                        : statusFilter === "ACCEPTED"
+                        ? "Accepted"
+                        : statusFilter === "REJECTED"
+                        ? "Rejected"
+                        : "Expired",
+                    )}
+              </span>
+              <ChevronDown
+                size={16}
+                className={`transition-transform ${
+                  isFilterOpen ? "rotate-180" : ""
+                }`}
+              />
             </button>
-          ))}
+            {isFilterOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setIsFilterOpen(false)}
+                />
+                <div
+                  className={`absolute top-full right-0 mt-2 w-56 rounded-lg shadow-lg overflow-hidden z-20 ${
+                    theme === "dark"
+                      ? "bg-[#0a0f2c] border border-[#1e2a5a]"
+                      : "bg-white border border-gray-200"
+                  }`}
+                >
+                  {["ALL", "PENDING", "ACCEPTED", "REJECTED", "EXPIRED"].map(
+                    (status) => (
+                      <button
+                        key={status}
+                        onClick={() => {
+                          setStatusFilter(status);
+                          setIsFilterOpen(false);
+                        }}
+                        className={`w-full px-4 py-2 text-left text-sm transition flex items-center justify-between ${
+                          statusFilter === status
+                            ? theme === "dark"
+                              ? "bg-yellow-400/20 text-yellow-400"
+                              : "bg-yellow-50 text-yellow-600"
+                            : theme === "dark"
+                            ? "hover:bg-[#1e2a5a] text-gray-300"
+                            : "hover:bg-gray-50 text-gray-700"
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <span
+                            className={`w-2 h-2 rounded-full ${
+                              status === "PENDING"
+                                ? "bg-yellow-500"
+                                : status === "ACCEPTED"
+                                ? "bg-green-500"
+                                : status === "REJECTED"
+                                ? "bg-red-500"
+                                : status === "EXPIRED"
+                                ? "bg-gray-500"
+                                : "bg-gray-400"
+                            }`}
+                          ></span>
+                          {status === "ALL"
+                            ? t("All Statuses")
+                            : status === "PENDING"
+                            ? t("Pending")
+                            : status === "ACCEPTED"
+                            ? t("Accepted")
+                            : status === "REJECTED"
+                            ? t("Rejected")
+                            : t("Expired")}
+                        </span>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-gray-500/20">
+                          {getStatusCount(status)}
+                        </span>
+                      </button>
+                    ),
+                  )}
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
-        {deals.length === 0 ? (
+        {filteredDeals.length === 0 ? (
           <div
             className={`text-center py-10 rounded-md
             ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}
           >
-            {t("No deals found")}
+            {statusFilter === "ALL"
+              ? t("No deals found")
+              : t(
+                  `No ${getStatusLabel(
+                    statusFilter === "PENDING"
+                      ? "Pending"
+                      : statusFilter === "ACCEPTED"
+                      ? "Accepted"
+                      : statusFilter === "REJECTED"
+                      ? "Rejected"
+                      : "Expired",
+                  ).toLowerCase()} deals found`,
+                )}
           </div>
         ) : (
           <div className="flex flex-col gap-6">
-            {deals.map((deal) => {
+            {filteredDeals.map((deal) => {
               const displayName = deal.senderName;
               const clubName = deal.club_name;
               const offerTypeIcon = getOfferTypeIcon(deal.offer_type);

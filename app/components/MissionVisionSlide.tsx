@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { useTheme } from "../context/ThemeContext";
 import useTranslate from "../hooks/useTranslate";
 
@@ -38,7 +39,6 @@ export default function MissionVisionSlide() {
 
       {/* CONTENT */}
       <div className="w-full max-w-6xl mx-auto flex flex-col gap-16">
-
         {/* ===== VISION ===== */}
         <motion.div
           initial={{ opacity: 0, x: isRTL ? 80 : -80 }}
@@ -57,11 +57,7 @@ export default function MissionVisionSlide() {
                 [isRTL ? "left" : "right"]: "-6rem",
               }}
             >
-              <img
-                src="/b3.jpg"
-                alt="Vision"
-                className="w-full h-full object-cover"
-              />
+              <Image src="/b3.jpg" alt="Vision" fill className="object-cover" />
             </motion.div>
 
             <h2 className="text-2xl md:text-3xl font-bold mb-3 text-white">
@@ -92,10 +88,11 @@ export default function MissionVisionSlide() {
                 [isRTL ? "right" : "left"]: "-6rem",
               }}
             >
-              <img
-                src="/b2.jpg"
+              <Image
+                src="/mission.jpeg"
                 alt="Mission"
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
               />
             </motion.div>
 
@@ -108,7 +105,6 @@ export default function MissionVisionSlide() {
             </p>
           </div>
         </motion.div>
-
       </div>
     </div>
   );

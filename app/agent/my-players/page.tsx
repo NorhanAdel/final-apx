@@ -3,12 +3,13 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Search, TrendingUp, Loader2 } from "lucide-react";
-import { useTheme } from "../../context/ThemeContext";
-import useTranslate from "../../hooks/useTranslate";
-import { fetchGraphQL } from "../../lib/fetchGraphQL";
 import { toast } from "sonner";
 import { PlayerCard } from "@/app/components/PlayerCard";
 import { GET_MY_PLAYERS } from "@/app/graphql/query/request.queries";
+import { useTheme } from "@/app/context/ThemeContext";
+import useTranslate from "@/app/hooks/useTranslate";
+import { fetchGraphQL } from "@/app/lib/fetchGraphQL";
+import BackButton from "@/app/components/BackButton";
 
 interface Player {
   id: string;
@@ -43,8 +44,17 @@ export default function AgentMyPlayers() {
     try {
       const result = await fetchGraphQL<MyPlayersResponse>(GET_MY_PLAYERS, {});
       if (result.data?.myPlayers) {
-        setPlayers(result.data.myPlayers);
-        setFilteredPlayers(result.data.myPlayers);
+        // إزالة التكرار باستخدام Map مع التأكد من uniqueness
+        const uniqueMap = new Map<string, Player>();
+        for (const player of result.data.myPlayers) {
+          if (!uniqueMap.has(player.id)) {
+            uniqueMap.set(player.id, player);
+          }
+        }
+        const uniquePlayers = Array.from(uniqueMap.values());
+
+        setPlayers(uniquePlayers);
+        setFilteredPlayers(uniquePlayers);
       }
     } catch (error) {
       console.error("Error fetching my players:", error);
@@ -106,14 +116,20 @@ export default function AgentMyPlayers() {
     return `${player.first_name} ${player.last_name}`;
   };
 
+  const getSafeKey = (player: Player, index: number) => {
+    return player.id ? `${player.id}-${index}` : `player-${index}`;
+  };
+
   return (
     <div
-      className={`min-h-screen py-20 px-6 transition ${
+      className={`min-h-screen py-40 px-6 transition ${
         isDark ? "bg-[#020617] text-white" : "bg-gray-100 text-black"
       }`}
     >
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-10">
+          <BackButton className="mb-6" />
+          
           <h1 className="text-4xl font-black italic tracking-tighter text-yellow-400 uppercase">
             {t("My Players")}
           </h1>
@@ -156,9 +172,9 @@ export default function AgentMyPlayers() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredPlayers.map((player) => (
+            {filteredPlayers.map((player, index) => (
               <div
-                key={player.id}
+                key={getSafeKey(player, index)}
                 onClick={() => handlePlayerClick(player.id)}
                 className="cursor-pointer"
               >

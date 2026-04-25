@@ -1,4 +1,3 @@
-// app/profile/page.tsx - Complete page with bio field
 "use client";
 
 import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
@@ -16,12 +15,12 @@ import {
   Camera,
   ChevronRight,
   ChevronLeft,
-  ChevronDown,
   Upload,
   FileText,
   Plus,
   ExternalLink,
   AlignLeft,
+  X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "../context/ThemeContext";
@@ -70,15 +69,6 @@ interface TextareaProps {
   value: string;
   onChange: (e: ChangeEvent<HTMLTextAreaElement>) => void;
   isDark: boolean;
-}
-
-interface SelectProps {
-  label: string;
-  icon: React.ReactNode;
-  name: keyof PlayerFormData;
-  value: string;
-  onChange: (e: ChangeEvent<HTMLSelectElement>) => void;
-  options: { label: string; value: string }[];
 }
 
 interface Variables extends Record<string, unknown> {
@@ -179,6 +169,11 @@ export default function ProfilePage() {
     null,
   );
 
+  // Separate date fields
+  const [birthDay, setBirthDay] = useState("");
+  const [birthMonth, setBirthMonth] = useState("");
+  const [birthYear, setBirthYear] = useState("");
+
   const [formData, setFormData] = useState<PlayerFormData>({
     id: "",
     first_name: "",
@@ -186,13 +181,30 @@ export default function ProfilePage() {
     email_address: "",
     phone: "",
     date_of_birth: "",
-    nationality: "Egyptian",
-    country: "Egypt",
+    nationality: "",
+    country: "",
     city: "",
     height_cm: "",
     weight_kg: "",
     bio: "",
   });
+
+  // Update date_of_birth from separate fields
+  useEffect(() => {
+    if (birthYear && birthMonth && birthDay) {
+      const formattedDate = `${birthYear}-${birthMonth.padStart(
+        2,
+        "0",
+      )}-${birthDay.padStart(2, "0")}`;
+      setFormData((prev) => ({ ...prev, date_of_birth: formattedDate }));
+    }
+  }, [birthDay, birthMonth, birthYear]);
+
+  const getFullImageUrl = (url: string) => {
+    if (!url) return "";
+    if (url.startsWith("http")) return url;
+    return `${API_URL}${url}`;
+  };
 
   const fetchPlayerProfile = async () => {
     setPageLoading(true);
@@ -203,15 +215,24 @@ export default function ProfilePage() {
 
       if (result.data?.myPlayerProfile) {
         const p = result.data.myPlayerProfile;
+
+        // Parse date of birth
+        const dob = p.date_of_birth?.split("T")[0] || "";
+        const [year, month, day] = dob.split("-");
+
+        setBirthYear(year || "");
+        setBirthMonth(month || "");
+        setBirthDay(day || "");
+
         const data = {
           id: p.id || "",
           first_name: p.first_name || "",
           last_name: p.last_name || "",
           email_address: p.email_address || "",
           phone: p.phone || "",
-          date_of_birth: p.date_of_birth?.split("T")[0] || "",
-          nationality: p.nationality || "Egyptian",
-          country: p.country || "Egypt",
+          date_of_birth: dob,
+          nationality: p.nationality || "",
+          country: p.country || "",
           city: p.city || "",
           height_cm: p.height_cm ? String(p.height_cm) : "",
           weight_kg: p.weight_kg ? String(p.weight_kg) : "",
@@ -221,104 +242,18 @@ export default function ProfilePage() {
         setInitialFormData(data);
 
         if (p.profile_image_url) {
-          const url = p.profile_image_url.startsWith("http")
-            ? p.profile_image_url
-            : `${API_URL}${p.profile_image_url}`;
-          setProfileImagePreview(url);
+          setProfileImagePreview(getFullImageUrl(p.profile_image_url));
         }
 
         if (p.verification_doc_url) {
-          const url = p.verification_doc_url.startsWith("http")
-            ? p.verification_doc_url
-            : `${API_URL}${p.verification_doc_url}`;
-          setExistingDocUrl(url);
-        }
-      } else {
-        const storedUser = localStorage.getItem("user");
-        if (storedUser) {
-          const user = JSON.parse(storedUser);
-          if (user?.playerProfile) {
-            const p = user.playerProfile;
-            const data = {
-              id: p.id || "",
-              first_name: p.first_name || "",
-              last_name: p.last_name || "",
-              email_address: user.email || "",
-              phone: p.phone || "",
-              date_of_birth: p.date_of_birth?.split("T")[0] || "",
-              nationality: p.nationality || "Egyptian",
-              country: p.country || "Egypt",
-              city: p.city || "",
-              height_cm: p.height_cm ? String(p.height_cm) : "",
-              weight_kg: p.weight_kg ? String(p.weight_kg) : "",
-              bio: p.bio || "",
-            };
-            setFormData(data);
-            setInitialFormData(data);
-
-            if (p.profile_image_url) {
-              const url = p.profile_image_url.startsWith("http")
-                ? p.profile_image_url
-                : `${API_URL}${p.profile_image_url}`;
-              setProfileImagePreview(url);
-            }
-
-            if (p.verification_doc_url) {
-              const url = p.verification_doc_url.startsWith("http")
-                ? p.verification_doc_url
-                : `${API_URL}${p.verification_doc_url}`;
-              setExistingDocUrl(url);
-            }
-          } else {
-            setInitialFormData(null);
-          }
-        } else {
-          setInitialFormData(null);
-        }
-      }
-    } catch (error) {
-      console.error("Failed to fetch profile:", error);
-      const storedUser = localStorage.getItem("user");
-      if (storedUser) {
-        const user = JSON.parse(storedUser);
-        if (user?.playerProfile) {
-          const p = user.playerProfile;
-          const data = {
-            id: p.id || "",
-            first_name: p.first_name || "",
-            last_name: p.last_name || "",
-            email_address: user.email || "",
-            phone: p.phone || "",
-            date_of_birth: p.date_of_birth?.split("T")[0] || "",
-            nationality: p.nationality || "Egyptian",
-            country: p.country || "Egypt",
-            city: p.city || "",
-            height_cm: p.height_cm ? String(p.height_cm) : "",
-            weight_kg: p.weight_kg ? String(p.weight_kg) : "",
-            bio: p.bio || "",
-          };
-          setFormData(data);
-          setInitialFormData(data);
-
-          if (p.profile_image_url) {
-            const url = p.profile_image_url.startsWith("http")
-              ? p.profile_image_url
-              : `${API_URL}${p.profile_image_url}`;
-            setProfileImagePreview(url);
-          }
-
-          if (p.verification_doc_url) {
-            const url = p.verification_doc_url.startsWith("http")
-              ? p.verification_doc_url
-              : `${API_URL}${p.verification_doc_url}`;
-            setExistingDocUrl(url);
-          }
-        } else {
-          setInitialFormData(null);
+          setExistingDocUrl(getFullImageUrl(p.verification_doc_url));
         }
       } else {
         setInitialFormData(null);
       }
+    } catch (error) {
+      console.error("Failed to fetch profile:", error);
+      setInitialFormData(null);
     } finally {
       setPageLoading(false);
     }
@@ -329,7 +264,7 @@ export default function ProfilePage() {
   }, [lang]);
 
   const handleChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -348,6 +283,11 @@ export default function ProfilePage() {
         setVerificationFile(file);
       }
     }
+  };
+
+  const removeProfileImage = () => {
+    setProfileImageFile(null);
+    setProfileImagePreview(null);
   };
 
   const hasFormChanged = () => {
@@ -507,18 +447,9 @@ export default function ProfilePage() {
         (prev) => ({ ...prev, ...updatedData } as PlayerFormData),
       );
 
-      try {
-        const storedUser = localStorage.getItem("user");
-        if (storedUser) {
-          const user = JSON.parse(storedUser);
-          if (user.playerProfile) {
-            user.playerProfile = { ...user.playerProfile, ...updatedData };
-            localStorage.setItem("user", JSON.stringify(user));
-          }
-        }
-      } catch (err) {
-        console.error("Failed to update localStorage:", err);
-      }
+      // Reset file states
+      setProfileImageFile(null);
+      setVerificationFile(null);
 
       toast.success(
         isUpdate
@@ -543,9 +474,14 @@ export default function ProfilePage() {
     );
   }
 
+  const inputStyle = {
+    backgroundColor: isDark ? "#0b1736" : "white",
+    color: isDark ? "white" : "black",
+  };
+
   return (
     <div
-      className={`min-h-screen py-20 transition ${
+      className={`min-h-screen py-40 pt-32 transition ${
         isDark ? "bg-[#020b1c] text-white" : "bg-gray-50 text-black"
       }`}
     >
@@ -584,6 +520,15 @@ export default function ProfilePage() {
                     className="w-32 h-32 rounded-full object-cover border-2 border-yellow-400"
                     unoptimized
                   />
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      removeProfileImage();
+                    }}
+                    className="absolute -top-2 -right-2 bg-red-500 rounded-full p-1 hover:bg-red-600 transition z-10"
+                  >
+                    <X size={16} className="text-white" />
+                  </button>
                 </div>
               ) : (
                 <div
@@ -619,6 +564,7 @@ export default function ProfilePage() {
             onChange={handleChange}
             icon={<User size={18} />}
             isDark={isDark}
+            inputStyle={inputStyle}
           />
           <Input
             label={t("Last Name")}
@@ -627,6 +573,7 @@ export default function ProfilePage() {
             onChange={handleChange}
             icon={<User size={18} />}
             isDark={isDark}
+            inputStyle={inputStyle}
           />
           <Input
             label={t("Email Address")}
@@ -635,6 +582,7 @@ export default function ProfilePage() {
             onChange={handleChange}
             icon={<Mail size={18} />}
             isDark={isDark}
+            inputStyle={inputStyle}
           />
           <Input
             label={t("Phone Number")}
@@ -643,62 +591,121 @@ export default function ProfilePage() {
             onChange={handleChange}
             icon={<Phone size={18} />}
             isDark={isDark}
+            inputStyle={inputStyle}
           />
+
+          {/* Date of Birth - Separated Fields */}
+          <div className="space-y-2">
+            <label
+              className={`block text-sm mb-2 ${
+                isDark ? "text-gray-300" : "text-gray-700"
+              }`}
+            >
+              {t("Date of Birth")}
+            </label>
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <div
+                  className={`flex items-center rounded-xl px-4 py-3 border transition-colors ${
+                    isDark
+                      ? "bg-[#0b1736] border-[#1e2d5a] focus-within:border-yellow-400"
+                      : "bg-white border-gray-300 focus-within:border-yellow-400"
+                  }`}
+                  style={inputStyle}
+                >
+                  <Calendar size={18} className="text-yellow-400 mr-3" />
+                  <input
+                    type="text"
+                    placeholder="DD"
+                    value={birthDay}
+                    onChange={(e) =>
+                      setBirthDay(e.target.value.replace(/\D/g, "").slice(0, 2))
+                    }
+                    className={`bg-transparent outline-none w-full text-sm ${
+                      isDark
+                        ? "text-white placeholder-gray-500"
+                        : "text-black placeholder-gray-400"
+                    }`}
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+              <div className="flex-1">
+                <div
+                  className={`flex items-center rounded-xl px-4 py-3 border ${
+                    isDark
+                      ? "bg-[#0b1736] border-[#1e2d5a] focus-within:border-yellow-400"
+                      : "bg-white border-gray-300 focus-within:border-yellow-400"
+                  }`}
+                  style={inputStyle}
+                >
+                  <Calendar size={18} className="text-yellow-400 mr-3" />
+                  <input
+                    type="text"
+                    placeholder="MM"
+                    value={birthMonth}
+                    onChange={(e) =>
+                      setBirthMonth(
+                        e.target.value.replace(/\D/g, "").slice(0, 2),
+                      )
+                    }
+                    className={`bg-transparent outline-none w-full text-sm ${
+                      isDark
+                        ? "text-white placeholder-gray-500"
+                        : "text-black placeholder-gray-400"
+                    }`}
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+              <div className="flex-1">
+                <div
+                  className={`flex items-center rounded-xl px-4 py-3 border ${
+                    isDark
+                      ? "bg-[#0b1736] border-[#1e2d5a] focus-within:border-yellow-400"
+                      : "bg-white border-gray-300 focus-within:border-yellow-400"
+                  }`}
+                  style={inputStyle}
+                >
+                  <Calendar size={18} className="text-yellow-400 mr-3" />
+                  <input
+                    type="text"
+                    placeholder="YYYY"
+                    value={birthYear}
+                    onChange={(e) =>
+                      setBirthYear(
+                        e.target.value.replace(/\D/g, "").slice(0, 4),
+                      )
+                    }
+                    className={`bg-transparent outline-none w-full text-sm ${
+                      isDark
+                        ? "text-white placeholder-gray-500"
+                        : "text-black placeholder-gray-400"
+                    }`}
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
           <Input
-            label={t("Date of Birth")}
-            name="date_of_birth"
-            type="date"
-            value={formData.date_of_birth}
-            onChange={handleChange}
-            icon={<Calendar size={18} />}
-            isDark={isDark}
-          />
-          <Select
             label={t("Nationality")}
             name="nationality"
             value={formData.nationality}
             onChange={handleChange}
             icon={<Flag size={18} />}
-            options={[
-              { label: "Egyptian", value: "Egyptian" },
-              { label: "Saudi", value: "Saudi" },
-              { label: "Emirati", value: "Emirati" },
-              { label: "Kuwaiti", value: "Kuwaiti" },
-              { label: "Qatari", value: "Qatari" },
-              { label: "Omani", value: "Omani" },
-              { label: "Bahraini", value: "Bahraini" },
-              { label: "Jordanian", value: "Jordanian" },
-              { label: "Lebanese", value: "Lebanese" },
-              { label: "Tunisian", value: "Tunisian" },
-              { label: "Moroccan", value: "Moroccan" },
-              { label: "Algerian", value: "Algerian" },
-              { label: "Libyan", value: "Libyan" },
-              { label: "Sudanese", value: "Sudanese" },
-              { label: "Palestinian", value: "Palestinian" },
-              { label: "Syrian", value: "Syrian" },
-              { label: "Iraqi", value: "Iraqi" },
-              { label: "Yemeni", value: "Yemeni" },
-            ]}
             isDark={isDark}
+            inputStyle={inputStyle}
           />
-          <Select
+          <Input
             label={t("Country")}
             name="country"
             value={formData.country}
             onChange={handleChange}
             icon={<MapPin size={18} />}
-            options={[
-              { label: "Egypt", value: "Egypt" },
-              { label: "Saudi Arabia", value: "Saudi Arabia" },
-              { label: "UAE", value: "UAE" },
-              { label: "Kuwait", value: "Kuwait" },
-              { label: "Qatar", value: "Qatar" },
-              { label: "Oman", value: "Oman" },
-              { label: "Bahrain", value: "Bahrain" },
-              { label: "Jordan", value: "Jordan" },
-              { label: "Lebanon", value: "Lebanon" },
-            ]}
             isDark={isDark}
+            inputStyle={inputStyle}
           />
           <Input
             label={t("City")}
@@ -707,6 +714,7 @@ export default function ProfilePage() {
             onChange={handleChange}
             icon={<MapPin size={18} />}
             isDark={isDark}
+            inputStyle={inputStyle}
           />
           <Input
             label={t("Height (cm)")}
@@ -716,6 +724,7 @@ export default function ProfilePage() {
             onChange={handleChange}
             icon={<Ruler size={18} />}
             isDark={isDark}
+            inputStyle={inputStyle}
           />
           <Input
             label={t("Weight (kg)")}
@@ -725,6 +734,7 @@ export default function ProfilePage() {
             onChange={handleChange}
             icon={<Weight size={18} />}
             isDark={isDark}
+            inputStyle={inputStyle}
           />
 
           {/* Bio Field - Full Width */}
@@ -736,17 +746,19 @@ export default function ProfilePage() {
               onChange={handleChange}
               icon={<AlignLeft size={18} />}
               isDark={isDark}
+              textareaStyle={inputStyle}
             />
           </div>
 
-          {/* Verification Document */}
+          {/* Verification Document - Optional (without X button) */}
           <div className="md:col-span-2">
             <label
               className={`block text-sm mb-2 ${
                 isDark ? "text-gray-300" : "text-gray-700"
               }`}
             >
-              {t("Verification Document (Medals or Championships)")}
+              {t("Verification Document (Medals or Championships)")} (
+              {t("Optional")})
             </label>
             <div
               className={`relative flex items-center rounded-xl px-4 py-3 border transition-colors group ${
@@ -754,6 +766,7 @@ export default function ProfilePage() {
                   ? "bg-[#0b1736] border-[#1e2d5a] hover:border-yellow-400"
                   : "bg-white border-gray-300 hover:border-yellow-400"
               }`}
+              style={inputStyle}
             >
               <span className="text-yellow-400 mr-3 z-10 pointer-events-none">
                 <FileText size={20} />
@@ -768,7 +781,7 @@ export default function ProfilePage() {
                     ? verificationFile.name
                     : existingDocUrl
                     ? "Document already uploaded"
-                    : t("Upload verification doc")}
+                    : t("Upload verification doc (optional)")}
                 </span>
                 {!verificationFile && existingDocUrl && (
                   <a
@@ -860,7 +873,8 @@ function Input({
   value,
   onChange,
   isDark,
-}: InputProps & { isDark: boolean }) {
+  inputStyle,
+}: InputProps & { isDark: boolean; inputStyle: React.CSSProperties }) {
   return (
     <div>
       <label
@@ -876,6 +890,7 @@ function Input({
             ? "bg-[#0b1736] border-[#1e2d5a] focus-within:border-yellow-400"
             : "bg-white border-gray-300 focus-within:border-yellow-400"
         }`}
+        style={inputStyle}
       >
         <span className="text-yellow-400 mr-3">{icon}</span>
         <input
@@ -883,12 +898,13 @@ function Input({
           value={value}
           onChange={onChange}
           type={type}
-          placeholder={label.replace("*", "")}
+          placeholder={label}
           className={`bg-transparent outline-none w-full text-sm ${
             isDark
               ? "text-white placeholder-gray-500"
               : "text-black placeholder-gray-400"
           }`}
+          style={inputStyle}
         />
       </div>
     </div>
@@ -902,7 +918,8 @@ function Textarea({
   value,
   onChange,
   isDark,
-}: TextareaProps & { isDark: boolean }) {
+  textareaStyle,
+}: TextareaProps & { isDark: boolean; textareaStyle: React.CSSProperties }) {
   return (
     <div>
       <label
@@ -918,6 +935,7 @@ function Textarea({
             ? "bg-[#0b1736] border-[#1e2d5a] focus-within:border-yellow-400"
             : "bg-white border-gray-300 focus-within:border-yellow-400"
         }`}
+        style={textareaStyle}
       >
         <span className="text-yellow-400 mr-3 mt-1">{icon}</span>
         <textarea
@@ -931,57 +949,8 @@ function Textarea({
               ? "text-white placeholder-gray-500"
               : "text-black placeholder-gray-400"
           }`}
+          style={textareaStyle}
         />
-      </div>
-    </div>
-  );
-}
-
-function Select({
-  label,
-  icon,
-  name,
-  value,
-  onChange,
-  options,
-  isDark,
-}: SelectProps & { isDark: boolean }) {
-  return (
-    <div>
-      <label
-        className={`block text-sm mb-2 ${
-          isDark ? "text-gray-300" : "text-gray-700"
-        }`}
-      >
-        {label}
-      </label>
-      <div
-        className={`flex items-center rounded-xl px-4 py-3 border transition-colors ${
-          isDark
-            ? "bg-[#0b1736] border-[#1e2d5a] focus-within:border-yellow-400"
-            : "bg-white border-gray-300 focus-within:border-yellow-400"
-        }`}
-      >
-        <span className="text-yellow-400 mr-3">{icon}</span>
-        <select
-          name={name}
-          value={value}
-          onChange={onChange}
-          className={`bg-transparent outline-none w-full text-sm cursor-pointer appearance-none ${
-            isDark ? "text-white" : "text-black"
-          }`}
-        >
-          {options.map((opt) => (
-            <option
-              key={opt.value}
-              value={opt.value}
-              className={isDark ? "bg-[#0b1736]" : "bg-white"}
-            >
-              {opt.label}
-            </option>
-          ))}
-        </select>
-        <ChevronDown size={18} className="text-gray-500 ml-auto" />
       </div>
     </div>
   );

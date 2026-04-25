@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { Heart, Eye, MessageCircle } from "lucide-react";
 import { useTheme } from "@/app/context/ThemeContext";
+import useTranslate from "@/app/hooks/useTranslate";
+import BackButton from "@/app/components/BackButton";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://72.62.28.146";
 
@@ -24,6 +26,7 @@ query MyLikedReels($skip: Int, $take: Int) {
 
 export default function LikedReelsPage() {
   const { theme } = useTheme();
+  const { t, lang } = useTranslate();
   const isDark = theme === "dark";
 
   const [reels, setReels] = useState<any[]>([]);
@@ -64,6 +67,28 @@ export default function LikedReelsPage() {
     return url.startsWith("http") ? url : `${API_URL}${url}`;
   };
 
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString(
+        lang === "ar"
+          ? "ar-EG"
+          : lang === "pt"
+          ? "pt-PT"
+          : lang === "zh"
+          ? "zh-CN"
+          : "en-US",
+        {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        },
+      );
+    } catch {
+      return dateString;
+    }
+  };
+
   if (loading)
     return (
       <div
@@ -71,36 +96,41 @@ export default function LikedReelsPage() {
           isDark ? "text-white bg-[#020617]" : "text-black bg-gray-100"
         }`}
       >
-        Loading...
+        {t("loading")}...
       </div>
     );
 
   return (
     <div
-      className={`min-h-screen py-30 px-6  transition-all duration-300 ${
+      className={`min-h-screen py-30 px-6 transition-all duration-300 ${
         isDark ? "bg-[#020617] text-white" : "bg-gray-100 text-black"
       }`}
     >
+      <BackButton className="mb-6" />
+
       <h1 className="text-3xl text-center font-bold mb-10 text-yellow-500">
-        Liked Reels
+        {t("favoriteReels")}
       </h1>
 
       {reels.length === 0 ? (
-        <p className={isDark ? "text-gray-400" : "text-gray-600"}>
-          No liked videos yet
+        <p
+          className={`text-center ${
+            isDark ? "text-gray-400" : "text-gray-600"
+          }`}
+        >
+          {t("noLikedVideos")}
         </p>
       ) : (
-        <div className="grid grid-cols-1  md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {reels.map((item) => (
             <div
               key={item.id}
-              className={`rounded-xl overflow-hidden  hover:scale-[1.02] transition border ${
+              className={`rounded-xl overflow-hidden hover:scale-[1.02] transition border ${
                 isDark
                   ? "bg-[#0a0f1e] border-gray-800"
                   : "bg-white border-gray-300"
               }`}
             >
-              {/* VIDEO */}
               <div className="relative w-full h-100 bg-black">
                 <video
                   src={getVideoUrl(item.clip_url)}
@@ -109,7 +139,6 @@ export default function LikedReelsPage() {
                 />
               </div>
 
-              {/* INFO */}
               <div className="p-4 space-y-2">
                 <div
                   className={`flex items-center justify-between text-sm ${
@@ -130,7 +159,7 @@ export default function LikedReelsPage() {
                 </div>
 
                 <p className="text-xs text-gray-500">
-                  {new Date(item.created_at).toLocaleString()}
+                  {formatDate(item.created_at)}
                 </p>
               </div>
             </div>

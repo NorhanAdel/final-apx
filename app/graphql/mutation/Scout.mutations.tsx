@@ -1,6 +1,6 @@
 export const CREATE_SCOUT_PROFILE = `
-mutation CreateScoutProfile($profile_image: Upload, $input: CreateScoutProfileInput!) {
-  createScoutProfile(profile_image: $profile_image, input: $input) {
+mutation CreateScoutProfile($input: CreateScoutProfileInput!) {
+  createScoutProfile(input: $input) {
     id
     first_name
     last_name
@@ -20,9 +20,29 @@ mutation CreateScoutProfile($profile_image: Upload, $input: CreateScoutProfileIn
 `;
 
 export const UPDATE_SCOUT_PROFILE = `
-mutation UpdateScoutProfile($profile_image: Upload, $input: UpdateScoutProfileInput!) {
-  updateScoutProfile(profile_image: $profile_image, input: $input) {
+mutation UpdateMyScoutProfile($input: UpdateScoutProfileInput!) {
+  updateMyScoutProfile(input: $input) {
     id
+    first_name
+    last_name
+    bio
+    country
+    city
+    nationality
+    email_address
+    phone
+    birth_date
+    profile_image_url
   }
 }
+`;
+
+export const UPSERT_CLUB_CAREER = `
+  mutation UpsertScoutClubCareer($input: CreateScoutClubCareerInput!) {
+    upsertScoutClubCareer(input: $input) {
+      id
+      current_club
+      previous_clubs
+    }
+  }
 `;

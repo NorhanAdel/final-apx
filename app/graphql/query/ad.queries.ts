@@ -62,6 +62,29 @@ export const GET_AD_BY_ID = `
   }
 `;
 
+export const GET_AD_WITH_USER = `
+  query GetAdWithUser($id: ID!) {
+    ad(id: $id) {
+      id
+      title
+      description
+      image_url
+      video_url
+      target_role
+      status
+      views_count
+      expires_at
+      created_at
+      user {
+        id
+        first_name
+        last_name
+        role
+      }
+    }
+  }
+`;
+
 export const SEARCH_ADS = `
   query SearchAds($searchTerm: String!) {
     searchAds(searchTerm: $searchTerm) {
@@ -74,5 +97,11 @@ export const SEARCH_ADS = `
       views_count
       created_at
     }
+  }
+`;
+
+export const HAS_USER_VIEWED_AD = `
+  query HasUserViewedAd($adId: ID!) {
+    hasUserViewedAd(adId: $adId)
   }
 `;
