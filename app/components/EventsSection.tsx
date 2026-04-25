@@ -361,7 +361,9 @@ export default function EventsSection() {
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-yellow-500">
-                      {formatDate(event.date_start)}
+                      {event.date_start
+                        ? formatDate(event.date_start)
+                        : t("dateTBA") || "Date TBA"}{" "}
                     </span>
                   </div>
                 </div>
