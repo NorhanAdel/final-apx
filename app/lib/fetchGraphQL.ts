@@ -18,6 +18,7 @@ export const fetchGraphQL = async <T = unknown>(
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     "Accept-Language": language,
+    "apollo-require-preflight": "true",
   };
 
   if (token) {
