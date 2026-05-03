@@ -10,6 +10,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import useTranslate from "../hooks/useTranslate";
 import { fetchGraphQL } from "../lib/fetchGraphQL";
 import { useTheme } from "../context/ThemeContext";
+import { useRouter } from "next/navigation";  
 
 import "swiper/css";
 import "swiper/css/effect-coverflow";
@@ -30,6 +31,8 @@ export default function AdsSlider() {
   const { theme } = useTheme();
   const { t, lang } = useTranslate();
   const isDark = theme === "dark";
+
+  const router = useRouter();  
 
   const [ads, setAds] = useState<Ad[]>([]);
   const [loading, setLoading] = useState(false);
@@ -159,6 +162,7 @@ export default function AdsSlider() {
         {ads.map((ad) => (
           <SwiperSlide key={ad.id}>
             <motion.div
+              onClick={() => router.push(`/ad/${ad.id}`)}  
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
               whileHover={{ scale: 1.04, y: -8 }}

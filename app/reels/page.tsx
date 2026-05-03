@@ -170,10 +170,10 @@ export default function ReelsPage() {
   const [replyToCommentId, setReplyToCommentId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
   const [openComments, setOpenComments] = useState<string | null>(null);
-
+const [isPaused, setIsPaused] = useState<Record<string, boolean>>({});
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const viewsIncremented = useRef<Set<string>>(new Set());
-  const [muted, setMuted] = useState<Record<string, boolean>>({});
+ const [muted, setMuted] = useState<Record<string, boolean>>({});
 
   const gqlFetch = async (
     query: string,
@@ -199,16 +199,16 @@ export default function ReelsPage() {
   useEffect(() => {
     fetchReels();
   }, []);
-
+ 
   const fetchReels = async () => {
     const json = await gqlFetch(GET_RECENT_REELS);
     const reelsData = json?.data?.recentReels || [];
     setReels(reelsData);
-    const initialMuted: Record<string, boolean> = {};
-    reelsData.forEach((reel: Reel) => {
-      initialMuted[reel.id] = true;
-    });
-    setMuted(initialMuted);
+   const initialMuted: Record<string, boolean> = {};
+reelsData.forEach((reel: Reel) => {
+  initialMuted[reel.id] = false;  
+});
+setMuted(initialMuted);
 
     for (const reel of reelsData) {
       fetchCommentsCount(reel.id);
@@ -255,13 +255,28 @@ export default function ReelsPage() {
     }
   }, [currentIndex, reels]);
 
-  const toggleSound = (reelId: string, index: number) => {
-    const newMuted = !muted[reelId];
-    setMuted((prev) => ({ ...prev, [reelId]: newMuted }));
-    const video = videoRefs.current[index];
-    if (video) video.muted = newMuted;
-  };
+ const toggleSound = (reelId: string, index: number) => {
+  setMuted((prev) => {
+    const newMuted = !prev[reelId];
 
+    const video = videoRefs.current[index];
+    if (video) {
+      video.muted = newMuted;
+
+       
+      video.volume = newMuted ? 0 : 1;
+
+      if (!newMuted) {
+        video.play().catch(() => {});
+      }
+    }
+
+    return {
+      ...prev,
+      [reelId]: newMuted,
+    };
+  });
+};
   const toggleLike = async (id: string) => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -382,6 +397,19 @@ export default function ReelsPage() {
     ).catch(console.error);
   };
 
+const togglePlay = (reelId: string, index: number) => {
+  const video = videoRefs.current[index];
+  if (!video) return;
+
+  if (video.paused) {
+    video.play();
+    setIsPaused((prev) => ({ ...prev, [reelId]: false }));
+  } else {
+    video.pause();
+    setIsPaused((prev) => ({ ...prev, [reelId]: true }));
+  }
+};
+
   const canEditDelete = (commentUserId: string) => user?.id === commentUserId;
 
   const UserAvatar = ({
@@ -431,31 +459,34 @@ export default function ReelsPage() {
         return (
           <div
             key={reel.id}
-            className="relative h-screen w-full max-w-[420px] my-0 mx-auto snap-start"
+            className="relative h-screen w-full  max-w-[420px] my-0 mx-auto snap-start"
           >
-            <video
-              ref={(el) => {
-                videoRefs.current[index] = el;
-              }}
-              src={videoSrc}
-              className="w-full h-full object-cover bg-black"
-              muted={isMuted}
-              loop
-              playsInline
-            />
-
-            <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/80" />
-
-            <button
-              onClick={() => toggleSound(reel.id, index)}
-              className="absolute top-28 right-4 z-20 bg-black/50 rounded-full p-2 backdrop-blur-sm"
-            >
-              {isMuted ? (
-                <VolumeX size={22} className="text-white" />
-              ) : (
-                <Volume2 size={22} className="text-white" />
-              )}
-            </button>
+<video
+  ref={(el) => {
+    videoRefs.current[index] = el;
+  }}
+  src={videoSrc}
+  className="w-full h-full object-cover bg-black"
+  loop
+  playsInline
+  autoPlay
+  muted={muted[reel.id] ?? false}
+  onClick={() => togglePlay(reel.id, index)}
+/>
+{isPaused[reel.id] && (
+  <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+    <div className="bg-black/40 rounded-full p-5 backdrop-blur-sm">
+      ▶
+    </div>
+  </div>
+)}
+         <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/80 pointer-events-none" />
+<button
+  onClick={() => toggleSound(reel.id, index)}
+  className="absolute top-28 right-4 z-[999] text-white"
+>
+  {muted[reel.id] ? <VolumeX /> : <Volume2 />}
+</button>
 
             <div className="absolute right-4 bottom-24 flex flex-col gap-6 z-10 text-white">
               <button

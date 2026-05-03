@@ -23,7 +23,7 @@ export default function MissionVisionSlide() {
     <div
       dir={isRTL ? "rtl" : "ltr"}
       className={`${
-        theme === "dark" ? "bg-[#000]" : "bg-gray-200"
+        theme === "dark" ? "bg-[#0f0f0f]" : "bg-gray-200"
       } min-h-screen flex flex-col justify-center px-4 sm:px-6 md:px-12 py-12 md:py-20 transition`}
     >
       {/* TITLE */}

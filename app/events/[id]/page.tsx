@@ -9,6 +9,7 @@ import useTranslate from "../../hooks/useTranslate";
 import { fetchGraphQL } from "../../lib/fetchGraphQL";
 import { GET_EVENT_BY_ID } from "@/app/graphql/query/event.queries";
 import BackButton from "@/app/components/BackButton";
+import { motion } from "framer-motion";
 
 interface Event {
   id: string;
@@ -29,14 +30,14 @@ export default function EventDetails() {
 
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [imageError, setImageError] = useState(false);
+
+  const isDark = theme === "dark";
 
   const fetchEvent = useCallback(async () => {
     if (!eventId) return;
 
     setLoading(true);
-    setError("");
 
     try {
       const result = await fetchGraphQL<{ event: Event }>(GET_EVENT_BY_ID, {
@@ -50,16 +51,12 @@ export default function EventDetails() {
           ...fetchedEvent,
           image_url: fetchedEvent.image_url || "/b2.jpg",
           date_start: new Date(fetchedEvent.date_start).toLocaleDateString(
-            lang,
+            lang
           ),
         });
       } else {
         setEvent(null);
       }
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to fetch event";
-      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -69,141 +66,141 @@ export default function EventDetails() {
     fetchEvent();
   }, [fetchEvent]);
 
-  const getImageUrl = (url: string | undefined) => {
+  const getImageUrl = (url?: string) => {
     if (!url) return "/b2.jpg";
     if (url.startsWith("http")) return url;
     return `${process.env.NEXT_PUBLIC_API_URL}${url}`;
   };
 
-  if (loading) {
+  if (loading || !event) {
     return (
       <div
-        className={`min-h-screen flex items-center justify-center
-        ${
-          theme === "dark"
-            ? "bg-[#020617] text-white"
-            : "bg-gray-100 text-black"
+        className={`min-h-screen flex items-center justify-center ${
+          isDark ? "bg-black" : "bg-gray-100"
         }`}
       >
-        <div className="w-12 h-12 border-3 border-yellow-400 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div
-        className={`min-h-screen flex items-center justify-center text-red-500
-        ${theme === "dark" ? "bg-[#020617]" : "bg-gray-100"}`}
-      >
-        {error}
-      </div>
-    );
-  }
-
-  if (!event) {
-    return (
-      <div
-        className={`min-h-screen flex items-center justify-center
-        ${
-          theme === "dark"
-            ? "bg-[#020617] text-white"
-            : "bg-gray-100 text-black"
-        }`}
-      >
-        {t("eventNotFound")}
+        <div className="w-12 h-12 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <section
-      className={`min-h-screen px-6 py-40 transition
-      ${theme === "dark" ? "bg-[#020617]" : "bg-gray-100"}`}
+    <div
+      className={`min-h-screen px-4 pt-24 pb-16 transition ${
+        isDark
+          ? "bg-gradient-to-b from-black via-[#050505] to-black text-white"
+          : "bg-gray-100 text-black"
+      }`}
     >
       <div className="max-w-6xl mx-auto">
         <BackButton className="mb-6" />
 
-        <div
-          className={`grid md:grid-cols-2 rounded-xl overflow-hidden shadow-2xl border
-          ${theme === "dark" ? "border-blue-900" : "border-gray-300"}`}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="grid md:grid-cols-2 gap-10"
         >
-          {/* Image Section */}
-          <div className="relative h-[400px] md:h-[500px] lg:h-[600px] overflow-hidden bg-gray-900">
+          {/* IMAGE */}
+          <div className="relative h-[480px] rounded-3xl overflow-hidden border shadow-2xl group">
             {!imageError && event.image_url ? (
-              <div className="relative w-full h-full">
+              <>
                 <Image
                   src={getImageUrl(event.image_url)}
                   alt={event.title}
                   fill
-                  className="object-contain md:object-cover"
+                  className="object-cover transition duration-700 group-hover:scale-110"
                   onError={() => setImageError(true)}
-                  unoptimized
                   priority
                 />
-              </div>
+
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
+                <div className="absolute bottom-4 left-4 right-4">
+                  <h2 className="text-xl font-bold text-white drop-shadow">
+                    {event.title}
+                  </h2>
+                </div>
+              </>
             ) : (
-              <div
-                className={`w-full h-full flex items-center justify-center ${
-                  theme === "dark" ? "bg-[#1a1c24]" : "bg-gray-200"
-                }`}
-              >
-                <span
-                  className={
-                    theme === "dark" ? "text-gray-500" : "text-gray-400"
-                  }
-                >
-                  {t("noImage") || "No image"}
-                </span>
+              <div className="w-full h-full flex items-center justify-center bg-[#111] text-gray-400">
+                No Image
               </div>
             )}
           </div>
 
-          {/* Content Section with Scrollbar */}
-          <div
-            className={`p-6 md:p-8 lg:p-10 overflow-y-auto max-h-[600px] ${
-              theme === "dark"
-                ? "bg-[#06122a] text-white"
-                : "bg-white text-black"
-            }`}
-          >
-            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-orange-400 mb-4">
+          {/* DETAILS */}
+          <div className="flex flex-col gap-6">
+
+            {/* TITLE */}
+            <h1
+              className={`text-4xl font-bold ${
+                isDark ? "text-yellow-400" : "text-yellow-600"
+              }`}
+            >
               {event.title}
             </h1>
 
+            {/* META */}
             <div
-              className={`flex flex-wrap gap-4 text-sm mb-6 pb-4 border-b ${
-                theme === "dark" ? "border-gray-700/50" : "border-gray-200"
+              className={`flex flex-wrap items-center gap-4 p-4 rounded-xl border text-sm ${
+                isDark
+                  ? "bg-white/5 border-white/10 text-gray-300"
+                  : "bg-white border-gray-300 text-gray-700"
               }`}
             >
-              <span className="text-orange-400 font-semibold flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-orange-400"></span>
+              <span className="px-3 py-1 rounded-full bg-yellow-400 text-black text-xs font-semibold">
                 {event.status}
               </span>
-              <div className="flex items-center gap-2 opacity-70">
-                <MapPin size={16} />
-                <span>{event.location}</span>
-              </div>
-              <div className="flex items-center gap-2 opacity-70">
-                <CalendarDays size={16} />
-                <span>{event.date_start}</span>
+
+              <span className="flex items-center gap-1">
+                <MapPin size={14} /> {event.location}
+              </span>
+
+              <span className="flex items-center gap-1">
+                <CalendarDays size={14} /> {event.date_start}
+              </span>
+            </div>
+
+            {/* DESCRIPTION (SCROLL) */}
+            <div
+              className={`rounded-2xl p-5 border ${
+                isDark
+                  ? "bg-white/5 border-white/10"
+                  : "bg-white border-gray-300"
+              }`}
+            >
+              <h3
+                className={`text-sm mb-3 ${
+                  isDark ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
+                {t("Description")}
+              </h3>
+
+              <div className="max-h-[260px] overflow-y-auto pr-2 custom-scroll">
+                <p
+                  className={`text-xl leading-relaxed whitespace-pre-line ${
+                    isDark ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  {event.description || t("noDescription")}
+                </p>
               </div>
             </div>
 
-            <div className="space-y-4 text-sm md:text-base leading-relaxed">
-              {event.description ? (
-                event.description.split("\n").map((paragraph, i) => (
-                  <p key={i} className="mb-3">
-                    {paragraph}
-                  </p>
-                ))
-              ) : (
-                <p className="opacity-70">{t("noDescription")}</p>
-              )}
-            </div>
           </div>
-        </div>
+        </motion.div>
       </div>
-    </section>
+
+      <style jsx>{`
+        .custom-scroll::-webkit-scrollbar {
+          width: 5px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+          background: #f0b100;
+          border-radius: 10px;
+        }
+      `}</style>
+    </div>
   );
 }

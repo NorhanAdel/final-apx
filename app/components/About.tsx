@@ -1,12 +1,13 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Users, Trophy } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTheme } from "../context/ThemeContext";
 import useTranslate from "../hooks/useTranslate";
 import { fetchGraphQL } from "../lib/fetchGraphQL";
 import { GET_TOTAL_PLAYERS_COUNT } from "@/app/graphql/query/player.queries";
+
+import { Users, Trophy, Target } from "lucide-react";
 
 export default function About({ lang }: { lang: string }) {
   const { theme } = useTheme();
@@ -14,176 +15,162 @@ export default function About({ lang }: { lang: string }) {
   const isRTL = lang === "ar";
 
   const [totalPlayers, setTotalPlayers] = useState<number>(0);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchTotalPlayers();
   }, []);
 
   const fetchTotalPlayers = async () => {
-    try {
-      const result = await fetchGraphQL<{ totalPlayersCount: number }>(
-        GET_TOTAL_PLAYERS_COUNT,
-      );
-      if (result.data?.totalPlayersCount !== undefined) {
-        setTotalPlayers(result.data.totalPlayersCount);
-      }
-    } catch (error) {
-      console.error("Error fetching total players:", error);
-    } finally {
-      setLoading(false);
+    const result = await fetchGraphQL<{ totalPlayersCount: number }>(
+      GET_TOTAL_PLAYERS_COUNT
+    );
+    if (result.data?.totalPlayersCount) {
+      setTotalPlayers(result.data.totalPlayersCount);
     }
+  };
+
+  const container = {
+    hidden: {},
+    show: {
+      transition: {
+        staggerChildren: 0.2,
+      },
+    },
+  };
+
+  const card = {
+    hidden: { opacity: 0, y: 60, scale: 0.9 },
+    show: {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      transition: { duration: 0.6 },
+    },
   };
 
   return (
     <section
       dir={isRTL ? "rtl" : "ltr"}
-      className={`relative py-28 overflow-hidden
-      ${theme === "dark" ? "bg-[#0c0c0c] text-white" : "bg-white text-black"}`}
+      className={`relative py-20 md:py-32 overflow-hidden ${
+        theme === "dark" ? "bg-black text-white" : "bg-white text-black"
+      }`}
     >
-      {/* Background blob */}
+      {/* background animation */}
       <motion.div
-        className="absolute w-[600px] h-[600px] bg-[#F54900]/10 rounded-full blur-3xl top-[-200px] right-[-200px]"
-        animate={{ scale: [1, 1.2, 1], opacity: [0.4, 0.7, 0.4] }}
-        transition={{ duration: 8, repeat: Infinity }}
+        className="absolute top-0 left-0 w-full h-full opacity-10"
+        animate={{ x: ["-10%", "110%"] }}
+        transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+        style={{
+          backgroundImage:
+            "linear-gradient(120deg, transparent 40%, #F0B100 50%, transparent 60%)",
+        }}
       />
 
-      <div className="max-w-6xl mx-auto px-6 relative z-10">
-        <div className="grid md:grid-cols-2 gap-16 items-center mb-32">
-          {/* TEXT */}
-          <div className={isRTL ? "text-right" : "text-left"}>
-            <span className="text-xl tracking-widest text-[#F0B100] uppercase">
-              {t("about_title")}
-            </span>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
 
-            <h2 className="text-4xl md:text-5xl font-bold mt-4 mb-6 leading-tight">
-              {t("about_heading")}
-            </h2>
+        {/* TITLE */}
+        <motion.h2
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold mb-4 md:mb-6"
+        >
+          {t("about_heading")}
+        </motion.h2>
 
-            <p
-              className={`leading-relaxed mb-8
-              ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}
-            >
-              {t("about_description")}
-            </p>
+        {/* DESCRIPTION */}
+        <motion.p
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className={`max-w-2xl mb-10 md:mb-16 text-sm sm:text-base ${
+            theme === "dark" ? "text-gray-400" : "text-gray-600"
+          }`}
+        >
+          {t("about_description")}
+        </motion.p>
 
-            <button className="px-7 py-3 bg-[#F0B100] hover:bg-[#9F0712] transition rounded-full font-semibold text-black hover:text-white">
-              {t("learn_more")}
-            </button>
-          </div>
+        {/* STATS */}
+        <motion.div
+          variants={container}
+          initial="hidden"
+          whileInView="show"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8"
+        >
 
-          {/* CARDS */}
-          <div className="grid grid-cols-2 gap-6">
-            <motion.div
-              animate={{ y: [0, -10, 0] }}
-              transition={{ duration: 4, repeat: Infinity }}
-              className={`p-8 rounded-2xl border text-center
-              ${
-                theme === "dark"
-                  ? "bg-[#151515] border-white/5"
-                  : "bg-gray-100 border-black/5"
-              }`}
-            >
-              <Users size={32} className="mx-auto mb-4 text-[#F0B100]" />
-
-              <h3 className="text-3xl font-bold">
-                {loading ? "..." : totalPlayers.toLocaleString()}+
-              </h3>
-
-              <p
-                className={`text-sm mt-2
-                ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}
-              >
-                {t("players_registered")}
-              </p>
-            </motion.div>
-
-            <motion.div
-              animate={{ y: [0, -10, 0] }}
-              transition={{ duration: 5, repeat: Infinity }}
-              className={`p-8 rounded-2xl border text-center
-              ${
-                theme === "dark"
-                  ? "bg-[#151515] border-white/5"
-                  : "bg-gray-100 border-black/5"
-              }`}
-            >
-              <Trophy size={32} className="mx-auto mb-4 text-[#F0B100]" />
-
-              <h3 className="text-3xl font-bold text-[#F0B100]">
-                {t("gaming_soon")}
-              </h3>
-
-              <p
-                className={`text-sm mt-2
-                ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}
-              >
-                {t("championships")}
-              </p>
-            </motion.div>
-
-            <motion.div
-              animate={{ y: [0, -8, 0] }}
-              transition={{ duration: 6, repeat: Infinity }}
-              className={`p-8 rounded-2xl border text-center col-span-2
-              ${
-                theme === "dark"
-                  ? "bg-[#151515] border-white/5"
-                  : "bg-gray-100 border-black/5"
-              }`}
-            >
-              <h3 className="text-2xl font-bold text-[#F0B100] mb-2">
-                3 {t("years_of_experience")}
-              </h3>
-
-              <p
-                className={`text-sm
-                ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}
-              >
-                {t("experience_desc")}
-              </p>
-            </motion.div>
-          </div>
-        </div>
-
-        {/* Mission & Vision Section */}
-        <div className="grid md:grid-cols-2 gap-12 mt-20 pt-10 border-t border-gray-200 dark:border-gray-800">
+          {/* CARD 1 */}
           <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
-            className={isRTL ? "text-right" : "text-left"}
+            variants={card}
+            whileHover={{ scale: 1.05, y: -5 }}
+            className="relative p-6 md:p-8 border-l-4 border-[#F0B100] bg-gradient-to-r from-[#F0B100]/10 to-transparent overflow-hidden"
           >
-            <h3 className="text-2xl font-bold text-[#F0B100] mb-4">
-              {t("vision_title")}
+            <motion.div
+              animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.7, 0.3] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="absolute top-3 right-3 w-2 h-2 md:w-3 md:h-3 bg-[#F0B100] rounded-full"
+            />
+
+            <Users className="text-[#F0B100] mb-3" size={28} />
+
+            <h3 className="text-2xl md:text-4xl font-extrabold">
+              {totalPlayers.toLocaleString()}+
             </h3>
-            <p
-              className={`leading-relaxed ${
-                theme === "dark" ? "text-gray-400" : "text-gray-600"
-              }`}
-            >
-              {t("vision_desc")}
+
+            <p className="mt-2 text-xs sm:text-sm">
+              {t("players_registered")}
             </p>
           </motion.div>
 
+          {/* CARD 2 */}
           <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
-            className={isRTL ? "text-right" : "text-left"}
+            variants={card}
+            whileHover={{ scale: 1.05, y: -5 }}
+            className="relative p-6 md:p-8 border-l-4 border-[#F0B100] bg-gradient-to-r from-[#F0B100]/10 to-transparent overflow-hidden"
           >
-            <h3 className="text-2xl font-bold text-[#F0B100] mb-4">
-              {t("mission_title")}
+            <Trophy className="text-[#F0B100] mb-3" size={28} />
+
+            <h3 className="text-xl md:text-2xl font-extrabold">
+              {t("gaming_soon")}
             </h3>
-            <p
-              className={`leading-relaxed ${
-                theme === "dark" ? "text-gray-400" : "text-gray-600"
-              }`}
-            >
-              {t("mission_desc")}
+
+            <p className="mt-2 text-xs sm:text-sm">
+              {t("championships")}
             </p>
           </motion.div>
+
+          {/* CARD 3 */}
+          <motion.div
+            variants={card}
+            whileHover={{ scale: 1.05, y: -5 }}
+            className="relative p-6 md:p-8 border-l-4 border-[#F0B100] bg-gradient-to-r from-[#F0B100]/10 to-transparent overflow-hidden"
+          >
+            <Target className="text-[#F0B100] mb-3" size={28} />
+
+            <h3 className="text-2xl md:text-4xl font-extrabold">
+              3+
+            </h3>
+
+            <p className="mt-2 text-xs sm:text-sm">
+              {t("years_of_experience")}
+            </p>
+          </motion.div>
+
+        </motion.div>
+
+        {/* BUTTON */}
+        <div className="flex justify-center md:justify-start">
+          <motion.button
+            whileHover={{
+              scale: 1.1,
+              boxShadow: "0 0 25px rgba(240,177,0,0.6)",
+            }}
+            whileTap={{ scale: 0.95 }}
+            className="mt-12 md:mt-16 px-6 sm:px-8 md:px-10 py-3 md:py-4 bg-[#F0B100] text-black font-bold rounded-full transition text-sm sm:text-base"
+          >
+            {t("learn_more")}
+          </motion.button>
         </div>
+
       </div>
     </section>
   );

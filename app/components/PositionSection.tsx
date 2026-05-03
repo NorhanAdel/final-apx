@@ -10,104 +10,67 @@ import { useTheme } from "../context/ThemeContext";
 import { useEffect, useState } from "react";
 import useTranslate from "../hooks/useTranslate";
 import { fetchGraphQL } from "../lib/fetchGraphQL";
-import { GET_ALL_POSITIONS } from "../graphql/query/sportPositions.query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
-import { usePathname } from "next/navigation";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://72.62.28.146";
 
 interface Sport {
   id: string;
   name: string;
-  image_url?: string;
 }
 
 interface Position {
   id: string;
   name: string;
   category?: string;
+  image_url?: string;
   sport?: Sport;
 }
 
-export default function PositionSlider() {
+export default function PositionSlider({
+  sportId,
+}: {
+  sportId?: string;
+}) {
   const { theme } = useTheme();
-  const { t, lang } = useTranslate();
-  const isDark = theme === "dark";
-  const pathname = usePathname();
+  const { t } = useTranslate();
 
   const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState(false);
-  const [currentSportId, setCurrentSportId] = useState<string | null>(null);
 
-  const isRTL = lang === "ar";
+  const isDark = theme === "dark";
 
-  // Get sport ID from URL path by fetching from backend
   useEffect(() => {
-    const sportSlug = pathname.split("/")[1];
+    if (!sportId) return;
 
-    if (
-      sportSlug &&
-      sportSlug !== "players" &&
-      sportSlug !== "profile" &&
-      sportSlug !== "blog" &&
-      sportSlug !== "events" &&
-      sportSlug !== "championships" &&
-      sportSlug !== "reels"
-    ) {
-      const fetchSportId = async () => {
-        try {
-          const result = await fetchGraphQL<{ sports: Sport[] }>(
-            `query GetSports {
-              sports {
-                id
-                name
-              }
-            }`,
-            {}
-          );
-          
-          if (result.data?.sports) {
-            const sport = result.data.sports.find(
-              (s) => s.name.toLowerCase() === sportSlug.toLowerCase()
-            );
-            if (sport) {
-              setCurrentSportId(sport.id);
-            } else {
-              setCurrentSportId(null);
-            }
-          }
-        } catch (error) {
-          console.error("Error fetching sport:", error);
-          setCurrentSportId(null);
-        }
-      };
-      fetchSportId();
-    } else {
-      setCurrentSportId(null);
-    }
-  }, [pathname]);
-
-  // Fetch positions directly from backend with sportId filter
-  useEffect(() => {
     const fetchPositions = async () => {
       setLoading(true);
-      try {
-        // Pass sportId directly to the backend query
-        const variables = currentSportId ? { sportId: currentSportId } : {};
-        const result = await fetchGraphQL<{ sportPositions: Position[] }>(
-          GET_ALL_POSITIONS,
-          variables,
-        );
 
-        if (!result.data?.sportPositions) {
-          setPositions([]);
-          return;
+      const query = `
+        query GetPositionsBySport($sportId: ID!) {
+          positionsBySport(sportId: $sportId) {
+            id
+            name
+            category
+            image_url
+            sport {
+              id
+              name
+              image_url
+            }
+          }
         }
+      `;
 
-        setPositions(result.data.sportPositions);
+      try {
+        const result = await fetchGraphQL<{
+          positionsBySport: Position[];
+        }>(query, { sportId });
+
+        setPositions(result.data?.positionsBySport || []);
       } catch (err) {
-        console.error("Error fetching positions:", err);
+        console.error(err);
         setPositions([]);
       } finally {
         setLoading(false);
@@ -115,138 +78,94 @@ export default function PositionSlider() {
     };
 
     fetchPositions();
-  }, [lang, currentSportId]);
+  }, [sportId]);
 
   if (loading) {
     return (
-      <div className="mt-14 px-3 sm:px-6 lg:px-10">
-        <p className="text-center text-gray-400">{t("loading")}</p>
+      <div className="mt-14 px-6 text-center text-gray-400">
+        {t("loading")}
       </div>
     );
   }
 
-  if (positions.length === 0) {
-    return null;
-  }
+  if (!positions.length) return null;
 
   return (
-    <div className="mt-14 px-3 sm:px-6 lg:px-10">
+    <div className="mt-14 px-3 lg:px-10">
       <div className="flex justify-between items-center mb-6">
         <motion.h2
-          initial={{ opacity: 0, x: -30 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          className={`text-lg sm:text-2xl font-bold italic tracking-wide ${
-            isDark ? "text-white" : "text-[#F0B100]"
+          className={`text-xl font-bold ${
+            isDark ? "text-white" : "text-black"
           }`}
         >
           {t("position")}
         </motion.h2>
+
         <div className="flex gap-2">
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            className={`prevPosition w-9 h-9 flex items-center justify-center border rounded-md transition ${
-              isDark
-                ? "bg-[#0b1120] border-[#1e293b] text-white"
-                : "bg-gray-200 border-gray-300 text-black"
-            }`}
-          >
+          <button className="prevPosition w-9 h-9 border rounded flex items-center justify-center">
             <ChevronLeft size={16} />
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            className={`nextPosition w-9 h-9 flex items-center justify-center border rounded-md transition ${
-              isDark
-                ? "bg-[#0b1120] border-[#1e293b] text-white"
-                : "bg-gray-200 border-gray-300 text-black"
-            }`}
-          >
+          </button>
+
+          <button className="nextPosition w-9 h-9 border rounded flex items-center justify-center">
             <ChevronRight size={16} />
-          </motion.button>
+          </button>
         </div>
       </div>
 
       <Swiper
         modules={[Navigation]}
-        navigation={{ nextEl: ".nextPosition", prevEl: ".prevPosition" }}
+        navigation={{
+          nextEl: ".nextPosition",
+          prevEl: ".prevPosition",
+        }}
         spaceBetween={20}
         breakpoints={{
           0: { slidesPerView: 1.1 },
           640: { slidesPerView: 1.5 },
           768: { slidesPerView: 2.2 },
-          1024: { slidesPerView: 3.2 },
+          1024: { slidesPerView: 3 },
         }}
       >
-        {positions.map((position) => (
-          <SwiperSlide key={position.id}>
+        {positions.map((pos) => (
+          <SwiperSlide key={pos.id}>
             <Link
-              href={
-                currentSportId
-                  ? `/players?sport=${currentSportId}&position=${position.id}`
-                  : "/players"
-              }
+              href={`/players?sport=${sportId}&position=${pos.id}`}
               className="block"
             >
               <div
-                className={`h-[140px] sm:h-[150px] md:h-[160px] rounded-xl overflow-hidden transition cursor-pointer
-                ${
-                  theme === "dark"
-                    ? "bg-[#0b1120] hover:border-yellow-400/50"
-                    : "bg-white shadow-md border hover:border-yellow-400"
+                className={`h-[150px] rounded-xl overflow-hidden border flex ${
+                  isDark
+                    ? "bg-[#0b1120] border-[#1e293b]"
+                    : "bg-white border-gray-200"
                 }`}
               >
-                <div className="flex h-full">
-                  <div className="relative w-1/2 h-full">
-                    <Image
-                      src={
-                        position.sport?.image_url
-                          ? position.sport.image_url.startsWith("http")
-                            ? position.sport.image_url
-                            : `${API_URL}${position.sport.image_url}`
-                          : "/p1.png"
-                      }
-                      alt={position.name}
-                      fill
-                      className="object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-l from-black/30 to-transparent" />
-                  </div>
+                <div className="relative w-1/2 h-full">
+                  <Image
+                    src={
+                      pos.image_url
+                        ? pos.image_url.startsWith("http")
+                          ? pos.image_url
+                          : `${API_URL}${pos.image_url}`
+                        : "/p1.png"
+                    }
+                    alt={pos.name}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
 
-                  <div
-                    className={`w-1/2 flex flex-col justify-center px-4 ${
-                      isRTL ? "text-right" : "text-left"
-                    }`}
-                  >
-                    <h3
-                      className={`text-base sm:text-lg md:text-xl font-bold italic
-                      ${theme === "dark" ? "text-white" : "text-black"}`}
-                    >
-                      {position.name}
-                    </h3>
+                <div className="w-1/2 p-3 flex flex-col justify-center">
+                  <h3 className="font-bold">{pos.name}</h3>
 
-                    {position.category && (
-                      <span
-                        className={`text-xs mt-2 ${
-                          theme === "dark" ? "text-gray-400" : "text-gray-500"
-                        }`}
-                      >
-                        {position.category}
-                      </span>
-                    )}
+                  {pos.category && (
+                    <p className="text-xs text-gray-400">
+                      {pos.category}
+                    </p>
+                  )}
 
-                    <div className="mt-3">
-                      <span
-                        className={`text-xs font-semibold ${
-                          theme === "dark"
-                            ? "text-yellow-400"
-                            : "text-[#F0B100]"
-                        }`}
-                      >
-                        {position.sport?.name || t("sport")}
-                      </span>
-                    </div>
-                  </div>
+                  <span className="text-xs text-yellow-500 mt-2">
+                    {pos.sport?.name}
+                  </span>
                 </div>
               </div>
             </Link>

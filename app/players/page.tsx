@@ -1,5 +1,3 @@
-// app/players/page.tsx
-
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
@@ -71,83 +69,88 @@ export default function PlayersPage() {
     return "newest";
   }, [activeSort]);
 
-const fetchPlayers = useCallback(async () => {
-  setLoading(true);
-  try {
-    let playerData: PlayerData[] = [];
-    const sortByValue = getSortByValue();
-    const minAgeNum = minAge ? parseInt(minAge) : undefined;
-    const maxAgeNum = maxAge ? parseInt(maxAge) : undefined;
+  const fetchPlayers = useCallback(async () => {
+    setLoading(true);
+    try {
+      let playerData: PlayerData[] = [];
+      const sortByValue = getSortByValue();
+      const minAgeNum = minAge ? parseInt(minAge) : undefined;
+      const maxAgeNum = maxAge ? parseInt(maxAge) : undefined;
 
-    if (searchTerm.trim()) {
-      const result = await fetchGraphQL<SearchPlayersResponse>(SEARCH_PLAYERS, {
-        query: searchTerm,
-        skip: 0,
-        take: 50,
-        sortBy: sortByValue,
-        minAge: minAgeNum,
-        maxAge: maxAgeNum,
-      });
-      playerData = result?.data?.searchPlayers?.data || [];
-    } else {
-      const result = await fetchGraphQL<GetAllPlayersResponse>(
-        GET_ALL_PLAYERS,
-        {
-          skip: 0,
-          take: 50,
-          sortBy: sortByValue,
-          minAge: minAgeNum,
-          maxAge: maxAgeNum,
-        },
-      );
-      playerData = result?.data?.getAllPlayers?.data || [];
-    }
-
-    if (!playerData || playerData.length === 0) {
-      setPlayers([]);
-      return;
-    }
-
-    let formatted = playerData.map((p: PlayerData) => {
-      const rating = p.average_rating ?? 0;
-
-      let image = "/b2.jpg";
-      if (p.profile_image_url) {
-        image = p.profile_image_url.startsWith("http")
-          ? p.profile_image_url
-          : `${process.env.NEXT_PUBLIC_API_URL}${p.profile_image_url}`;
+      if (searchTerm.trim()) {
+        const result = await fetchGraphQL<SearchPlayersResponse>(
+          SEARCH_PLAYERS,
+          {
+            query: searchTerm,
+            skip: 0,
+            take: 50,
+            sortBy: sortByValue,
+            minAge: minAgeNum,
+            maxAge: maxAgeNum,
+          }
+        );
+        playerData = result?.data?.searchPlayers?.data || [];
+      } else {
+        const result = await fetchGraphQL<GetAllPlayersResponse>(
+          GET_ALL_PLAYERS,
+          {
+            skip: 0,
+            take: 50,
+            sortBy: sortByValue,
+            minAge: minAgeNum,
+            maxAge: maxAgeNum,
+          }
+        );
+        playerData = result?.data?.getAllPlayers?.data || [];
       }
 
-      return {
-        id: p.id,
-        name: `${p.first_name} ${p.last_name}`,
-        image,
-        rating: rating,
-        position: "Player",
-        country: p.nationality || "Unknown",
-        age: p.age || 0,
-      };
-    });
+      if (!playerData || playerData.length === 0) {
+        setPlayers([]);
+        return;
+      }
 
-    if (activeSort === "name") {
-      formatted = formatted.sort((a, b) => a.name.localeCompare(b.name));
+      let formatted = playerData.map((p: PlayerData) => {
+        const rating = p.average_rating ?? 0;
+
+        let image = "/b2.jpg";
+        if (p.profile_image_url) {
+          image = p.profile_image_url.startsWith("http")
+            ? p.profile_image_url
+            : `${process.env.NEXT_PUBLIC_API_URL}${p.profile_image_url}`;
+        }
+
+        return {
+          id: p.id,
+          name: `${p.first_name} ${p.last_name}`,
+          image,
+          rating: rating,
+          position: "Player",
+          country: p.nationality || "Unknown",
+          age: p.age || 0,
+        };
+      });
+
+      if (activeSort === "name") {
+        formatted = formatted.sort((a, b) =>
+          a.name.localeCompare(b.name)
+        );
+      }
+
+      setPlayers(formatted);
+    } catch (err) {
+      console.error(err);
+      setPlayers([]);
+    } finally {
+      setLoading(false);
     }
-
-    setPlayers(formatted);
-  } catch (err) {
-    console.error(err);
-    setPlayers([]);
-  } finally {
-    setLoading(false);
-  }
-}, [searchTerm, activeSort, getSortByValue, minAge, maxAge]);
+  }, [searchTerm, activeSort, getSortByValue, minAge, maxAge]);
 
   useEffect(() => {
     fetchPlayers();
   }, [fetchPlayers, lang]);
 
   const filteredPlayers = players.filter((player) =>
-    player.name.toLowerCase().includes(searchTerm.toLowerCase()),
+    player.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const bg = isDark ? "bg-[#01040a]" : "bg-gray-100";
@@ -158,10 +161,9 @@ const fetchPlayers = useCallback(async () => {
 
   return (
     <div
-      className={`min-h-screen py-30 px-4 sm:px-6 md:px-8 pb-10 ${bg} ${text}`}
+      className={`min-h-screen py-10 px-4 sm:px-6 md:px-8 pb-10 ${bg} ${text}`}
     >
       <div className="max-w-7xl mx-auto pt-20 sm:pt-24 md:pt-28 mb-8 flex flex-col gap-4">
-        {/* Search Bar */}
         <div className="relative w-full">
           <Search
             className={`absolute left-4 top-1/2 -translate-y-1/2 ${accent}/60`}
@@ -176,7 +178,6 @@ const fetchPlayers = useCallback(async () => {
           />
         </div>
 
-        {/* Age Filter */}
         <div className="flex flex-wrap items-center gap-3">
           <span
             className={`text-xs font-bold italic ${
@@ -185,6 +186,7 @@ const fetchPlayers = useCallback(async () => {
           >
             {t("Age Range:")}
           </span>
+
           <input
             type="number"
             placeholder={t("Min Age")}
@@ -192,11 +194,15 @@ const fetchPlayers = useCallback(async () => {
             onChange={(e) => setMinAge(e.target.value)}
             className={`w-24 rounded-lg py-2 px-3 text-xs border focus:outline-none transition ${card} ${border} ${accent} focus:border-yellow-500/50`}
           />
+
           <span
-            className={`text-xs ${isDark ? "text-gray-400" : "text-gray-600"}`}
+            className={`text-xs ${
+              isDark ? "text-gray-400" : "text-gray-600"
+            }`}
           >
             -
           </span>
+
           <input
             type="number"
             placeholder={t("Max Age")}
@@ -206,12 +212,13 @@ const fetchPlayers = useCallback(async () => {
           />
         </div>
 
-        {/* Sort Buttons */}
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <button
             onClick={() => setActiveSort("newest")}
             className={`px-3 py-2 rounded-lg text-[10px] sm:text-xs font-bold border transition ${card} ${border} hover:opacity-80 ${
-              activeSort === "newest" ? "border-yellow-400 text-yellow-400" : ""
+              activeSort === "newest"
+                ? "border-yellow-400 text-yellow-400"
+                : ""
             }`}
           >
             {t("Newest")}
@@ -231,7 +238,9 @@ const fetchPlayers = useCallback(async () => {
           <button
             onClick={() => setActiveSort("age")}
             className={`px-3 py-2 rounded-lg text-[10px] sm:text-xs font-bold border transition ${card} ${border} hover:opacity-80 ${
-              activeSort === "age" ? "border-yellow-400 text-yellow-400" : ""
+              activeSort === "age"
+                ? "border-yellow-400 text-yellow-400"
+                : ""
             }`}
           >
             {t("Age")}
@@ -240,7 +249,9 @@ const fetchPlayers = useCallback(async () => {
           <button
             onClick={() => setActiveSort("name")}
             className={`px-3 py-2 rounded-lg text-[10px] sm:text-xs font-bold border transition ${card} ${border} hover:opacity-80 ${
-              activeSort === "name" ? "border-yellow-400 text-yellow-400" : ""
+              activeSort === "name"
+                ? "border-yellow-400 text-yellow-400"
+                : ""
             }`}
           >
             {t("Name")}

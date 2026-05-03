@@ -1,85 +1,142 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Facebook, Twitter, Instagram } from "lucide-react";
+import { Facebook, Twitter, Instagram, Mail } from "lucide-react";
 import useTranslate from "../hooks/useTranslate";
+import { useEffect, useState } from "react";
 
 export default function ComingSoonSection() {
   const { lang, t } = useTranslate();
-
   const isRTL = lang === "ar";
+
+  const fullText = `${t("coming")} ${t("soon")}`;
+  const [typed, setTyped] = useState("");
+
+  useEffect(() => {
+    let i = 0;
+    const id = setInterval(() => {
+      setTyped(fullText.slice(0, i));
+      i++;
+      if (i > fullText.length) clearInterval(id);
+    }, 50);
+    return () => clearInterval(id);
+  }, [fullText]);
 
   return (
     <section
       dir={isRTL ? "rtl" : "ltr"}
-      className="relative h-[85vh] flex items-center text-white overflow-hidden"
+      className="relative min-h-screen overflow-hidden text-white bg-black"
     >
-      {/* Background */}
-      <motion.div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat scale-110"
+      {/* BACKGROUND IMAGE */}
+      <div
+        className="absolute inset-y-0 end-0 w-full md:w-1/2 bg-cover bg-center"
         style={{ backgroundImage: "url('/photo_2026-03-04_00-01-19.jpg')" }}
-        animate={{ scale: [1.1, 1.13, 1.1] }}
-        transition={{ duration: 12, repeat: Infinity }}
       />
 
-      <div className="absolute inset-0 bg-black/60" />
+      {/* DARK GRADIENT */}
+      <div className="absolute inset-y-0 start-0 w-full md:w-1/2 bg-gradient-to-r from-black via-black/90 to-transparent" />
 
-      {/* Glow */}
+      {/* LIGHT BEAM */}
       <motion.div
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-[300px] h-full bg-gradient-to-b from-[#F0B100]/25 via-transparent to-transparent blur-3xl"
-        animate={{ opacity: [0.3, 0.6, 0.3] }}
-        transition={{ duration: 5, repeat: Infinity }}
+        className="absolute inset-y-0 start-1/2 w-[2px] -translate-x-1/2 bg-gradient-to-b from-transparent via-[#F0B100] to-transparent opacity-70"
+        animate={{ y: ["-20%", "120%"] }}
+        transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
       />
 
-      <div className="relative z-10 max-w-7xl mx-auto w-full px-6 grid md:grid-cols-2 gap-12 items-center">
+      {/* CONTENT */}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 grid grid-cols-1 md:grid-cols-2 gap-10 items-center min-h-screen">
 
-        {/* LEFT */}
-        <motion.div
-          className={`border-white/30 ${isRTL ? "border-l pr-4 sm:pr-8" : "border-l pl-4 sm:pl-8"}`}
-        >
-          <p className="text-gray-200 mb-6 max-w-md text-sm sm:text-base">
+        {/* LEFT SIDE */}
+        <div className="max-w-xl text-center md:text-start">
+
+          {/* TITLE */}
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold mb-6 leading-tight">
+            <span className="relative">
+              {typed}
+
+              <motion.span
+                animate={{ opacity: [0, 1, 0] }}
+                transition={{ duration: 1, repeat: Infinity }}
+                className="ms-1"
+              >
+                |
+              </motion.span>
+
+              <span className="absolute inset-0 text-[#F0B100] blur-md opacity-30 pointer-events-none">
+                {typed}
+              </span>
+            </span>
+          </h1>
+
+          {/* DESCRIPTION */}
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-gray-300 mb-8 md:mb-10 text-sm sm:text-base text-center md:text-start"
+          >
             {t("coming_soon_desc")}
-          </p>
+          </motion.p>
 
-          {/* Input */}
-          <div className="flex w-full max-w-md flex-col sm:flex-row gap-2">
-            <input
-              type="email"
-              placeholder={t("email_placeholder")}
-              className="flex-1 px-4 py-3 bg-transparent border border-white/40 focus:outline-none text-sm sm:text-base focus:border-[#F0B100] transition"
-            />
+          {/* SUBSCRIBE CARD */}
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            className="bg-white/10 backdrop-blur-xl border border-white/10 p-4 sm:p-6 rounded-2xl"
+          >
+            {/* HEADER */}
+            <div className="flex items-center gap-3 mb-4 text-[#F0B100] justify-center md:justify-start">
+              <Mail size={20} />
+              <span className="font-semibold text-sm sm:text-base">
+                {t("subscribe")}
+              </span>
+            </div>
 
-            <button className="bg-[#F0B100] hover:bg-[#FF6900] transition px-6 py-3 text-sm sm:text-base">
-              {t("subscribe")}
-            </button>
-          </div>
+            {/* INPUT */}
+            <div
+              className={`flex flex-col sm:flex-row gap-3 ${
+                isRTL ? "sm:flex-row-reverse" : ""
+              }`}
+            >
+              <input
+                type="email"
+                placeholder={t("email_placeholder")}
+                className="flex-1 px-4 py-3 bg-transparent border border-white/20 text-sm sm:text-base focus:outline-none focus:border-[#F0B100] rounded-md"
+              />
 
-          {/* Social */}
-          <div className="flex gap-4 mt-6">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="px-6 py-3 bg-[#F0B100] text-black font-semibold rounded-md text-sm sm:text-base"
+              >
+                OK
+              </motion.button>
+            </div>
+          </motion.div>
+
+          {/* SOCIAL */}
+          <div className="flex gap-3 sm:gap-4 mt-6 sm:mt-8 justify-center md:justify-start">
             {[Facebook, Twitter, Instagram].map((Icon, i) => (
-              <a
+              <motion.a
                 key={i}
+                whileHover={{
+                  scale: 1.15,
+                  y: -3,
+                  backgroundColor: "#F0B100",
+                  color: "#000",
+                }}
+                className="border border-white/20 p-2 sm:p-3 rounded-lg"
                 href="#"
-                className="border border-white/40 p-2 hover:bg-[#F0B100] hover:text-black transition"
               >
                 <Icon size={18} />
-              </a>
+              </motion.a>
             ))}
           </div>
-        </motion.div>
 
-        {/* RIGHT */}
-        <motion.div className={isRTL ? "text-center md:text-right" : "text-center md:text-left"}>
-          {[t("we_are"), t("coming"), t("soon")].map((text, i) => (
-            <motion.h1
-              key={i}
-              className="text-4xl sm:text-5xl md:text-7xl font-bold leading-snug"
-            >
-              {text}
-            </motion.h1>
-          ))}
-        </motion.div>
+        </div>
 
+       
+        <div />
       </div>
     </section>
   );

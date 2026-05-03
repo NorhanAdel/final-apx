@@ -416,21 +416,21 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                   {sportsLoading ? (
                     <div className="px-4 py-2 text-center">Loading...</div>
                   ) : (
-                    sports.map((sport: Sport) => {
-                      const Icon = getSportIcon(sport.name);
-                      const slug = sport.name.toLowerCase();
-                      return (
-                        <Link
-                          key={sport.id}
-                          href={`/${slug}`}
-                          className="flex items-center gap-2 px-4 py-2 hover:bg-[#F0B100] hover:text-black transition-colors"
-                          onClick={() => setSportsOpen(false)}
-                        >
-                          <Icon size={18} />
-                          {sport.name}
-                        </Link>
-                      );
-                    })
+                  sports.map((sport: Sport) => {
+  const Icon = getSportIcon(sport.name);
+
+  return (
+    <Link
+      key={sport.id}
+      href={`/sports/${sport.id}`}
+      className="flex items-center gap-2 px-4 py-2 hover:bg-[#F0B100] hover:text-black transition-colors"
+      onClick={() => setSportsOpen(false)}
+    >
+      <Icon size={18} />
+      {sport.name}
+    </Link>
+  );
+})
                   )}
                 </motion.div>
               )}
