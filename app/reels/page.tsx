@@ -17,7 +17,7 @@ import {
 import { useTheme } from "@/app/context/ThemeContext";
 import { useAuth } from "@/app/context/auth-context";
 import useTranslate from "@/app/hooks/useTranslate";
-
+import { toast } from "sonner";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://72.62.28.146";
 
 interface Comment {
@@ -279,10 +279,10 @@ setMuted(initialMuted);
 };
   const toggleLike = async (id: string) => {
     const token = localStorage.getItem("token");
-    if (!token) {
-      alert("Login required");
-      return;
-    }
+   if (!token) {
+  toast.error("Login required 🔒");
+  return;
+}
 
     const isLiked = liked[id];
     setLiked((prev) => ({ ...prev, [id]: !isLiked }));
