@@ -41,70 +41,98 @@ export default function MissionVisionSlide() {
       <div className="w-full max-w-6xl mx-auto flex flex-col gap-16">
         {/* ===== VISION ===== */}
         <motion.div
-          initial={{ opacity: 0, x: isRTL ? 80 : -80 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.7 }}
-          className={`flex ${isRTL ? "justify-end" : "justify-start"}`}
-        >
-          <div
-            className={`${bgVision} w-full md:w-3/4 py-10 px-6 md:px-10 rounded-3xl relative shadow-lg`}
-          >
-            {/* IMAGE */}
-            <motion.div
-              {...floating}
-              className="hidden md:block absolute top-1/2 -translate-y-1/2 w-44 h-44 rounded-full border-8 border-white overflow-hidden shadow-xl"
-              style={{
-                [isRTL ? "left" : "right"]: "-6rem",
-              }}
-            >
-              <Image src="/b3.jpg" alt="Vision" fill className="object-cover" />
-            </motion.div>
+  initial={{ opacity: 0, x: isRTL ? 80 : -80 }}
+  animate={{ opacity: 1, x: 0 }}
+  transition={{ duration: 0.7 }}
+  className={`flex ${isRTL ? "justify-end" : "justify-start"}`}
+>
+  <div
+    className={`
+      ${bgVision}
+      w-full md:w-3/4
+      py-8 md:py-10
+      px-4 md:px-10
+      rounded-3xl
+      relative shadow-lg
+    `}
+  >
+    {/* IMAGE */}
+    <motion.div
+      {...floating}
+      className="
+        w-24 h-24 
+        mx-auto mb-4
+        rounded-full border-4 border-white
+        overflow-hidden shadow-xl
 
-            <h2 className="text-2xl md:text-3xl font-bold mb-3 text-white">
-              {t("vision_title")}
-            </h2>
+        md:block md:absolute md:top-1/2 md:-translate-y-1/2 md:w-44 md:h-44 md:border-8 md:mb-0
+      "
+      style={{
+        [isRTL ? "left" : "right"]: "-6rem",
+      }}
+    >
+      <Image src="/b3.jpg" alt="Vision" fill className="object-cover" />
+    </motion.div>
 
-            <p className="text-sm md:text-base text-gray-100 leading-relaxed max-w-md">
-              {t("vision_desc")}
-            </p>
-          </div>
-        </motion.div>
+    <h2 className="text-xl md:text-3xl font-bold mb-2 md:mb-3 text-white text-center md:text-left">
+      {t("vision_title")}
+    </h2>
+
+    <p className="text-sm md:text-base text-gray-100 leading-relaxed max-w-md text-center md:text-left">
+      {t("vision_desc")}
+    </p>
+  </div>
+</motion.div>
 
         {/* ===== MISSION ===== */}
-        <motion.div
-          initial={{ opacity: 0, x: isRTL ? -80 : 80 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.7 }}
-          className={`flex ${isRTL ? "justify-start" : "justify-end"}`}
-        >
-          <div
-            className={`${bgMission} w-full md:w-3/4 py-10 px-6 md:px-10 rounded-3xl relative shadow-lg`}
-          >
-            {/* IMAGE */}
-            <motion.div
-              {...floating}
-              className="hidden md:block absolute top-1/2 -translate-y-1/2 w-44 h-44 rounded-full border-8 border-[#F0B100] overflow-hidden shadow-xl"
-              style={{
-                [isRTL ? "right" : "left"]: "-6rem",
-              }}
-            >
-              <Image
-                src="/mission.jpeg"
-                alt="Mission"
-                fill
-                className="object-cover"
-              />
-            </motion.div>
+      <motion.div
+  initial={{ opacity: 0, x: isRTL ? -80 : 80 }}
+  animate={{ opacity: 1, x: 0 }}
+  transition={{ duration: 0.7 }}
+  className={`flex ${isRTL ? "justify-start" : "justify-end"}`}
+>
+  <div
+    className={`
+      ${bgMission}
+      w-full md:w-3/4
+      py-8 md:py-10
+      px-4 md:px-10
+      rounded-3xl
+      relative shadow-lg
+    `}
+  >
+    {/* IMAGE */}
+    <motion.div
+      {...floating}
+      className="
+        w-24 h-24 
+        mx-auto mb-4
+        rounded-full border-4 border-[#F0B100]
+        overflow-hidden shadow-xl
 
-            <h2 className="text-2xl md:text-3xl font-bold mb-3 mx-15 text-white">
-              {t("mission_title")}
-            </h2>
+        md:block md:absolute md:top-1/2 md:-translate-y-1/2 md:w-44 md:h-44 md:border-8 md:mb-0
+      "
+      style={{
+        [isRTL ? "right" : "left"]: "-6rem",
+      }}
+    >
+      <Image
+        src="/mission.jpeg"
+        alt="Mission"
+        fill
+        className="object-cover"
+      />
+    </motion.div>
 
-            <p className="text-sm md:text-base text-gray-100 mx-15 leading-relaxed max-w-md">
-              {t("mission_desc")}
-            </p>
-          </div>
-        </motion.div>
+    <h2 className="text-xl md:text-3xl font-bold mb-2 md:mb-3 text-white text-center md:text-left md:mx-15">
+      {t("mission_title")}
+    </h2>
+
+    <p className="text-sm md:text-base text-gray-100 leading-relaxed max-w-md text-center md:text-left md:mx-15">
+      {t("mission_desc")}
+    </p>
+  </div>
+</motion.div>
       </div>
     </div>
   );
