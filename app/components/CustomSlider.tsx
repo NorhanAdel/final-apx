@@ -122,13 +122,41 @@ export default function BlogSlider({ lang }: { lang: string }) {
           );
         })}
 
-        <button onClick={prev} className="absolute left-5 z-20 w-12 h-12 rounded-full bg-black/40 text-white">
-          <ChevronLeft />
-        </button>
+<button
+  onClick={prev}
+  className="
+    absolute left-2 md:left-5 
+    top-1/2 -translate-y-1/2 
+    z-20 
+    px-3 py-2 md:px-4 md:py-3
+    rounded-2xl rounded-md
+    bg-black/30 backdrop-blur-md
+    text-white
+    border border-white/10
+    hover:bg-black/50 hover:scale-105
+    transition
+  "
+>
+  <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
+</button>
 
-        <button onClick={next} className="absolute right-5 z-20 w-12 h-12 rounded-full bg-black/40 text-white">
-          <ChevronRight />
-        </button>
+<button
+  onClick={next}
+  className="
+    absolute right-2 md:right-5 
+    top-1/2 -translate-y-1/2 
+    z-20 
+    px-3 py-2 md:px-4 md:py-3
+    rounded-2xl rounded-md
+    bg-black/30 backdrop-blur-md
+    text-white
+    border border-white/10
+    hover:bg-black/50 hover:scale-105
+    transition
+  "
+>
+  <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
+</button>
       </div>
     </section>
   );
