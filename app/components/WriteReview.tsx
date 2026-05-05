@@ -318,34 +318,35 @@ export default function WriteReview({
                 </div>
 
                 {/* Stars Selection Mode */}
-                {ratingMode === "stars" && (
-                  <div className="text-center py-4 rounded-xl border border-yellow-400/30">
-                    <p className={`text-sm ${textSecondary} mb-4`}>
-                      {t("Click on stars to rate")}:
-                    </p>
-                    <div className="flex items-center justify-center gap-2">
-                      {[1, 2, 3, 4, 5, 6, 7].map((star) => (
-                        <button
-                          key={star}
-                          type="button"
-                          onClick={() => handleStarClick(star)}
-                          onMouseEnter={() => setHoveredStars(star)}
-                          onMouseLeave={() => setHoveredStars(0)}
-                          className="transition-transform hover:scale-110 focus:outline-none"
-                        >
-                          <Star
-                            size={40}
-                            className={`${
-                              star <= (hoveredStars || selectedStars)
-                                ? "fill-yellow-400 text-yellow-400"
-                                : "fill-gray-600 text-gray-600"
-                            } transition-all duration-150`}
-                          />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
+              {ratingMode === "stars" && (
+  <div className="text-center py-4 rounded-xl border border-yellow-400/30 px-2 sm:px-4">
+    <p className={`text-sm ${textSecondary} mb-4`}>
+      {t("Click on stars to rate")}:
+    </p>
+
+    <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+      {[1, 2, 3, 4, 5, 6, 7].map((star) => (
+        <button
+          key={star}
+          type="button"
+          onClick={() => handleStarClick(star)}
+          onMouseEnter={() => setHoveredStars(star)}
+          onMouseLeave={() => setHoveredStars(0)}
+          className="transition-transform hover:scale-110 focus:outline-none"
+        >
+          <Star
+            size={window.innerWidth < 640 ? 28 : 40}
+            className={`${
+              star <= (hoveredStars || selectedStars)
+                ? "fill-yellow-400 text-yellow-400"
+                : "fill-gray-600 text-gray-600"
+            } transition-all duration-150`}
+          />
+        </button>
+      ))}
+    </div>
+  </div>
+)}
 
                 {/* Skills Selection Mode */}
                 {ratingMode === "skills" && (
