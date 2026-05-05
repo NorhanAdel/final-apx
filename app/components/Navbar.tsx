@@ -91,8 +91,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isLoading: loading, logout } = useAuth();
-  const [mounted, setMounted] = useState(false); // <-- أضف هذا
-
+  const [mounted, setMounted] = useState(false);  
   const [open, setOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const [sportsOpen, setSportsOpen] = useState(false);
@@ -109,7 +108,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
   const { theme, toggleTheme } = useTheme();
   const { t, changeLang, lang: currentLang } = useTranslate();
 
-  // <-- حدد mounted=true بعد تحميل العميل
+ 
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -439,7 +438,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
 
           {renderAuthButton()}
 
-          {/* <-- هنا التعديل الرئيسي */}
+      
           <button
             onClick={toggleTheme}
             className="p-2 rounded-lg hover:bg-white/10 transition-colors"
@@ -498,7 +497,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
         </div>
 
         <div className="md:hidden flex items-center gap-3">
-          {/* <-- وهنا كمان */}
+         
           <button onClick={toggleTheme}>
             {mounted ? (
               theme === "dark" ? (
@@ -572,7 +571,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                     return (
                       <Link
                         key={sport.id}
-                        href={`/${slug}`}
+                        href={`/sports/${sport.id}`}
                         onClick={() => setOpen(false)}
                         className="flex items-center gap-2 px-6 py-2 hover:bg-white/5"
                       >
