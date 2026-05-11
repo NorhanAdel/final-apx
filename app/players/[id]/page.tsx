@@ -228,7 +228,7 @@ export default function PlayerProfilePage() {
           <ClubCareer playerId={player.id} />
         </div>
 
-        <ReelsPlayer videos={player.videos || []} playerId={player.id} />
+    <ReelsPlayer videos={player.videos || []} />
 
         <Ratings
           key={refreshRatings}
