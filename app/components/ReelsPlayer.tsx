@@ -4,7 +4,8 @@ import { useEffect, useState, useRef } from "react";
 import { Heart } from "lucide-react";
 import { toast } from "sonner";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://72.62.28.146";
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://72.62.28.146";
 
 interface Video {
   id: string | number;
@@ -15,6 +16,7 @@ interface Video {
 
 interface Props {
   videos?: Video[];
+  playerId?: string;
 }
 
 const LIKE_REEL = `
@@ -34,9 +36,14 @@ query {
 }
 `;
 
-export default function ReelsPlayer({ videos = [] }: Props) {
+export default function ReelsPlayer({
+  videos = [],
+  playerId,
+}: Props) {
   const [reels, setReels] = useState<Video[]>([]);
-  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
+  const [selectedVideo, setSelectedVideo] =
+    useState<Video | null>(null);
+
   const [likes, setLikes] = useState(0);
   const [liked, setLiked] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -75,7 +82,9 @@ export default function ReelsPlayer({ videos = [] }: Props) {
 
   const getFullUrl = (url?: string) => {
     if (!url) return "";
+
     if (url.startsWith("http")) return url;
+
     return `${API_URL}${url}`;
   };
 
@@ -83,7 +92,7 @@ export default function ReelsPlayer({ videos = [] }: Props) {
   // LOAD REELS (SYNC FIX)
   // =========================
   const fetchReels = async () => {
-    const res = await gqlFetch(GET_REELS);
+    const res: any = await gqlFetch(GET_REELS);
 
     const data = res?.data?.recentReels || [];
 
@@ -97,7 +106,9 @@ export default function ReelsPlayer({ videos = [] }: Props) {
 
     if (!initRef.current && mapped.length) {
       initRef.current = true;
+
       setSelectedVideo(mapped[0]);
+
       setLikes(mapped[0].likesCount || 0);
     }
   };
@@ -131,7 +142,7 @@ export default function ReelsPlayer({ videos = [] }: Props) {
     try {
       setLoading(true);
 
-      const res = await gqlFetch(
+      const res: any = await gqlFetch(
         LIKE_REEL,
         { id: selectedVideo.id },
         true
@@ -146,7 +157,10 @@ export default function ReelsPlayer({ videos = [] }: Props) {
       const newState = !liked;
 
       setLiked(newState);
-      setLikes((prev) => (newState ? prev + 1 : prev - 1));
+
+      setLikes((prev) =>
+        newState ? prev + 1 : prev - 1
+      );
 
       // 🔥 IMPORTANT: refresh from server to avoid zero after reload issue
       setTimeout(() => {
@@ -185,10 +199,17 @@ export default function ReelsPlayer({ videos = [] }: Props) {
           <Heart
             onClick={handleLike}
             className={`cursor-pointer transition ${
-              liked ? "text-red-500 fill-red-500" : "text-white"
-            } ${loading ? "opacity-50 pointer-events-none" : ""}`}
+              liked
+                ? "text-red-500 fill-red-500"
+                : "text-white"
+            } ${
+              loading
+                ? "opacity-50 pointer-events-none"
+                : ""
+            }`}
             size={18}
           />
+
           <span className="text-sm">{likes}</span>
         </div>
       </div>
