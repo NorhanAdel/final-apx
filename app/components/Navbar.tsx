@@ -68,7 +68,7 @@ const navLinks = [
   { key: "Players", href: "/players" },
   { key: "Blog", href: "/blog" },
   { key: "Events", href: "/events" },
-  { key: "Championships", href: "/championships" },
+  { key: "Championships", href: "/championship" },
 ];
 
 const DEFAULT_LANGUAGES: Language[] = [
