@@ -23,6 +23,7 @@ import {
   GET_ALL_PLAYERS_FOR_REQUESTS,
   GET_MY_SENT_REQUESTS,
   GET_CLUB_REQUESTS_FOR_ME,
+  CAN_CONTACT_PLAYER,
 } from "@/app/graphql/query/request.queries";
 import {
   SEND_REQUEST_MUTATION,
@@ -87,7 +88,13 @@ interface GetAllPlayersResponse {
 interface MySentRequestsResponse {
   mySentRequests: SentRequest[];
 }
-
+interface CanContactPlayerResponse {
+  canContactPlayer: {
+    can_contact: boolean;
+    reason: string;
+    max_stars: number;
+  };
+}
 interface AcceptScoutRequestResponse {
   acceptScoutRequest: {
     id: string;
@@ -421,41 +428,65 @@ export default function ScoutRequestsPage() {
   };
 
   const handleSendRequest = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (!selectedTargetId) {
-      toast.error(t("Please select a player"));
+  if (!selectedTargetId) {
+    toast.error(t("Please select a player"));
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    
+    const contactCheck = await fetchGraphQL<CanContactPlayerResponse>(
+      CAN_CONTACT_PLAYER,
+      {
+        playerId: selectedTargetId,
+      },
+    );
+
+    if (contactCheck.errors) {
+      toast.error(contactCheck.errors[0].message);
       return;
     }
 
-    setLoading(true);
-    try {
-      const result = await fetchGraphQL<SendRequestResponse>(
-        SEND_REQUEST_MUTATION,
-        {
-          input: {
-            player_id: selectedTargetId,
-            type: "SCOUT_OFFER",
-            message: details || null,
-          },
-        },
-      );
+    const canContact = contactCheck.data?.canContactPlayer;
 
-      if (result.errors) {
-        toast.error(result.errors[0].message);
-      } else if (result.data?.sendRequest) {
-        setSelectedTargetId("");
-        setDetails("");
-        await fetchAllData();
-        toast.success(t("Request sent successfully!"));
-      }
-    } catch (error) {
-      console.error("Error sending request:", error);
-      toast.error(t("Failed to send request"));
-    } finally {
-      setLoading(false);
+    
+    if (!canContact?.can_contact) {
+      toast.error(canContact.reason);
+      return;
     }
-  };
+
+    // ✅ Send request normally
+    const result = await fetchGraphQL<SendRequestResponse>(
+      SEND_REQUEST_MUTATION,
+      {
+        input: {
+          player_id: selectedTargetId,
+          type: "SCOUT_OFFER",
+          message: details || null,
+        },
+      },
+    );
+
+    if (result.errors) {
+      toast.error(result.errors[0].message);
+    } else if (result.data?.sendRequest) {
+      setSelectedTargetId("");
+      setDetails("");
+      await fetchAllData();
+
+      toast.success(t("Request sent successfully!"));
+    }
+  } catch (error) {
+    console.error("Error sending request:", error);
+    toast.error(t("Failed to send request"));
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleCancelClick = (requestId: string) => {
     setSelectedRequestId(requestId);
