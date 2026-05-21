@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import {
   GET_ALL_PLAYERS_FOR_REQUESTS,
   GET_MY_SENT_REQUESTS,
+  CAN_CONTACT_PLAYER,
 } from "@/app/graphql/query/request.queries";
 import {
   SEND_REQUEST_MUTATION,
@@ -54,7 +55,13 @@ interface SentRequest {
 interface SendRequestResponse {
   sendRequest: SentRequest;
 }
-
+interface CanContactPlayerResponse {
+  canContactPlayer: {
+    can_contact: boolean;
+    reason?: string;
+    max_stars?: number;
+  };
+}
 interface CancelRequestResponse {
   cancelRequest: SentRequest;
 }
@@ -239,43 +246,66 @@ export default function AgentRequests() {
     return t("No message");
   };
 
-  const handleSendRequest = async (e: React.FormEvent) => {
-    e.preventDefault();
+ const handleSendRequest = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    if (!selectedTargetId) {
-      toast.error(t("Please select a player"));
-      return;
-    }
+  if (!selectedTargetId) {
+    toast.error(t("Please select a player"));
+    return;
+  }
 
-    setLoading(true);
-    try {
-      const result = await fetchGraphQL<SendRequestResponse>(
-        SEND_REQUEST_MUTATION,
+  setLoading(true);
+
+  try {
+    // check permission first
+    const permissionResult =
+      await fetchGraphQL<CanContactPlayerResponse>(
+        CAN_CONTACT_PLAYER,
         {
-          input: {
-            player_id: selectedTargetId,
-            type: "AGENT_REQUEST",
-            message: details || null,
-          },
+          playerId: selectedTargetId,
         },
       );
 
-      if (result.errors) {
-        toast.error(result.errors[0].message);
-      } else if (result.data?.sendRequest) {
-        setSelectedTargetId("");
-        setDetails("");
-        await fetchAllData();
-        toast.success(t("Request sent successfully!"));
-      }
-    } catch (error) {
-      console.error("Error sending request:", error);
-      toast.error(t("Failed to send request"));
-    } finally {
-      setLoading(false);
-    }
-  };
+    const permission = permissionResult.data?.canContactPlayer;
 
+    if (!permission?.can_contact) {
+      toast.error(
+        permission?.reason ||
+          t("Your package does not allow contacting this player"),
+      );
+
+      setLoading(false);
+      return;
+    }
+
+    // send request
+    const result = await fetchGraphQL<SendRequestResponse>(
+      SEND_REQUEST_MUTATION,
+      {
+        input: {
+          player_id: selectedTargetId,
+          type: "AGENT_REQUEST",
+          message: details || null,
+        },
+      },
+    );
+
+    if (result.errors) {
+      toast.error(result.errors[0].message);
+    } else if (result.data?.sendRequest) {
+      setSelectedTargetId("");
+      setDetails("");
+      await fetchAllData();
+
+      toast.success(t("Request sent successfully!"));
+    }
+  } catch (error) {
+    console.error("Error sending request:", error);
+    toast.error(t("Failed to send request"));
+  } finally {
+    setLoading(false);
+  }
+};
   const handleCancelClick = (requestId: string) => {
     setSelectedRequestId(requestId);
     setCancelModalOpen(true);
