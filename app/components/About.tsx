@@ -158,18 +158,7 @@ export default function About({ lang }: { lang: string }) {
         </motion.div>
 
         {/* BUTTON */}
-        <div className="flex justify-center md:justify-start">
-          <motion.button
-            whileHover={{
-              scale: 1.1,
-              boxShadow: "0 0 25px rgba(240,177,0,0.6)",
-            }}
-            whileTap={{ scale: 0.95 }}
-            className="mt-12 md:mt-16 px-6 sm:px-8 md:px-10 py-3 md:py-4 bg-[#F0B100] text-black font-bold rounded-full transition text-sm sm:text-base"
-          >
-            {t("learn_more")}
-          </motion.button>
-        </div>
+   
 
       </div>
     </section>
