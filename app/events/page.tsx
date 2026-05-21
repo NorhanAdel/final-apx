@@ -9,6 +9,9 @@ import useTranslate from "../hooks/useTranslate";
 import { fetchGraphQL } from "../lib/fetchGraphQL";
 import { GET_ALL_EVENTS } from "@/app/graphql/query/event.queries";
 
+/* 🔥 Import Sidebar Ads */
+import SidebarAds from "../components/SidebarAds";
+
 interface Event {
   id: string;
   title: string;
@@ -50,6 +53,7 @@ export default function EventsPage() {
 
   const fetchEvents = useCallback(async () => {
     setLoading(true);
+
     try {
       const variables: { skip: number; take: number } = {
         skip: 0,
@@ -58,19 +62,21 @@ export default function EventsPage() {
 
       const result = await fetchGraphQL<{ events: Event[] }>(
         GET_ALL_EVENTS,
-        variables,
+        variables
       );
 
       if (result.data?.events) {
         const formatted: Event[] = result.data.events.map((event) => ({
           ...event,
           date_start: new Date(event.date_start).toLocaleDateString(lang),
+
           image_url: event.image_url
             ? event.image_url.startsWith("http")
               ? event.image_url
               : `${process.env.NEXT_PUBLIC_API_URL}${event.image_url}`
             : "/b2.jpg",
         }));
+
         setAllEvents(formatted);
       } else {
         setAllEvents([]);
@@ -87,34 +93,33 @@ export default function EventsPage() {
     fetchEvents();
   }, [fetchEvents]);
 
-  // Filter and sort events based on current filters
+  /* FILTER EVENTS */
   const getFilteredEvents = useCallback(() => {
     let filtered = [...allEvents];
 
-    // Apply search filter
     if (search) {
       filtered = filtered.filter((event) =>
-        event.title.toLowerCase().includes(search.toLowerCase()),
+        event.title.toLowerCase().includes(search.toLowerCase())
       );
     }
 
-    // Apply status filter
     if (statusFilter !== "ALL") {
       filtered = filtered.filter(
-        (event) => event.status?.toUpperCase() === statusFilter,
+        (event) => event.status?.toUpperCase() === statusFilter
       );
     }
 
-    // Apply sorting by created_at
     if (sort === "Newest") {
       filtered.sort(
         (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+          new Date(b.created_at).getTime() -
+          new Date(a.created_at).getTime()
       );
     } else {
       filtered.sort(
         (a, b) =>
-          new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+          new Date(a.created_at).getTime() -
+          new Date(b.created_at).getTime()
       );
     }
 
@@ -125,8 +130,10 @@ export default function EventsPage() {
 
   const getStatusCount = (status: EventStatus | "ALL"): number => {
     if (status === "ALL") return allEvents.length;
-    return allEvents.filter((event) => event.status?.toUpperCase() === status)
-      .length;
+
+    return allEvents.filter(
+      (event) => event.status?.toUpperCase() === status
+    ).length;
   };
 
   const clearFilters = (): void => {
@@ -137,13 +144,17 @@ export default function EventsPage() {
     setIsFilterOpen(false);
   };
 
-  const handleStatusFilterChange = (status: EventStatus | "ALL"): void => {
+  const handleStatusFilterChange = (
+    status: EventStatus | "ALL"
+  ): void => {
     setStatusFilter(status);
     setIsFilterOpen(false);
   };
 
   const hasActiveFilters: boolean =
-    statusFilter !== "ALL" || search !== "" || sort !== "Newest";
+    statusFilter !== "ALL" ||
+    search !== "" ||
+    sort !== "Newest";
 
   if (loading) {
     return (
@@ -155,19 +166,27 @@ export default function EventsPage() {
             : "bg-gray-100 text-black"
         }`}
       >
-        <div className="w-10 h-10 border-3 border-yellow-400 border-t-transparent rounded-full animate-spin" />
+        <div className="w-10 h-10 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin" />
+
+        {/* ADS */}
+        <SidebarAds />
       </div>
     );
   }
 
   return (
     <div
-      className={`min-h-screen px-4 sm:px-6 md:px-12 lg:px-30 py-40 transition
+      className={`min-h-screen px-4 sm:px-6 md:px-12 lg:px-60 py-40 transition
       ${
-        theme === "dark" ? "bg-[#020b1c] text-white" : "bg-gray-100 text-black"
+        theme === "dark"
+          ? "bg-[#020b1c] text-white"
+          : "bg-gray-100 text-black"
       }`}
     >
-      {/* Search and Filter Bar */}
+      
+      <SidebarAds />
+
+       
       <div className="flex flex-col gap-4 mb-10">
         <div className="flex gap-4">
           <div
@@ -179,6 +198,7 @@ export default function EventsPage() {
             }`}
           >
             <Search size={18} className="text-gray-500" />
+
             <input
               placeholder={t("searchEvents")}
               value={search}
@@ -200,7 +220,11 @@ export default function EventsPage() {
               }`}
           >
             <Filter size={18} />
-            <span className="hidden sm:inline">{t("filter")}</span>
+
+            <span className="hidden sm:inline">
+              {t("filter")}
+            </span>
+
             {hasActiveFilters && (
               <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-red-500 text-white">
                 {(statusFilter !== "ALL" ? 1 : 0) +
@@ -221,12 +245,15 @@ export default function EventsPage() {
                 }`}
             >
               <X size={18} />
-              <span className="hidden sm:inline">{t("clear")}</span>
+
+              <span className="hidden sm:inline">
+                {t("clear")}
+              </span>
             </button>
           )}
         </div>
 
-        {/* Filter Panel */}
+        {/* FILTER PANEL */}
         {showFilters && (
           <div
             className={`p-4 rounded-lg grid grid-cols-1 md:grid-cols-2 gap-4 border
@@ -236,15 +263,18 @@ export default function EventsPage() {
                 : "bg-white border-gray-200"
             }`}
           >
-            {/* Filter by Status */}
+            {/* STATUS */}
             <div>
               <label
                 className={`block text-sm font-medium mb-2 ${
-                  theme === "dark" ? "text-gray-300" : "text-gray-700"
+                  theme === "dark"
+                    ? "text-gray-300"
+                    : "text-gray-700"
                 }`}
               >
                 {t("status")}
               </label>
+
               <div className="relative">
                 <button
                   onClick={() => setIsFilterOpen(!isFilterOpen)}
@@ -256,9 +286,11 @@ export default function EventsPage() {
                     }`}
                 >
                   <span>
-                    {statusOptions.find((s) => s.value === statusFilter)
-                      ?.label || t("allStatuses")}
+                    {statusOptions.find(
+                      (s) => s.value === statusFilter
+                    )?.label || t("allStatuses")}
                   </span>
+
                   <ChevronDown
                     size={16}
                     className={`transition-transform ${
@@ -273,6 +305,7 @@ export default function EventsPage() {
                       className="fixed inset-0 z-10"
                       onClick={() => setIsFilterOpen(false)}
                     />
+
                     <div
                       className={`absolute top-full left-0 mt-2 w-full rounded-lg shadow-lg overflow-hidden z-20
                         ${
@@ -284,7 +317,9 @@ export default function EventsPage() {
                       {statusOptions.map((option) => (
                         <button
                           key={option.value}
-                          onClick={() => handleStatusFilterChange(option.value)}
+                          onClick={() =>
+                            handleStatusFilterChange(option.value)
+                          }
                           className={`w-full px-4 py-2 text-left text-sm transition flex items-center justify-between
                             ${
                               statusFilter === option.value
@@ -310,8 +345,10 @@ export default function EventsPage() {
                                   : "bg-gray-400"
                               }`}
                             />
+
                             {option.label}
                           </span>
+
                           <span className="text-xs px-2 py-0.5 rounded-full bg-gray-500/20">
                             {getStatusCount(option.value)}
                           </span>
@@ -323,18 +360,23 @@ export default function EventsPage() {
               </div>
             </div>
 
-            {/* Sort by */}
+            {/* SORT */}
             <div>
               <label
                 className={`block text-sm font-medium mb-2 ${
-                  theme === "dark" ? "text-gray-300" : "text-gray-700"
+                  theme === "dark"
+                    ? "text-gray-300"
+                    : "text-gray-700"
                 }`}
               >
                 {t("sortBy")}
               </label>
+
               <select
                 value={sort}
-                onChange={(e) => setSort(e.target.value as "Newest" | "Oldest")}
+                onChange={(e) =>
+                  setSort(e.target.value as "Newest" | "Oldest")
+                }
                 className={`w-full px-4 py-2 rounded-lg text-sm border
                   ${
                     theme === "dark"
@@ -345,83 +387,21 @@ export default function EventsPage() {
                 <option value="Newest">
                   {t("newest")}
                 </option>
+
                 <option value="Oldest">
                   {t("oldest")}
                 </option>
               </select>
-              <p
-                className={`text-xs mt-1 ${
-                  theme === "dark" ? "text-gray-500" : "text-gray-400"
-                }`}
-              >
-                {t("sortedByCreationDate")}
-              </p>
             </div>
           </div>
         )}
       </div>
 
-      {/* Active Filters Display */}
-      {hasActiveFilters && (
-        <div className="flex flex-wrap gap-2 mb-6">
-          {statusFilter !== "ALL" && (
-            <span
-              className={`px-3 py-1 rounded-full text-sm flex items-center gap-1
-                ${
-                  theme === "dark"
-                    ? "bg-yellow-400/20 text-yellow-400"
-                    : "bg-yellow-100 text-yellow-700"
-                }`}
-            >
-              {t("status")}:{" "}
-              {statusOptions.find((s) => s.value === statusFilter)?.label}
-              <X
-                size={14}
-                className="cursor-pointer hover:opacity-70"
-                onClick={() => handleStatusFilterChange("ALL")}
-              />
-            </span>
-          )}
-          {search && (
-            <span
-              className={`px-3 py-1 rounded-full text-sm flex items-center gap-1
-                ${
-                  theme === "dark"
-                    ? "bg-yellow-400/20 text-yellow-400"
-                    : "bg-yellow-100 text-yellow-700"
-                }`}
-            >
-              {t("search")}: {search}
-              <X
-                size={14}
-                className="cursor-pointer hover:opacity-70"
-                onClick={() => setSearch("")}
-              />
-            </span>
-          )}
-          {sort !== "Newest" && (
-            <span
-              className={`px-3 py-1 rounded-full text-sm flex items-center gap-1
-                ${
-                  theme === "dark"
-                    ? "bg-yellow-400/20 text-yellow-400"
-                    : "bg-yellow-100 text-yellow-700"
-                }`}
-            >
-              {t("sort")}: {sort === "Oldest" ? t("oldest") : sort}
-              <X
-                size={14}
-                className="cursor-pointer hover:opacity-70"
-                onClick={() => setSort("Newest")}
-              />
-            </span>
-          )}
-        </div>
-      )}
-
-      {/* Results */}
+      {/* EVENTS */}
       {filteredEvents.length === 0 ? (
-        <p className="text-center text-gray-400">{t("noEvents")}</p>
+        <p className="text-center text-gray-400">
+          {t("noEvents")}
+        </p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredEvents.map((event) => (
@@ -442,13 +422,19 @@ export default function EventsPage() {
                 height={400}
                 className="w-full h-[280px] object-cover"
               />
+
               <div className="p-4">
                 <h3 className="text-lg font-bold mb-2 line-clamp-1">
                   {event.title}
                 </h3>
-                <p className="text-gray-500 text-sm">{event.location}</p>
+
+                <p className="text-gray-500 text-sm">
+                  {event.location}
+                </p>
+
                 <div className="flex justify-between mt-2 text-sm">
                   <span>{event.date_start}</span>
+
                   <span
                     className={`font-bold ${
                       event.status?.toLowerCase() === "upcoming"
