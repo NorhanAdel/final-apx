@@ -427,7 +427,7 @@ export default function ScoutRequestsPage() {
     return t("No message");
   };
 
-  const handleSendRequest = async (e: React.FormEvent) => {
+const handleSendRequest = async (e: React.FormEvent) => {
   e.preventDefault();
 
   if (!selectedTargetId) {
@@ -438,7 +438,6 @@ export default function ScoutRequestsPage() {
   setLoading(true);
 
   try {
-    
     const contactCheck = await fetchGraphQL<CanContactPlayerResponse>(
       CAN_CONTACT_PLAYER,
       {
@@ -453,8 +452,14 @@ export default function ScoutRequestsPage() {
 
     const canContact = contactCheck.data?.canContactPlayer;
 
-    
-    if (!canContact?.can_contact) {
+    // ✅ HANDLE UNDEFINED RESPONSE
+    if (!canContact) {
+      toast.error(t("Unable to verify player contact"));
+      return;
+    }
+
+    // ❌ BLOCK REQUEST IF PLAYER STARS > PACKAGE LIMIT
+    if (!canContact.can_contact) {
       toast.error(canContact.reason);
       return;
     }
@@ -476,6 +481,7 @@ export default function ScoutRequestsPage() {
     } else if (result.data?.sendRequest) {
       setSelectedTargetId("");
       setDetails("");
+
       await fetchAllData();
 
       toast.success(t("Request sent successfully!"));
