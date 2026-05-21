@@ -76,7 +76,7 @@ export default function SidebarAds() {
 
     const interval = setInterval(() => {
       setIndex((prev) => (prev + 1) % ads.length);
-    }, 5000);
+    }, 1500);
 
     return () => clearInterval(interval);
   }, [ads]);
