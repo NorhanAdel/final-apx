@@ -71,15 +71,18 @@ export default function SidebarAds() {
   }, [lang]);
 
   /* AUTO ROTATE SAFE */
-  useEffect(() => {
-    if (ads.length <= 1) return;
+useEffect(() => {
+  if (ads.length <= 1) return;
 
-    const interval = setInterval(() => {
+  const interval = setInterval(() => {
+ 
+    setTimeout(() => {
       setIndex((prev) => (prev + 1) % ads.length);
-    }, 1500);
+    }, 1200);
+  }, 1500);  
 
-    return () => clearInterval(interval);
-  }, [ads]);
+  return () => clearInterval(interval);
+}, [ads]);
 
   if (loading) {
     return (
