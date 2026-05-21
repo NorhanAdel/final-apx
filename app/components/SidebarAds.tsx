@@ -20,22 +20,10 @@ interface Ad {
 }
 
 const texts = {
-  en: {
-    sponsored: "Sponsored",
-    learnMore: "View",
-  },
-  ar: {
-    sponsored: "إعلان ممول",
-    learnMore: "عرض",
-  },
-  pt: {
-    sponsored: "Patrocinado",
-    learnMore: "Ver",
-  },
-  zh: {
-    sponsored: "赞助",
-    learnMore: "查看",
-  },
+  en: { sponsored: "Sponsored", learnMore: "View" },
+  ar: { sponsored: "إعلان ممول", learnMore: "عرض" },
+  pt: { sponsored: "Patrocinado", learnMore: "Ver" },
+  zh: { sponsored: "赞助", learnMore: "查看" },
 };
 
 export default function SidebarAds() {
@@ -45,7 +33,6 @@ export default function SidebarAds() {
   const [closed, setClosed] = useState(false);
 
   const { lang } = useTranslate();
-
   const t = texts[lang as keyof typeof texts] || texts.en;
 
   const GET_ADS = `
@@ -63,22 +50,18 @@ export default function SidebarAds() {
     }
   `;
 
+  /* FETCH ADS */
   useEffect(() => {
     const fetchAds = async () => {
       try {
-        const res = await fetchGraphQL<{
-          getAllSponsoredAds: Ad[];
-        }>(GET_ADS);
+        const res = await fetchGraphQL<{ getAllSponsoredAds: Ad[] }>(GET_ADS);
 
-        if (res.data?.getAllSponsoredAds) {
-          setAds(
-            res.data.getAllSponsoredAds.filter(
-              (ad) => ad.is_active,
-            ),
-          );
-        }
+        const data = res?.data?.getAllSponsoredAds || [];
+
+        setAds(data.filter((ad) => ad?.is_active));
       } catch (err) {
-        console.error(err);
+        console.error("Ads error:", err);
+        setAds([]);
       } finally {
         setLoading(false);
       }
@@ -87,9 +70,9 @@ export default function SidebarAds() {
     fetchAds();
   }, [lang]);
 
-  /* AUTO ROTATE */
+  /* AUTO ROTATE SAFE */
   useEffect(() => {
-    if (ads.length === 0) return;
+    if (ads.length <= 1) return;
 
     const interval = setInterval(() => {
       setIndex((prev) => (prev + 1) % ads.length);
@@ -106,15 +89,19 @@ export default function SidebarAds() {
     );
   }
 
-  if (closed) return null;
+  if (closed || ads.length === 0) return null;
 
-  const ad = ads[index];
+  const ad = ads?.[index] ?? null;
 
   if (!ad) return null;
 
+  const imageUrl =
+    ad.media_url && process.env.NEXT_PUBLIC_API_URL
+      ? `${process.env.NEXT_PUBLIC_API_URL}${ad.media_url}`
+      : null;
+
   return (
     <div className="fixed right-4 top-1/2 -translate-y-1/2 z-50 hidden lg:block">
-
       <AnimatePresence mode="wait">
         <motion.div
           key={ad.id}
@@ -124,31 +111,27 @@ export default function SidebarAds() {
           transition={{ duration: 0.5 }}
           className="relative w-[260px] rounded-2xl overflow-hidden border border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl"
         >
-
-          {/* CLOSE BUTTON */}
+          {/* CLOSE */}
           <button
             onClick={() => setClosed(true)}
-            className="absolute top-2 right-2 z-20 bg-black/60 hover:bg-red-500 text-white rounded-full p-1.5 transition-all duration-300"
+            className="absolute top-2 right-2 z-20 bg-black/60 hover:bg-red-500 text-white rounded-full p-1.5"
           >
             <X size={16} />
           </button>
 
-          {/* IMAGE */}
+          {/* IMAGE SAFE */}
           <div className="relative h-40 bg-black overflow-hidden">
-
-            {ad.media_url && (
+            {imageUrl && (
               <Image
-                src={`${process.env.NEXT_PUBLIC_API_URL}${ad.media_url}`}
-                alt={ad.title}
+                src={imageUrl}
+                alt={ad.title || "ad"}
                 fill
                 className="object-cover transition-transform duration-700 hover:scale-110"
               />
             )}
 
-            {/* OVERLAY */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
-            {/* SPONSORED BADGE */}
             <span className="absolute top-2 left-2 bg-yellow-400 text-black text-[10px] px-2 py-1 rounded-full font-bold shadow">
               {t.sponsored}
             </span>
@@ -156,27 +139,22 @@ export default function SidebarAds() {
 
           {/* CONTENT */}
           <div className="p-4 text-white">
-
-            {/* COMPANY */}
             <h3 className="text-sm font-bold line-clamp-1">
-              {ad.company_name}
+              {ad.company_name || "—"}
             </h3>
 
-            {/* TITLE */}
             <p className="text-yellow-400 text-xs font-semibold mt-1 line-clamp-1">
-              {ad.title}
+              {ad.title || "—"}
             </p>
 
-            {/* DESCRIPTION */}
-            <p className="text-gray-400 text-xs mt-2 line-clamp-3 leading-relaxed">
-              {ad.description}
+            <p className="text-gray-400 text-xs mt-2 line-clamp-3">
+              {ad.description || ""}
             </p>
 
-            {/* BUTTON */}
             <a
-              href={ad.target_url}
+              href={ad.target_url || "#"}
               target="_blank"
-              className="mt-4 inline-flex items-center justify-center gap-2 w-full bg-yellow-400 text-black text-sm font-bold py-2.5 rounded-xl hover:bg-yellow-500 transition-all duration-300 shadow-lg hover:scale-[1.02]"
+              className="mt-4 inline-flex items-center justify-center gap-2 w-full bg-yellow-400 text-black text-sm font-bold py-2.5 rounded-xl"
             >
               {t.learnMore}
               <ExternalLink size={14} />
@@ -184,7 +162,6 @@ export default function SidebarAds() {
           </div>
         </motion.div>
       </AnimatePresence>
-
     </div>
   );
 }
