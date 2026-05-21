@@ -100,3 +100,29 @@ export const GET_CLUB_REQUESTS_FOR_ME = `
     }
   }
 `;
+
+/* =========================
+   NEW QUERIES
+========================= */
+
+export const HAS_PRIORITY_LISTING = `
+  query HasPriorityListing {
+    hasPriorityListing
+  }
+`;
+
+export const MY_MAX_REQUEST_STARS = `
+  query MyMaxRequestStars {
+    myMaxRequestStars
+  }
+`;
+
+export const CAN_CONTACT_PLAYER = `
+  query CanContactPlayer($playerId: ID!) {
+    canContactPlayer(playerId: $playerId) {
+      can_contact
+      reason
+      max_stars
+    }
+  }
+`;
