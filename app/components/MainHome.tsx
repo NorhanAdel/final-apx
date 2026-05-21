@@ -31,8 +31,9 @@ export default function MainHome() {
   <EventsSection sportId={sportId} />
       <NewestPlayers />
       <TransfersSection  />
-      <Investor/>
       <SponsoredAds/>
+      <Investor/>
+       
     </main>
   );
 }
