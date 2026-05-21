@@ -64,16 +64,18 @@ export default function BannerAds() {
     }
   `;
 
+  /* FETCH ADS */
   useEffect(() => {
     const fetchAds = async () => {
       try {
         const res = await fetchGraphQL<{ getAllSponsoredAds: Ad[] }>(GET_ADS);
 
-        if (res.data?.getAllSponsoredAds) {
-          setAds(res.data.getAllSponsoredAds.filter(a => a.is_active));
-        }
+        const data = res?.data?.getAllSponsoredAds || [];
+
+        setAds(data.filter((a) => a?.is_active));
       } catch (err) {
-        console.error(err);
+        console.error("Ads error:", err);
+        setAds([]);
       } finally {
         setLoading(false);
       }
@@ -82,9 +84,9 @@ export default function BannerAds() {
     fetchAds();
   }, [lang]);
 
-  /* AUTO ROTATE BANNER */
+  /* AUTO ROTATE */
   useEffect(() => {
-    if (ads.length === 0) return;
+    if (ads.length <= 1) return;
 
     const interval = setInterval(() => {
       setIndex((prev) => (prev + 1) % ads.length);
@@ -93,6 +95,7 @@ export default function BannerAds() {
     return () => clearInterval(interval);
   }, [ads]);
 
+  /* LOADING */
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24 bg-[#020617]">
@@ -101,16 +104,30 @@ export default function BannerAds() {
     );
   }
 
-  const ad = ads[index];
+  /* SAFE AD */
+  const ad = ads?.length > 0 ? ads[index] : null;
+
+  /* EMPTY STATE */
+  if (!ad) {
+    return (
+      <div className="flex items-center justify-center py-24 bg-[#020617]">
+        <p className="text-gray-400">No ads available</p>
+      </div>
+    );
+  }
+
+  const imageUrl =
+    ad.media_url && process.env.NEXT_PUBLIC_API_URL
+      ? `${process.env.NEXT_PUBLIC_API_URL}${ad.media_url}`
+      : null;
 
   return (
     <section className="w-full bg-[#020617] py-10">
-
       <div className="max-w-7xl mx-auto px-6">
 
         <AnimatePresence mode="wait">
           <motion.div
-            key={ad?.id}
+            key={ad.id}
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0 }}
@@ -119,16 +136,16 @@ export default function BannerAds() {
           >
 
             {/* IMAGE */}
-            {ad.media_url && (
+            {imageUrl && (
               <Image
-                src={`${process.env.NEXT_PUBLIC_API_URL}${ad.media_url}`}
-                alt={ad.title}
+                src={imageUrl}
+                alt={ad.title || "ad"}
                 fill
                 className="object-cover"
               />
             )}
 
-            {/* DARK OVERLAY */}
+            {/* OVERLAY */}
             <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
 
             {/* CONTENT */}
@@ -141,28 +158,29 @@ export default function BannerAds() {
 
               {/* company */}
               <h2 className="text-3xl md:text-4xl font-black">
-                {ad.company_name}
+                {ad.company_name || ""}
               </h2>
 
               {/* title */}
               <h3 className="text-yellow-400 text-xl font-semibold mt-2">
-                {ad.title}
+                {ad.title || ""}
               </h3>
 
               {/* description */}
               <p className="text-gray-300 mt-3 max-w-lg line-clamp-3">
-                {ad.description}
+                {ad.description || ""}
               </p>
 
               {/* CTA */}
               <a
-                href={ad.target_url}
+                href={ad.target_url || "#"}
                 target="_blank"
                 className="mt-6 inline-flex items-center gap-2 bg-yellow-400 text-black font-bold px-6 py-3 rounded-xl hover:bg-yellow-500 transition w-fit"
               >
                 {t.learnMore}
                 <ExternalLink size={16} />
               </a>
+
             </div>
           </motion.div>
         </AnimatePresence>
