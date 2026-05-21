@@ -364,7 +364,7 @@ export default function ClubRequests() {
     }
   }, [statusFilter, sentRequests, sentScoutRequests]);
 
-const handleSendRequest = async (e: React.FormEvent) => {
+ const handleSendRequest = async (e: React.FormEvent) => {
   e.preventDefault();
 
   if (!selectedTargetId) {
@@ -391,8 +391,14 @@ const handleSendRequest = async (e: React.FormEvent) => {
 
       const canContact = contactCheck.data?.canContactPlayer;
 
+      // ✅ HANDLE UNDEFINED RESPONSE
+      if (!canContact) {
+        toast.error(t("Unable to verify player contact"));
+        return;
+      }
+
       // ❌ BLOCK REQUEST IF PLAYER STARS > PACKAGE LIMIT
-      if (!canContact?.can_contact) {
+      if (!canContact.can_contact) {
         toast.error(canContact.reason);
         return;
       }
@@ -455,7 +461,6 @@ const handleSendRequest = async (e: React.FormEvent) => {
     setLoading(false);
   }
 };
-
   const handleCancelClick = (requestId: string, type: "player" | "scout") => {
     setSelectedRequestId(requestId);
     setSelectedRequestTypeVal(type);
