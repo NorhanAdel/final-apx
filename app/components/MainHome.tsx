@@ -8,6 +8,8 @@ import NewestPlayers from "../components/NewestPlayers";
 import TransfersSection from "../components/TransfersSection";
 import AdsSlider from "../components/AdsSlider";
 import PositionSlider from "./PositionSection";
+import Investor from "./Investor";
+import SponsoredAds from "./SponsoredAds";
 
 export default function MainHome() {
   const { theme } = useTheme();
@@ -29,6 +31,8 @@ export default function MainHome() {
   <EventsSection sportId={sportId} />
       <NewestPlayers />
       <TransfersSection  />
+      <Investor/>
+      <SponsoredAds/>
     </main>
   );
 }
