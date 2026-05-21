@@ -70,7 +70,12 @@ export default function BannerAds() {
       try {
         const res = await fetchGraphQL<{ getAllSponsoredAds: Ad[] }>(GET_ADS);
 
-        const data = res?.data?.getAllSponsoredAds || [];
+        const data = res?.data?.getAllSponsoredAds;
+
+        if (!data || !Array.isArray(data)) {
+          setAds([]);
+          return;
+        }
 
         setAds(data.filter((a) => a?.is_active));
       } catch (err) {
@@ -104,10 +109,9 @@ export default function BannerAds() {
     );
   }
 
-  /* SAFE AD */
-  const ad = ads?.length > 0 ? ads[index] : null;
+  const ad = ads.length > 0 ? ads[index] : null;
 
-  /* EMPTY STATE */
+  /* NO ADS SAFE STATE */
   if (!ad) {
     return (
       <div className="flex items-center justify-center py-24 bg-[#020617]">
@@ -180,7 +184,6 @@ export default function BannerAds() {
                 {t.learnMore}
                 <ExternalLink size={16} />
               </a>
-
             </div>
           </motion.div>
         </AnimatePresence>
