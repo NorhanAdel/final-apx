@@ -12,6 +12,8 @@ import {
 } from "@/app/graphql/query/player.queries";
 import useTranslate from "../hooks/useTranslate";
 
+import SidebarAds from "../components/SidebarAds";
+
 interface PlayerData {
   id: string;
   first_name: string;
@@ -71,9 +73,12 @@ export default function PlayersPage() {
 
   const fetchPlayers = useCallback(async () => {
     setLoading(true);
+
     try {
       let playerData: PlayerData[] = [];
+
       const sortByValue = getSortByValue();
+
       const minAgeNum = minAge ? parseInt(minAge) : undefined;
       const maxAgeNum = maxAge ? parseInt(maxAge) : undefined;
 
@@ -89,6 +94,7 @@ export default function PlayersPage() {
             maxAge: maxAgeNum,
           }
         );
+
         playerData = result?.data?.searchPlayers?.data || [];
       } else {
         const result = await fetchGraphQL<GetAllPlayersResponse>(
@@ -101,6 +107,7 @@ export default function PlayersPage() {
             maxAge: maxAgeNum,
           }
         );
+
         playerData = result?.data?.getAllPlayers?.data || [];
       }
 
@@ -113,6 +120,7 @@ export default function PlayersPage() {
         const rating = p.average_rating ?? 0;
 
         let image = "/b2.jpg";
+
         if (p.profile_image_url) {
           image = p.profile_image_url.startsWith("http")
             ? p.profile_image_url
@@ -163,12 +171,15 @@ export default function PlayersPage() {
     <div
       className={`min-h-screen py-10 px-4 sm:px-6 md:px-8 pb-10 ${bg} ${text}`}
     >
+      <SidebarAds />
+
       <div className="max-w-7xl mx-auto pt-20 sm:pt-24 md:pt-28 mb-8 flex flex-col gap-4">
         <div className="relative w-full">
           <Search
             className={`absolute left-4 top-1/2 -translate-y-1/2 ${accent}/60`}
             size={18}
           />
+
           <input
             type="text"
             placeholder={t("Search players by name...")}
@@ -259,7 +270,7 @@ export default function PlayersPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div className="max-w-6xl mr-[300px] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {loading ? (
           <p className="col-span-full text-center opacity-70">
             {t("Loading...")}
