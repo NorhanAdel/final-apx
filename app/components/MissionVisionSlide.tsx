@@ -123,14 +123,21 @@ export default function MissionVisionSlide() {
         className="object-cover"
       />
     </motion.div>
+<h2
+  className={`text-xl md:text-3xl font-bold mb-2 md:mb-3 text-center md:text-left md:mx-15 ${
+    theme === "dark" ? "text-white" : "text-black"
+  }`}
+>
+  {t("mission_title")}
+</h2>
 
-    <h2 className="text-xl md:text-3xl font-bold mb-2 md:mb-3 text-white text-center md:text-left md:mx-15">
-      {t("mission_title")}
-    </h2>
-
-    <p className="text-sm md:text-base text-gray-100 leading-relaxed max-w-md text-center md:text-left md:mx-15">
-      {t("mission_desc")}
-    </p>
+<p
+  className={`text-sm md:text-base leading-relaxed max-w-md text-center md:text-left md:mx-15 ${
+    theme === "dark" ? "text-gray-100" : "text-gray-800"
+  }`}
+>
+  {t("mission_desc")}
+</p>
   </div>
 </motion.div>
       </div>
