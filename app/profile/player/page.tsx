@@ -1,451 +1,1143 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
 import {
-  Star,
-  LayoutGrid,
-  Users,
+  User,
   Trophy,
-  Share2,
-  Mail,
-  Phone,
-  MapPin,
-  ChevronLeft,
-  ChevronRight,
-  FileText,
-  ArrowRightLeft,
-  Heart,
-  CheckCircle,
-  AlertCircle,
+  DollarSign,
+  Image as ImageIcon,
+  Plus,
+  Loader2,
+  X,
+  ChevronDown,
 } from "lucide-react";
-import { Swiper, SwiperSlide } from "swiper/react";
-import { Navigation } from "swiper/modules";
-import "swiper/css";
-import "swiper/css/navigation";
-import { motion } from "framer-motion";
+
+import {
+  useState,
+  ChangeEvent,
+  useEffect,
+} from "react";
+
+import { toast } from "sonner";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+
 import { useTheme } from "../../context/ThemeContext";
 import useTranslate from "../../hooks/useTranslate";
+
 import { fetchGraphQL } from "../../lib/fetchGraphQL";
+import { uploadGraphQL } from "../../lib/uploadGraphQL";
+
 import {
-  GET_MY_PLAYER_PROFILE,
-  GET_ALL_PLAYERS,
-} from "@/app/graphql/query/player.queries";
-import { LogoutButton } from "@/app/components/LogoutButton";
+  UPLOAD_PHOTO,
+  UPLOAD_VIDEO,
+  DELETE_PHOTO,
+  DELETE_VIDEO,
+} from "@/app/graphql/mutation/player.mutations";
 
-interface PlayerData {
-  id: string;
-  first_name: string;
-  last_name: string;
-  profile_image_url?: string;
-  nationality?: string;
-  date_of_birth?: string;
-  age?: number;
-  average_rating?: number;
-  trust_level?: string;
-  email_address?: string;
-  phone?: string;
-  country?: string;
-  city?: string;
-  is_verified?: boolean;
+interface UploadLimits {
+  max_photos: number;
+  max_videos: number;
+  max_ads: number;
+
+  uploaded_photos: number;
+  uploaded_videos: number;
+  uploaded_ads: number;
+
+  remaining_photos: number;
+  remaining_videos: number;
+  remaining_ads: number;
+
+  can_upload_photo: boolean;
+  can_upload_video: boolean;
+  can_create_ad: boolean;
 }
 
-interface ClubData {
+interface PlayerPhoto {
+  id: string;
+  image_url: string;
+}
+
+interface PlayerVideo {
+  id: string;
+  video_url: string;
+  title: string;
+}
+
+interface Sport {
   id: string;
   name: string;
-  email: string;
-  phone: string;
-  country: string;
-  city: string;
-  logo_url?: string;
-  cover_url?: string;
-  rating?: number;
-  description?: string;
-  members_count?: number;
-  is_verified?: boolean;
 }
 
-interface Member {
-  name: string;
-  img: string;
-  id: string;
+interface UserProfile {
+  playerProfile?: {
+    id?: string;
+  };
 }
 
-interface MenuButton {
-  label: string;
-  icon: React.ReactNode;
-  path?: string;
-  color?: string;
-  action?: () => void;
+function getFullUrl(url: string): string {
+  if (!url) return "";
+
+  if (
+    url.startsWith("http") ||
+    url.startsWith("blob:")
+  ) {
+    return url;
+  }
+
+  const API_URL =
+    process.env.NEXT_PUBLIC_API_URL;
+
+  return `${API_URL}${
+    url.startsWith("/") ? "" : "/"
+  }${url}`;
 }
 
-export default function ClubProfile() {
+export default function ImagesReels() {
   const { theme } = useTheme();
-  const { t } = useTranslate();
-  const router = useRouter();
-  const [swiperReady, setSwiperReady] = useState(false);
-  const [clubData, setClubData] = useState<ClubData | null>(null);
-  const [members, setMembers] = useState<Member[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isVerified, setIsVerified] = useState<boolean>(false);
-  const [hasProfile, setHasProfile] = useState<boolean>(false);
-  const prevRef = useRef<HTMLButtonElement>(null);
-  const nextRef = useRef<HTMLButtonElement>(null);
 
+  const router = useRouter();
+
+  const { t } = useTranslate();
+
+  const isDark = theme === "dark";
+
+  const [photos, setPhotos] = useState<
+    PlayerPhoto[]
+  >([]);
+
+  const [videos, setVideos] = useState<
+    PlayerVideo[]
+  >([]);
+
+  const [sports, setSports] = useState<
+    Sport[]
+  >([]);
+
+  const [
+    playerProfileId,
+    setPlayerProfileId,
+  ] = useState<string | null>(null);
+
+  const [hasNewUploads, setHasNewUploads] =
+    useState(false);
+
+  const [selectedSportId, setSelectedSportId] =
+    useState("");
+
+  const [limits, setLimits] =
+    useState<UploadLimits | null>(
+      null
+    );
+
+  const [isUploading, setIsUploading] =
+    useState(false);
+
+  const [mainVideo, setMainVideo] =
+    useState<string | null>(null);
+
+  // =========================
+  // FETCH DATA
+  // =========================
   useEffect(() => {
-    setSwiperReady(true);
-    fetchClubData();
-    fetchMembers();
+    fetchData();
   }, []);
 
-  const fetchClubData = async () => {
+  const fetchData = async () => {
     try {
-      const result = await fetchGraphQL<{ myPlayerProfile: PlayerData }>(
-        GET_MY_PLAYER_PROFILE,
+      const result: any =
+        await fetchGraphQL(`
+          query {
+            sports {
+              id
+              name
+            }
+
+            myPhotos {
+              id
+              image_url
+            }
+
+            myVideos {
+              id
+              video_url
+              title
+            }
+
+            myUploadLimits {
+              max_photos
+              max_videos
+              max_ads
+
+              uploaded_photos
+              uploaded_videos
+              uploaded_ads
+
+              remaining_photos
+              remaining_videos
+              remaining_ads
+
+              can_upload_photo
+              can_upload_video
+              can_create_ad
+            }
+          }
+        `);
+
+      setPhotos(
+        result?.data?.myPhotos || []
       );
-      if (result.data?.myPlayerProfile) {
-        const player = result.data.myPlayerProfile;
-        setClubData({
-          id: player.id,
-          name: `${player.first_name} ${player.last_name}`,
-          email: player.email_address || "",
-          phone: player.phone || "",
-          country: player.country || "",
-          city: player.city || "",
-          logo_url: player.profile_image_url,
-          rating: player.average_rating || 0,
-        });
-        setIsVerified(player.is_verified || false);
-        setHasProfile(true);
-      } else {
-        setHasProfile(false);
-        setClubData(null);
-      }
-    } catch (error) {
-      console.error("Error fetching club data:", error);
-      setHasProfile(false);
-      setClubData(null);
-    }
-  };
 
-  const fetchMembers = async () => {
-    try {
-      const result = await fetchGraphQL<{
-        getAllPlayers: { data: PlayerData[]; total: number };
-      }>(GET_ALL_PLAYERS, { skip: 0, take: 20 });
-      if (result.data?.getAllPlayers?.data) {
-        const formattedMembers = result.data.getAllPlayers.data.map(
-          (player) => ({
-            name: `${player.first_name} ${player.last_name}`,
-            img: player.profile_image_url || "",
-            id: player.id,
-          }),
+      setVideos(
+        result?.data?.myVideos || []
+      );
+
+      setSports(
+        result?.data?.sports || []
+      );
+
+      setLimits(
+        result?.data?.myUploadLimits
+      );
+
+      if (
+        result?.data?.sports?.length > 0
+      ) {
+        setSelectedSportId(
+          result.data.sports[0].id
         );
-        setMembers(formattedMembers);
-      } else {
-        setMembers([]);
       }
-    } catch (error) {
-      console.error("Error fetching members:", error);
-      setMembers([]);
-    } finally {
-      setLoading(false);
+
+      if (
+        result?.data?.myVideos
+          ?.length > 0
+      ) {
+        setMainVideo(
+          result.data.myVideos[0]
+            .video_url
+        );
+      }
+    } catch (err) {
+      console.log(err);
     }
   };
 
-  const getFullImageUrl = (url?: string) => {
-    if (!url) return "";
-    if (url.startsWith("http")) return url;
-    return `${process.env.NEXT_PUBLIC_API_URL}${url}`;
+  // =========================
+  // CHECK LIMITS
+  // =========================
+  const canUploadPhoto = () => {
+    return (
+      (limits?.remaining_photos || 0) > 0
+    );
   };
 
-  const menuButtons: MenuButton[] = [
-    {
-      label: t("Requests"),
-      icon: <LayoutGrid size={18} />,
-      path: "/profile/requests",
-    },
-    {
-      label: t("Deals"),
-      icon: <FileText size={18} />,
-      path: "/profile/deals",
-    },
-    {
-      label: t("My Transfers"),
-      icon: <ArrowRightLeft size={18} />,
-      path: "/profile/transfers",
-    },
-    {
-      label: t("My Contract"),
-      icon: <FileText size={18} />,
-      path: "/profile/mycontract",
-    },
-    {
-      label: t("Share AD"),
-      icon: <Share2 size={18} />,
-      path: "/profile/share",
-    },
-     
-    {
-      label: t("Participation Prime"),
-      icon: <Trophy size={18} />,
-      path: "/profile/participationprime",
-    },
-    {
-      label: t("Favorite Players"),
-      icon: <Heart size={18} className="text-red-500" />,
-      path: "/profile/favouritePlayers",
-    },
-  ];
-
-  if (loading) {
+  const canUploadVideo = () => {
     return (
-      <div
-        className={`min-h-screen flex items-center justify-center transition
-        ${
-          theme === "dark" ? "bg-[#020617] text-white" : "bg-white text-black"
-        }`}
-      >
-        <div className="text-yellow-400">{t("Loading...")}</div>
-      </div>
+      (limits?.remaining_videos || 0) > 0
     );
+  };
+
+  // =========================
+  // BUY EXTRA
+  // =========================
+ const buyExtra = async (
+  type: "PHOTO" | "VIDEO"
+) => {
+
+  // =========================
+  // CHECK IF USER STILL HAS SPACE
+  // =========================
+  if (
+    type === "PHOTO" &&
+    (limits?.remaining_photos || 0) > 0
+  ) {
+    toast.error(
+      t(
+        "You still have available photo uploads"
+      )
+    );
+
+    return;
   }
 
-  // If no profile exists, show message to complete registration
-  if (!hasProfile) {
-    return (
-      <div
-        className={`min-h-screen flex flex-col items-center justify-center transition
-        ${
-          theme === "dark" ? "bg-[#020617] text-white" : "bg-white text-black"
-        }`}
-      >
-        <div className="text-center max-w-md px-6">
-          <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-yellow-400/20 flex items-center justify-center">
-            <Users size={48} className="text-yellow-400" />
-          </div>
-          <h2 className="text-2xl font-bold mb-4">
-            {t("Complete Your Profile")}
-          </h2>
-          <p className="text-gray-500 mb-8">
-            {t("Please complete your profile information to continue")}
-          </p>
-          <button
-            onClick={() => router.push("/profile")}
-            className="px-8 py-3 bg-yellow-400 text-black font-semibold rounded-md hover:bg-yellow-500 transition"
-          >
-            {t("Complete Registration")}
-          </button>
-        </div>
-      </div>
+  if (
+    type === "VIDEO" &&
+    (limits?.remaining_videos || 0) > 0
+  ) {
+    toast.error(
+      t(
+        "You still have available video uploads"
+      )
     );
+
+    return;
   }
+
+
+    try {
+      const res: any =
+        await fetchGraphQL(
+          `
+          mutation PurchaseExtra($input: PurchaseExtraItemInput!) {
+            purchaseExtraItem(input: $input) {
+              success
+              message
+              purchase_id
+            }
+          }
+        `,
+          {
+            input: {
+              unit_type: type,
+              quantity: 1,
+
+              card: {
+                cardholder_name:
+                  "Test User",
+
+                card_number:
+                  "4111111111111111",
+
+                expiry_month: 12,
+
+                expiry_year: 2028,
+
+                cvv: "123",
+              },
+            },
+          }
+        );
+
+      if (res.errors) {
+        toast.error(
+          res.errors[0].message
+        );
+
+        return;
+      }
+
+      toast.success(
+        type === "PHOTO"
+          ? t(
+              "Extra photo purchased"
+            )
+          : t(
+              "Extra video purchased"
+            )
+      );
+
+      fetchData();
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  // =========================
+  // UPLOAD PHOTO
+  // =========================
+  const handlePhotoUpload = async (
+    e: ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+
+    if (!file) return;
+
+    if (!canUploadPhoto()) {
+      toast.error(
+        t("Photo limit reached")
+      );
+
+      e.target.value = "";
+
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      const result: any =
+        await uploadGraphQL(
+          UPLOAD_PHOTO,
+          {
+            file,
+
+            input: {
+              is_main: false,
+              caption: "",
+            },
+          }
+        );
+
+      if (result.errors) {
+        toast.error(
+          result.errors[0].message
+        );
+
+        return;
+      }
+
+      toast.success(
+        t("Photo uploaded")
+      );
+
+      setHasNewUploads(true);
+
+      if (
+        result?.data?.uploadPlayerPhoto
+      ) {
+        setPhotos((prev) => [
+          ...prev,
+          result.data.uploadPlayerPhoto,
+        ]);
+      }
+
+      setLimits((prev: any) => {
+        if (!prev) return prev;
+
+        const remaining =
+          prev.remaining_photos - 1;
+
+        return {
+          ...prev,
+
+          uploaded_photos:
+            prev.uploaded_photos + 1,
+
+          remaining_photos:
+            Math.max(0, remaining),
+
+          can_upload_photo:
+            remaining > 0,
+        };
+      });
+    } catch (err) {
+      console.log(err);
+
+      toast.error(
+        t("Upload failed")
+      );
+    } finally {
+      setIsUploading(false);
+
+      e.target.value = "";
+    }
+  };
+
+  // =========================
+  // UPLOAD VIDEO
+  // =========================
+  const handleVideoUpload = async (
+    e: ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+
+    if (!file) return;
+
+    if (!canUploadVideo()) {
+      toast.error(
+        t("Video limit reached")
+      );
+
+      e.target.value = "";
+
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      const result: any =
+        await uploadGraphQL(
+          UPLOAD_VIDEO,
+          {
+            file,
+
+            input: {
+              title: "Highlight",
+
+              type: "HIGHLIGHT",
+
+              sport_id:
+                selectedSportId,
+
+              duration_seconds: 30,
+
+              create_reel: false,
+            },
+          }
+        );
+
+      if (result.errors) {
+        toast.error(
+          result.errors[0].message
+        );
+
+        return;
+      }
+
+      toast.success(
+        t("Video uploaded")
+      );
+
+      setHasNewUploads(true);
+
+      if (
+        result?.data?.uploadPlayerVideo
+      ) {
+        setVideos((prev) => [
+          ...prev,
+          result.data.uploadPlayerVideo,
+        ]);
+
+        if (!mainVideo) {
+          setMainVideo(
+            result.data
+              .uploadPlayerVideo
+              .video_url
+          );
+        }
+      }
+
+      setLimits((prev: any) => {
+        if (!prev) return prev;
+
+        const remaining =
+          prev.remaining_videos - 1;
+
+        return {
+          ...prev,
+
+          uploaded_videos:
+            prev.uploaded_videos + 1,
+
+          remaining_videos:
+            Math.max(0, remaining),
+
+          can_upload_video:
+            remaining > 0,
+        };
+      });
+    } catch (err) {
+      console.log(err);
+
+      toast.error(
+        t("Upload failed")
+      );
+    } finally {
+      setIsUploading(false);
+
+      e.target.value = "";
+    }
+  };
+
+  // =========================
+  // DELETE
+  // =========================
+  const handleDelete = async (
+    id: string,
+    type: "image" | "video"
+  ) => {
+    try {
+      const mutation =
+        type === "image"
+          ? DELETE_PHOTO
+          : DELETE_VIDEO;
+
+      const variables =
+        type === "image"
+          ? { photoId: id }
+          : { videoId: id };
+
+      const result: any =
+        await fetchGraphQL(
+          mutation,
+          variables
+        );
+
+      if (result.errors) {
+        toast.error(
+          result.errors[0].message
+        );
+
+        return;
+      }
+
+      toast.success(
+        t("Deleted successfully")
+      );
+
+      if (type === "image") {
+        setPhotos((prev) =>
+          prev.filter(
+            (p) => p.id !== id
+          )
+        );
+
+        setLimits((prev: any) => ({
+          ...prev,
+
+          uploaded_photos:
+            Math.max(
+              0,
+              prev.uploaded_photos - 1
+            ),
+
+          remaining_photos:
+            prev.remaining_photos + 1,
+
+          can_upload_photo: true,
+        }));
+      }
+
+      if (type === "video") {
+        setVideos((prev) =>
+          prev.filter(
+            (v) => v.id !== id
+          )
+        );
+
+        setLimits((prev: any) => ({
+          ...prev,
+
+          uploaded_videos:
+            Math.max(
+              0,
+              prev.uploaded_videos - 1
+            ),
+
+          remaining_videos:
+            prev.remaining_videos + 1,
+
+          can_upload_video: true,
+        }));
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const handleSubmitProfile =
+    async () => {
+      let finalPlayerId =
+        playerProfileId;
+
+      if (!finalPlayerId) {
+        try {
+          const storedUser =
+            localStorage.getItem(
+              "user"
+            );
+
+          if (storedUser) {
+            const user: UserProfile =
+              JSON.parse(storedUser);
+
+            finalPlayerId =
+              user.playerProfile?.id ||
+              null;
+          }
+        } catch (err) {
+          console.error(
+            "Error getting user profile:",
+            err
+          );
+        }
+      }
+
+      if (!finalPlayerId) {
+        try {
+          const result: any =
+            await fetchGraphQL(
+              `
+          query GetMyPlayerId {
+            myPlayerProfile {
+              id
+            }
+          }
+        `
+            );
+
+          if (
+            result.data
+              ?.myPlayerProfile?.id
+          ) {
+            finalPlayerId =
+              result.data
+                .myPlayerProfile.id;
+
+            setPlayerProfileId(
+              finalPlayerId
+            );
+
+            try {
+              const storedUser =
+                localStorage.getItem(
+                  "user"
+                );
+
+              if (storedUser) {
+                const user =
+                  JSON.parse(
+                    storedUser
+                  );
+
+                if (
+                  !user.playerProfile
+                ) {
+                  user.playerProfile =
+                    {};
+                }
+
+                user.playerProfile.id =
+                  finalPlayerId;
+
+                localStorage.setItem(
+                  "user",
+                  JSON.stringify(user)
+                );
+              }
+            } catch (e) {
+              console.error(
+                "Failed to update localStorage:",
+                e
+              );
+            }
+          }
+        } catch (err) {
+          console.error(
+            "Failed to fetch player ID:",
+            err
+          );
+        }
+      }
+
+      if (!finalPlayerId) {
+        toast.error(
+          t(
+            "Player profile not found"
+          )
+        );
+
+        router.push("/");
+
+        return;
+      }
+
+      const hasUploads =
+        photos.length > 0 ||
+        videos.length > 0;
+
+      if (!hasUploads) {
+        toast.error(
+          t(
+            "Please upload at least one photo or video"
+          )
+        );
+
+        return;
+      }
+
+      toast.success(
+        t(
+          "Profile submitted successfully!"
+        )
+      );
+
+      setTimeout(() => {
+        router.push(
+          `/players/${finalPlayerId}`
+        );
+      }, 1500);
+    };
 
   return (
-    <div
-      className={`min-h-screen flex justify-center py-40 px-4 transition
-      ${theme === "dark" ? "bg-[#020617] text-white" : "bg-white text-black"}`}
-    >
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="max-w-6xl w-full"
-      >
-        {/* ===== Header ===== */}
-        <div className="flex flex-col md:flex-row gap-6 mb-8">
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            className="relative w-[320px] h-[320px] rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-800"
-          >
-            {clubData?.logo_url ? (
-              <Image
-                src={getFullImageUrl(clubData.logo_url)}
-                fill
-                alt="club"
-                className="object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <Users size={64} className="text-gray-400" />
-              </div>
-            )}
-          </motion.div>
+  <div
+    className={`min-h-screen py-32 px-6 ${
+      isDark
+        ? "bg-[#020617] text-white"
+        : "bg-gray-50 text-black"
+    }`}
+  >
+    <div className="max-w-6xl mx-auto">
 
-          <div className="flex-1 space-y-3">
-            <h1 className="text-3xl font-bold">{clubData?.name || ""}</h1>
+      {/* TITLE */}
+      <h1 className="text-4xl font-black text-center text-yellow-400 mb-14">
+        {t("Images & Videos")}
+      </h1>
 
-            {/* 7 Stars Rating */}
-            <div className="flex text-yellow-400">
-              {[...Array(7)].map((_, i) => (
-                <motion.div
-                  key={i}
-                  whileHover={{ scale: 1.2 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <Star
-                    size={20}
-                    fill={i < (clubData?.rating || 0) ? "currentColor" : "none"}
-                    className={
-                      i < (clubData?.rating || 0)
-                        ? "text-yellow-400"
-                        : "text-gray-400"
-                    }
-                  />
-                </motion.div>
-              ))}
-            </div>
+      {/* STEPS */}
+      <div className="flex justify-center items-center gap-6 mb-14">
+        <Step
+          icon={<User />}
+          isDark={isDark}
+        />
 
-            {/* Info */}
-            <div className="text-gray-400 space-y-2">
-              {clubData?.country && (
-                <div className="flex items-center gap-2">
-                  <MapPin size={14} />
-                  {clubData.country}
-                </div>
-              )}
+        <Line isDark={isDark} />
 
-              <div className="flex flex-col sm:flex-row gap-4">
-                {clubData?.email && (
-                  <span className="flex items-center gap-1">
-                    <Mail size={14} /> {clubData.email}
-                  </span>
-                )}
-                {clubData?.phone && (
-                  <span className="flex items-center gap-1">
-                    <Phone size={14} /> {clubData.phone}
-                  </span>
-                )}
-              </div>
-            </div>
+        <Step
+          icon={<Trophy />}
+          isDark={isDark}
+        />
 
-            {/* Verification Status Badge */}
-            <div className="flex justify-start">
-              {isVerified ? (
-                <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-500/20 text-green-500 text-xs">
-                  <CheckCircle size={12} />
-                  {t("Verified Player")}
-                </span>
-              ) : (
-                <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-500 text-xs">
-                  <AlertCircle size={12} />
-                  {t("Pending Verification")}
-                </span>
-              )}
-            </div>
-          </div>
+        <Line isDark={isDark} />
+
+        <Step
+          icon={<DollarSign />}
+          isDark={isDark}
+        />
+
+        <Line isDark={isDark} />
+
+        <Step
+          active
+          icon={<ImageIcon />}
+          isDark={isDark}
+        />
+      </div>
+
+      {/* LIMITS */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+
+        <div className="rounded-3xl bg-gradient-to-br from-cyan-500 to-blue-600 p-6 text-white">
+          <p className="text-sm opacity-80">
+            {t("Photos")}
+          </p>
+
+          <h2 className="text-4xl font-black mt-2">
+            {limits?.remaining_photos || 0}
+          </h2>
+
+          <p className="mt-2 text-sm opacity-70">
+            {limits?.uploaded_photos} / {limits?.max_photos}
+          </p>
         </div>
 
-        {/* ===== Edit Button ===== */}
-        <motion.button
-          whileTap={{ scale: 0.95 }}
-          whileHover={{ scale: 1.02 }}
-          onClick={() => router.push("/profile")}
-          className={`w-full py-3 mb-6 rounded-md transition border-x-3 border-[#F0B100]
-          ${
-            theme === "dark" ? "bg-[#0B1739] text-white" : "bg-white text-black"
-          }`}
-        >
-          {t("Edit Profile")}
-        </motion.button>
+        <div className="rounded-3xl bg-gradient-to-br from-pink-500 to-rose-600 p-6 text-white">
+          <p className="text-sm opacity-80">
+            {t("Videos")}
+          </p>
 
-        {/* ===== Menu ===== */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-10">
-          {menuButtons.map((btn, i) => (
-            <motion.button
-              key={i}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => {
-                if (btn.path) router.push(btn.path);
-                if (btn.action) btn.action();
-              }}
-              className={`flex justify-between items-center border-x-3 border-[#F0B100] p-3 rounded-md transition
-              ${
-                theme === "dark"
-                  ? "bg-[#0B1739] text-white"
-                  : "bg-gray-100 text-black"
-              }`}
+          <h2 className="text-4xl font-black mt-2">
+            {limits?.remaining_videos || 0}
+          </h2>
+
+          <p className="mt-2 text-sm opacity-70">
+            {limits?.uploaded_videos} / {limits?.max_videos}
+          </p>
+        </div>
+
+        <div className="rounded-3xl bg-gradient-to-br from-yellow-400 to-orange-500 p-6 text-white">
+          <p className="text-sm opacity-80">
+            {t("Ads")}
+          </p>
+
+          <h2 className="text-4xl font-black mt-2">
+            {limits?.remaining_ads || 0}
+          </h2>
+        </div>
+
+      </div>
+
+      {/* BUY EXTRA */}
+     {/* BUY EXTRA */}
+<div className="flex flex-wrap gap-4 mb-14">
+
+  {!canUploadPhoto() && (
+    <button
+      onClick={() =>
+        buyExtra("PHOTO")
+      }
+      className="px-6 py-3 rounded-2xl bg-cyan-500 text-white font-bold"
+    >
+      + {t("Buy Extra Photo")}
+    </button>
+  )}
+
+  {!canUploadVideo() && (
+    <button
+      onClick={() =>
+        buyExtra("VIDEO")
+      }
+      className="px-6 py-3 rounded-2xl bg-pink-500 text-white font-bold"
+    >
+      + {t("Buy Extra Video")}
+    </button>
+  )}
+
+</div>
+
+      {/* PHOTOS */}
+      <div className="mb-16">
+
+        <div className="flex items-center justify-between mb-6">
+
+          <h2 className="text-2xl font-bold">
+            {t("Photos")}
+          </h2>
+
+          <label
+            className={`cursor-pointer ${
+              !canUploadPhoto()
+                ? "opacity-50 pointer-events-none"
+                : ""
+            }`}
+          >
+
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={
+                handlePhotoUpload
+              }
+            />
+
+            <div className="w-14 h-14 rounded-full bg-cyan-500 flex items-center justify-center">
+              <Plus />
+            </div>
+
+          </label>
+
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+
+          {photos.map((p) => (
+            <div
+              key={p.id}
+              className="relative h-44 rounded-2xl overflow-hidden group"
             >
-              <span className="text-sm">{btn.label}</span>
-              <span className={btn.color || "text-yellow-400"}>{btn.icon}</span>
-            </motion.button>
+              <Image
+                src={getFullUrl(
+                  p.image_url
+                )}
+                alt=""
+                fill
+                className="object-cover group-hover:scale-110 transition"
+              />
+
+              <button
+                onClick={() =>
+                  handleDelete(
+                    p.id,
+                    "image"
+                  )
+                }
+                className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition"
+              >
+                <X size={16} />
+              </button>
+            </div>
           ))}
 
-          {/* Logout Button */}
-          <LogoutButton variant="default" />
         </div>
 
-        {/* ===== Members Slider ===== */}
-        {members.length > 0 && (
-          <div className="relative px-10">
-            {swiperReady && (
-              <Swiper
-                modules={[Navigation]}
-                navigation={{
-                  prevEl: prevRef.current,
-                  nextEl: nextRef.current,
-                }}
-                spaceBetween={15}
-                slidesPerView={1}
-                breakpoints={{
-                  640: { slidesPerView: 2 },
-                  768: { slidesPerView: 3 },
-                  1024: { slidesPerView: 4 },
-                }}
-                className="overflow-visible"
-              >
-                {members.map((m) => (
-                  <SwiperSlide key={m.id}>
-                    <motion.div
-                      whileHover={{ scale: 1.05 }}
-                      className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer
-                      ${
-                        theme === "dark"
-                          ? "bg-[#051139] border-gray-700 hover:border-yellow-400"
-                          : "bg-white shadow border-gray-200 hover:border-yellow-400"
-                      }`}
-                      onClick={() => router.push(`/players/${m.id}`)}
-                    >
-                      <div className="w-12 h-12 relative rounded-full overflow-hidden bg-gray-300 dark:bg-gray-700">
-                        {m.img ? (
-                          <Image
-                            src={getFullImageUrl(m.img)}
-                            fill
-                            alt="member"
-                            className="object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Users size={20} className="text-gray-500" />
-                          </div>
-                        )}
-                      </div>
-                      <p className="text-sm font-medium">{m.name}</p>
-                    </motion.div>
-                  </SwiperSlide>
-                ))}
-              </Swiper>
+      </div>
+
+      {/* SPORT */}
+      <div className="mb-6 relative w-64">
+
+        <select
+          value={selectedSportId}
+          onChange={(e) =>
+            setSelectedSportId(
+              e.target.value
+            )
+          }
+          className={`w-full rounded-xl px-4 py-3 appearance-none outline-none ${
+            isDark
+              ? "bg-[#0b1736] border border-[#1e2d5a]"
+              : "bg-white border border-gray-300"
+          }`}
+        >
+          {sports.map((s) => (
+            <option
+              key={s.id}
+              value={s.id}
+            >
+              {s.name}
+            </option>
+          ))}
+        </select>
+
+        <ChevronDown
+          size={16}
+          className="absolute right-3 top-4 text-gray-400"
+        />
+
+      </div>
+
+      {/* MAIN VIDEO */}
+      <div
+        className={`w-full h-[450px] rounded-3xl overflow-hidden mb-8 border ${
+          isDark
+            ? "bg-black border-[#1e293b]"
+            : "bg-white border-gray-300"
+        }`}
+      >
+        {mainVideo ? (
+          <video
+            src={getFullUrl(
+              mainVideo
             )}
-
-            {/* Navigation Buttons */}
-            <button
-              ref={prevRef}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-black/50 hover:bg-black/70 rounded-full p-2 transition"
-            >
-              <ChevronLeft size={24} className="text-white" />
-            </button>
-
-            <button
-              ref={nextRef}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-black/50 hover:bg-black/70 rounded-full p-2 transition"
-            >
-              <ChevronRight size={24} className="text-white" />
-            </button>
+            controls
+            className="w-full h-full object-contain"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-gray-500">
+            {t("No video selected")}
           </div>
         )}
-      </motion.div>
+      </div>
+
+      {/* VIDEOS */}
+      <div className="flex flex-wrap gap-5 mb-10">
+
+        {videos.map((v) => (
+          <div
+            key={v.id}
+            className="relative group"
+          >
+            <video
+              src={getFullUrl(
+                v.video_url
+              )}
+              onClick={() =>
+                setMainVideo(
+                  v.video_url
+                )
+              }
+              className={`w-40 h-28 rounded-2xl object-cover cursor-pointer border-2 ${
+                mainVideo ===
+                v.video_url
+                  ? "border-yellow-400"
+                  : "border-transparent"
+              }`}
+            />
+
+            <button
+              onClick={() =>
+                handleDelete(
+                  v.id,
+                  "video"
+                )
+              }
+              className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition"
+            >
+              <X size={14} />
+            </button>
+
+            <p className="text-xs mt-2 text-center">
+              {v.title}
+            </p>
+          </div>
+        ))}
+
+        {/* ADD VIDEO */}
+        <label
+          className={`w-28 h-28 rounded-2xl flex items-center justify-center cursor-pointer border-2 border-dashed ${
+            !canUploadVideo()
+              ? "opacity-50 pointer-events-none"
+              : ""
+          } ${
+            isDark
+              ? "border-[#1e293b] bg-[#0b1120]"
+              : "border-gray-300 bg-white"
+          }`}
+        >
+          <Plus className="text-pink-500" />
+
+          <input
+            type="file"
+            accept="video/*"
+            className="hidden"
+            onChange={
+              handleVideoUpload
+            }
+          />
+        </label>
+
+      </div>
+
+      {/* SUBMIT */}
+      <div className="flex justify-between mt-14">
+
+        <button
+          onClick={() =>
+            router.back()
+          }
+          className={`px-10 py-3 rounded-2xl ${
+            isDark
+              ? "bg-[#1e293b]"
+              : "bg-gray-200"
+          }`}
+        >
+          {t("Previous")}
+        </button>
+
+        <button
+          onClick={handleSubmitProfile}
+          disabled={isUploading}
+          className="px-12 py-3 rounded-2xl bg-yellow-400 text-black font-bold hover:scale-105 transition disabled:opacity-50"
+        >
+          {isUploading ? (
+            <Loader2 className="animate-spin w-5 h-5" />
+          ) : (
+            t("Submit")
+          )}
+        </button>
+
+      </div>
+
+      {/* LOADING */}
+      {isUploading && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+
+          <Loader2 className="animate-spin text-yellow-400 w-14 h-14" />
+
+        </div>
+      )}
+
     </div>
+  </div>
+);
+}
+
+function Step({
+  icon,
+  active,
+  isDark,
+}: {
+  icon: React.ReactNode;
+  active?: boolean;
+  isDark: boolean;
+}) {
+  return (
+    <div
+      className={`w-14 h-14 rounded-full flex items-center justify-center ${
+        active
+          ? "bg-yellow-400 text-black"
+          : isDark
+          ? "bg-[#0b1120] border border-[#1e293b] text-gray-400"
+          : "bg-white border border-gray-300 text-gray-500"
+      }`}
+    >
+      {icon}
+    </div>
+  );
+}
+
+function Line({
+  isDark,
+}: {
+  isDark: boolean;
+}) {
+  return (
+    <div
+      className={`w-16 h-[2px] ${
+        isDark
+          ? "bg-[#1e293b]"
+          : "bg-gray-300"
+      }`}
+    />
   );
 }
