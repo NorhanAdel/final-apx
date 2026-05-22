@@ -10,777 +10,1096 @@ import {
   X,
   ChevronDown,
 } from "lucide-react";
-import { useState, ChangeEvent, useEffect } from "react";
+
+import {
+  useState,
+  ChangeEvent,
+  useEffect,
+} from "react";
+
 import { toast } from "sonner";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+
 import { useTheme } from "../../context/ThemeContext";
 import useTranslate from "../../hooks/useTranslate";
+
 import { fetchGraphQL } from "../../lib/fetchGraphQL";
 import { uploadGraphQL } from "../../lib/uploadGraphQL";
+
 import {
   UPLOAD_PHOTO,
   UPLOAD_VIDEO,
   DELETE_PHOTO,
   DELETE_VIDEO,
 } from "@/app/graphql/mutation/player.mutations";
-import { GET_MY_PHOTOS_AND_VIDEOS } from "@/app/graphql/query/player.queries";
 
-interface Sport {
-  id: string;
-  name: string;
+interface UploadLimits {
+  max_photos: number;
+  max_videos: number;
+  max_ads: number;
+
+  uploaded_photos: number;
+  uploaded_videos: number;
+  uploaded_ads: number;
+
+  remaining_photos: number;
+  remaining_videos: number;
+  remaining_ads: number;
+
+  can_upload_photo: boolean;
+  can_upload_video: boolean;
+  can_create_ad: boolean;
 }
 
 interface PlayerPhoto {
   id: string;
   image_url: string;
-  caption?: string;
-  created_at: string;
 }
 
 interface PlayerVideo {
   id: string;
   video_url: string;
   title: string;
-  type: string;
-  duration_seconds: number;
-  created_at: string;
-  is_reel?: boolean;
+}
+
+interface Sport {
+  id: string;
+  name: string;
 }
 
 interface UserProfile {
-  id: string;
   playerProfile?: {
-    id: string;
+    id?: string;
   };
 }
 
 function getFullUrl(url: string): string {
   if (!url) return "";
-  if (url.startsWith("blob:") || url.startsWith("http")) return url;
-  const API_URL = process.env.NEXT_PUBLIC_API_URL;
-  return `${API_URL}${url.startsWith("/") ? "" : "/"}${url}`;
-}
 
-function ShareAsReelToggle({
-  videoId,
-  isReel,
-  isDark,
-  onToggle,
-  isLoading,
-  t,
-}: {
-  videoId: string;
-  isReel: boolean;
-  isDark: boolean;
-  onToggle: (videoId: string) => void;
-  isLoading: boolean;
-  t: (key: string) => string;
-}) {
-  return (
-    <div className="flex items-center gap-2 mt-2">
-      <span
-        className={`text-[11px] italic font-semibold ${
-          isDark ? "text-gray-400" : "text-gray-500"
-        }`}
-      >
-        {t("Share as Reels")}
-      </span>
-      <button
-        onClick={() => onToggle(videoId)}
-        disabled={isLoading}
-        className={`relative w-11 h-6 rounded-full transition-all duration-300 focus:outline-none disabled:opacity-50 ${
-          isReel ? "bg-green-500" : isDark ? "bg-gray-600" : "bg-gray-300"
-        }`}
-      >
-        <span
-          className={`absolute top-[3px] w-[18px] h-[18px] rounded-full shadow-md transition-all duration-300 flex items-center justify-center ${
-            isReel
-              ? "translate-x-[22px] bg-white"
-              : "translate-x-[3px] bg-white"
-          }`}
-        >
-          {isLoading && (
-            <Loader2 size={10} className="animate-spin text-gray-400" />
-          )}
-        </span>
-      </button>
-    </div>
-  );
-}
+  if (
+    url.startsWith("http") ||
+    url.startsWith("blob:")
+  ) {
+    return url;
+  }
 
-function TitleModal({
-  isOpen,
-  onClose,
-  onConfirm,
-  isLoading,
-  isDark,
-  t,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: (title: string) => void;
-  isLoading: boolean;
-  isDark: boolean;
-  t: (key: string) => string;
-}) {
-  const [title, setTitle] = useState("");
+  const API_URL =
+    process.env.NEXT_PUBLIC_API_URL;
 
-  if (!isOpen) return null;
-
-  const handleConfirm = () => {
-    if (!title.trim()) {
-      toast.error(t("Please enter a title"));
-      return;
-    }
-    onConfirm(title.trim());
-    setTitle("");
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div
-        className={`w-full max-w-md rounded-2xl p-6 shadow-2xl ${
-          isDark ? "bg-[#0b1736] border border-[#1e2d5a]" : "bg-white"
-        }`}
-      >
-        <h2
-          className={`text-xl font-bold mb-4 ${
-            isDark ? "text-white" : "text-gray-800"
-          }`}
-        >
-          {t("Enter Video Title")}
-        </h2>
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder={t("Video title...")}
-          className={`w-full rounded-xl px-4 py-3 text-sm outline-none focus:border-yellow-400 transition-all ${
-            isDark
-              ? "bg-[#0b1736] border border-[#1e2d5a] text-white placeholder-gray-500"
-              : "bg-white border border-gray-300 text-black placeholder-gray-400"
-          }`}
-          autoFocus
-          onKeyDown={(e) => {
-            if (e.key === "Enter") handleConfirm();
-            if (e.key === "Escape") onClose();
-          }}
-        />
-        <div className="flex gap-3 mt-6">
-          <button
-            onClick={onClose}
-            className={`flex-1 py-2 rounded-xl transition ${
-              isDark
-                ? "bg-gray-700 text-white hover:bg-gray-600"
-                : "bg-gray-200 text-black hover:bg-gray-300"
-            }`}
-          >
-            {t("Cancel")}
-          </button>
-          <button
-            onClick={handleConfirm}
-            disabled={isLoading}
-            className="flex-1 py-2 rounded-xl bg-yellow-400 text-black font-bold hover:bg-yellow-500 transition disabled:opacity-50"
-          >
-            {isLoading ? t("Uploading...") : t("Upload")}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  return `${API_URL}${
+    url.startsWith("/") ? "" : "/"
+  }${url}`;
 }
 
 export default function ImagesReels() {
   const { theme } = useTheme();
+
   const router = useRouter();
-  const { t, lang } = useTranslate();
 
-  const [video, setVideo] = useState<string | null>(null);
-  const [photos, setPhotos] = useState<PlayerPhoto[]>([]);
-  const [reels, setReels] = useState<PlayerVideo[]>([]);
-  const [sports, setSports] = useState<Sport[]>([]);
-  const [selectedSportId, setSelectedSportId] = useState<string>("");
-  const [isUploading, setIsUploading] = useState(false);
-  const [isLoadingPage, setIsLoadingPage] = useState(true);
-  const [togglingReelId, setTogglingReelId] = useState<string | null>(null);
-  const [playerProfileId, setPlayerProfileId] = useState<string | null>(null);
-  const [hasNewUploads, setHasNewUploads] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [pendingVideoFile, setPendingVideoFile] = useState<File | null>(null);
-
-  useEffect(() => {
-    const fetchInitialData = async () => {
-      try {
-        const result = await fetchGraphQL<{
-          sports: Sport[];
-          myPhotos: PlayerPhoto[];
-          myVideos: PlayerVideo[];
-        }>(GET_MY_PHOTOS_AND_VIDEOS);
-
-        if (result.data) {
-          const fetchedSports = result.data.sports || [];
-          setSports(fetchedSports);
-          if (fetchedSports.length > 0) {
-            setSelectedSportId(fetchedSports[0].id.toString());
-          }
-          setPhotos(result.data.myPhotos || []);
-          setReels(result.data.myVideos || []);
-          if (result.data.myVideos?.length > 0) {
-            setVideo(result.data.myVideos[0].video_url);
-          }
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setIsLoadingPage(false);
-      }
-    };
-
-    const getUserProfile = () => {
-      try {
-        const storedUser = localStorage.getItem("user");
-        if (storedUser) {
-          const user: UserProfile = JSON.parse(storedUser);
-          if (user.playerProfile?.id) {
-            setPlayerProfileId(user.playerProfile.id);
-          }
-        }
-      } catch (err) {
-        console.error("Error getting user profile:", err);
-      }
-    };
-
-    getUserProfile();
-    fetchInitialData();
-  }, [lang]);
-
-  const refreshVideos = async () => {
-    try {
-      const result = await fetchGraphQL<{ myVideos: PlayerVideo[] }>(
-        `query GetMyVideos {
-          myVideos {
-            id
-            video_url
-            title
-            is_reel
-          }
-        }`,
-      );
-      if (result.data?.myVideos) {
-        setReels(result.data.myVideos);
-        if (!video && result.data.myVideos.length > 0) {
-          setVideo(result.data.myVideos[0].video_url);
-        }
-      }
-    } catch (err) {
-      console.error("Failed to refresh videos:", err);
-    }
-  };
-
-  const handleToggleReel = async (videoId: string) => {
-    setTogglingReelId(videoId);
-
-    try {
-      const result = await fetchGraphQL<{
-        toggleVideoReelStatus: { is_reel: boolean };
-      }>(
-        `mutation ToggleReel($videoId: String!) {
-          toggleVideoReelStatus(videoId: $videoId) {
-            is_reel
-          }
-        }`,
-        { videoId },
-      );
-
-      if (result.errors) {
-        toast.error(result.errors[0].message);
-      } else if (result.data) {
-        await refreshVideos();
-        toast.success(
-          result.data.toggleVideoReelStatus.is_reel
-            ? t("Added to Reels!")
-            : t("Removed from Reels"),
-        );
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error(t("Failed to update reel status"));
-    } finally {
-      setTogglingReelId(null);
-    }
-  };
-
-  const handlePhotoUpload = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const localUrl = URL.createObjectURL(file);
-    const tempId = `temp-${Date.now()}`;
-    const tempPhoto = {
-      id: tempId,
-      image_url: localUrl,
-      caption: "",
-      created_at: "",
-    } as PlayerPhoto;
-    setPhotos((prev) => [...prev, tempPhoto]);
-
-    setIsUploading(true);
-    const tid = toast.loading(t("Uploading photo..."));
-
-    try {
-      const result = await uploadGraphQL<{ uploadPlayerPhoto: PlayerPhoto }>(
-        UPLOAD_PHOTO,
-        { file, input: { is_main: false, caption: "" } },
-      );
-
-      if (result.errors) throw new Error(result.errors[0].message);
-
-      if (result.data?.uploadPlayerPhoto) {
-        setPhotos((prev) =>
-          prev.map((p) =>
-            p.id === tempId ? result.data!.uploadPlayerPhoto : p,
-          ),
-        );
-        setHasNewUploads(true);
-        toast.success(t("Photo uploaded!"), { id: tid });
-      }
-    } catch (err) {
-      setPhotos((prev) => prev.filter((p) => p.id !== tempId));
-      toast.error(err instanceof Error ? err.message : t("Upload failed"), {
-        id: tid,
-      });
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 50 * 1024 * 1024) {
-      toast.error(t("Video is too large. Max 50MB allowed."));
-      return;
-    }
-
-    if (!selectedSportId) {
-      toast.error(t("Please select a sport from the dropdown first"));
-      return;
-    }
-
-    setPendingVideoFile(file);
-    setIsModalOpen(true);
-  };
-
-  const handleVideoUploadWithTitle = async (title: string) => {
-    if (!pendingVideoFile) return;
-
-    const file = pendingVideoFile;
-    const localUrl = URL.createObjectURL(file);
-    const tempId = `v-${Date.now()}`;
-    const tempVideo = {
-      id: tempId,
-      video_url: localUrl,
-      title: title,
-      type: "HIGHLIGHT",
-      duration_seconds: 0,
-      created_at: "",
-      is_reel: false,
-    } as PlayerVideo;
-
-    setReels((prev) => [...prev, tempVideo]);
-    setVideo(localUrl);
-    setIsModalOpen(false);
-    setIsUploading(true);
-    const tid = toast.loading(t("Uploading video..."));
-
-    try {
-      const result = await uploadGraphQL<{ uploadPlayerVideo: PlayerVideo }>(
-        UPLOAD_VIDEO,
-        {
-          file,
-          input: {
-            title: title,
-            type: "HIGHLIGHT",
-            sport_id: selectedSportId,
-            duration_seconds: Math.floor(file.size / (1024 * 1024)) || 30,
-            create_reel: false,
-          },
-        },
-      );
-
-      if (result.errors) throw new Error(result.errors[0].message);
-
-      if (result.data?.uploadPlayerVideo) {
-        const newVideo = result.data.uploadPlayerVideo;
-        setReels((prev) => prev.map((v) => (v.id === tempId ? newVideo : v)));
-        setVideo(newVideo.video_url);
-        setHasNewUploads(true);
-        toast.success(t("Video uploaded!"), { id: tid });
-        setTimeout(() => {
-          toast.info(
-            t(
-              "Video is being processed. You can create reels in a few moments.",
-            ),
-          );
-        }, 1000);
-      }
-    } catch (err) {
-      setReels((prev) => prev.filter((v) => v.id !== tempId));
-      setVideo(reels.length > 0 ? reels[0].video_url : null);
-      toast.error(err instanceof Error ? err.message : t("Upload failed"), {
-        id: tid,
-      });
-    } finally {
-      setIsUploading(false);
-      setPendingVideoFile(null);
-    }
-  };
-
-  const handleDelete = async (id: string, type: "image" | "video") => {
-    const mutation = type === "image" ? DELETE_PHOTO : DELETE_VIDEO;
-    const variables = type === "image" ? { photoId: id } : { videoId: id };
-
-    try {
-      const result = await fetchGraphQL(mutation, variables);
-      if (result.errors) throw new Error(result.errors[0].message);
-
-      if (type === "image") {
-        setPhotos((prev) => prev.filter((p) => p.id !== id));
-      } else {
-        setReels((prev) => {
-          const remainingReels = prev.filter((v) => v.id !== id);
-          if (video === prev.find((v) => v.id === id)?.video_url) {
-            setVideo(
-              remainingReels.length > 0 ? remainingReels[0].video_url : null,
-            );
-          }
-          return remainingReels;
-        });
-      }
-      toast.success(t("Deleted successfully"));
-    } catch (err) {
-      console.error(err);
-      toast.error(t("Delete failed"));
-    }
-  };
-
-  const handleSubmitProfile = async () => {
-    let finalPlayerId = playerProfileId;
-
-    if (!finalPlayerId) {
-      try {
-        const storedUser = localStorage.getItem("user");
-        if (storedUser) {
-          const user: UserProfile = JSON.parse(storedUser);
-          finalPlayerId = user.playerProfile?.id || null;
-        }
-      } catch (err) {
-        console.error("Error getting user profile:", err);
-      }
-    }
-
-    if (!finalPlayerId) {
-      try {
-        const result = await fetchGraphQL<{ myPlayerProfile: { id: string } }>(
-          `query GetMyPlayerId {
-          myPlayerProfile {
-            id
-          }
-        }`,
-        );
-        if (result.data?.myPlayerProfile?.id) {
-          finalPlayerId = result.data.myPlayerProfile.id;
-          try {
-            const storedUser = localStorage.getItem("user");
-            if (storedUser) {
-              const user = JSON.parse(storedUser);
-              if (!user.playerProfile) {
-                user.playerProfile = {};
-              }
-              user.playerProfile.id = finalPlayerId;
-              localStorage.setItem("user", JSON.stringify(user));
-            }
-          } catch (e) {
-            console.error("Failed to update localStorage:", e);
-          }
-        }
-      } catch (err) {
-        console.error("Failed to fetch player ID:", err);
-      }
-    }
-
-    if (!finalPlayerId) {
-      toast.error("Player profile not found");
-      router.push("/");
-      return;
-    }
-
-    if (!hasNewUploads) {
-      router.push(`/players/${finalPlayerId}`);
-      return;
-    }
-
-    toast.success(t("Profile submitted successfully!"));
-
-    setTimeout(() => {
-      router.push(`/players/${finalPlayerId}`);
-    }, 1500);
-  };
+  const { t } = useTranslate();
 
   const isDark = theme === "dark";
 
-  if (isLoadingPage) {
-    return (
-      <div
-        className={`min-h-screen flex items-center justify-center ${
-          isDark ? "bg-[#020617]" : "bg-gray-50"
-        }`}
-      >
-        <Loader2
-          className={`animate-spin ${
-            isDark ? "text-yellow-400" : "text-yellow-600"
-          } w-12 h-12`}
-        />
-      </div>
+  const [photos, setPhotos] = useState<
+    PlayerPhoto[]
+  >([]);
+
+  const [videos, setVideos] = useState<
+    PlayerVideo[]
+  >([]);
+
+  const [sports, setSports] = useState<
+    Sport[]
+  >([]);
+
+  const [
+    playerProfileId,
+    setPlayerProfileId,
+  ] = useState<string | null>(null);
+
+  const [hasNewUploads, setHasNewUploads] =
+    useState(false);
+
+  const [selectedSportId, setSelectedSportId] =
+    useState("");
+
+  const [limits, setLimits] =
+    useState<UploadLimits | null>(
+      null
     );
+
+  const [isUploading, setIsUploading] =
+    useState(false);
+
+  const [mainVideo, setMainVideo] =
+    useState<string | null>(null);
+
+  // =========================
+  // FETCH DATA
+  // =========================
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      const result: any =
+        await fetchGraphQL(`
+          query {
+            sports {
+              id
+              name
+            }
+
+            myPhotos {
+              id
+              image_url
+            }
+
+            myVideos {
+              id
+              video_url
+              title
+            }
+
+            myUploadLimits {
+              max_photos
+              max_videos
+              max_ads
+
+              uploaded_photos
+              uploaded_videos
+              uploaded_ads
+
+              remaining_photos
+              remaining_videos
+              remaining_ads
+
+              can_upload_photo
+              can_upload_video
+              can_create_ad
+            }
+          }
+        `);
+
+      setPhotos(
+        result?.data?.myPhotos || []
+      );
+
+      setVideos(
+        result?.data?.myVideos || []
+      );
+
+      setSports(
+        result?.data?.sports || []
+      );
+
+      setLimits(
+        result?.data?.myUploadLimits
+      );
+
+      if (
+        result?.data?.sports?.length > 0
+      ) {
+        setSelectedSportId(
+          result.data.sports[0].id
+        );
+      }
+
+      if (
+        result?.data?.myVideos
+          ?.length > 0
+      ) {
+        setMainVideo(
+          result.data.myVideos[0]
+            .video_url
+        );
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  // =========================
+  // CHECK LIMITS
+  // =========================
+  const canUploadPhoto = () => {
+    return (
+      (limits?.remaining_photos || 0) > 0
+    );
+  };
+
+  const canUploadVideo = () => {
+    return (
+      (limits?.remaining_videos || 0) > 0
+    );
+  };
+
+  // =========================
+  // BUY EXTRA
+  // =========================
+ const buyExtra = async (
+  type: "PHOTO" | "VIDEO"
+) => {
+
+  // =========================
+  // CHECK IF USER STILL HAS SPACE
+  // =========================
+  if (
+    type === "PHOTO" &&
+    (limits?.remaining_photos || 0) > 0
+  ) {
+    toast.error(
+      t(
+        "You still have available photo uploads"
+      )
+    );
+
+    return;
   }
 
+  if (
+    type === "VIDEO" &&
+    (limits?.remaining_videos || 0) > 0
+  ) {
+    toast.error(
+      t(
+        "You still have available video uploads"
+      )
+    );
+
+    return;
+  }
+
+
+    try {
+      const res: any =
+        await fetchGraphQL(
+          `
+          mutation PurchaseExtra($input: PurchaseExtraItemInput!) {
+            purchaseExtraItem(input: $input) {
+              success
+              message
+              purchase_id
+            }
+          }
+        `,
+          {
+            input: {
+              unit_type: type,
+              quantity: 1,
+
+              card: {
+                cardholder_name:
+                  "Test User",
+
+                card_number:
+                  "4111111111111111",
+
+                expiry_month: 12,
+
+                expiry_year: 2028,
+
+                cvv: "123",
+              },
+            },
+          }
+        );
+
+      if (res.errors) {
+        toast.error(
+          res.errors[0].message
+        );
+
+        return;
+      }
+
+      toast.success(
+        type === "PHOTO"
+          ? t(
+              "Extra photo purchased"
+            )
+          : t(
+              "Extra video purchased"
+            )
+      );
+
+      fetchData();
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  // =========================
+  // UPLOAD PHOTO
+  // =========================
+  const handlePhotoUpload = async (
+    e: ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+
+    if (!file) return;
+
+    if (!canUploadPhoto()) {
+      toast.error(
+        t("Photo limit reached")
+      );
+
+      e.target.value = "";
+
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      const result: any =
+        await uploadGraphQL(
+          UPLOAD_PHOTO,
+          {
+            file,
+
+            input: {
+              is_main: false,
+              caption: "",
+            },
+          }
+        );
+
+      if (result.errors) {
+        toast.error(
+          result.errors[0].message
+        );
+
+        return;
+      }
+
+      toast.success(
+        t("Photo uploaded")
+      );
+
+      setHasNewUploads(true);
+
+      if (
+        result?.data?.uploadPlayerPhoto
+      ) {
+        setPhotos((prev) => [
+          ...prev,
+          result.data.uploadPlayerPhoto,
+        ]);
+      }
+
+      setLimits((prev: any) => {
+        if (!prev) return prev;
+
+        const remaining =
+          prev.remaining_photos - 1;
+
+        return {
+          ...prev,
+
+          uploaded_photos:
+            prev.uploaded_photos + 1,
+
+          remaining_photos:
+            Math.max(0, remaining),
+
+          can_upload_photo:
+            remaining > 0,
+        };
+      });
+    } catch (err) {
+      console.log(err);
+
+      toast.error(
+        t("Upload failed")
+      );
+    } finally {
+      setIsUploading(false);
+
+      e.target.value = "";
+    }
+  };
+
+  // =========================
+  // UPLOAD VIDEO
+  // =========================
+  const handleVideoUpload = async (
+    e: ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+
+    if (!file) return;
+
+    if (!canUploadVideo()) {
+      toast.error(
+        t("Video limit reached")
+      );
+
+      e.target.value = "";
+
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      const result: any =
+        await uploadGraphQL(
+          UPLOAD_VIDEO,
+          {
+            file,
+
+            input: {
+              title: "Highlight",
+
+              type: "HIGHLIGHT",
+
+              sport_id:
+                selectedSportId,
+
+              duration_seconds: 30,
+
+              create_reel: false,
+            },
+          }
+        );
+
+      if (result.errors) {
+        toast.error(
+          result.errors[0].message
+        );
+
+        return;
+      }
+
+      toast.success(
+        t("Video uploaded")
+      );
+
+      setHasNewUploads(true);
+
+      if (
+        result?.data?.uploadPlayerVideo
+      ) {
+        setVideos((prev) => [
+          ...prev,
+          result.data.uploadPlayerVideo,
+        ]);
+
+        if (!mainVideo) {
+          setMainVideo(
+            result.data
+              .uploadPlayerVideo
+              .video_url
+          );
+        }
+      }
+
+      setLimits((prev: any) => {
+        if (!prev) return prev;
+
+        const remaining =
+          prev.remaining_videos - 1;
+
+        return {
+          ...prev,
+
+          uploaded_videos:
+            prev.uploaded_videos + 1,
+
+          remaining_videos:
+            Math.max(0, remaining),
+
+          can_upload_video:
+            remaining > 0,
+        };
+      });
+    } catch (err) {
+      console.log(err);
+
+      toast.error(
+        t("Upload failed")
+      );
+    } finally {
+      setIsUploading(false);
+
+      e.target.value = "";
+    }
+  };
+
+  // =========================
+  // DELETE
+  // =========================
+  const handleDelete = async (
+    id: string,
+    type: "image" | "video"
+  ) => {
+    try {
+      const mutation =
+        type === "image"
+          ? DELETE_PHOTO
+          : DELETE_VIDEO;
+
+      const variables =
+        type === "image"
+          ? { photoId: id }
+          : { videoId: id };
+
+      const result: any =
+        await fetchGraphQL(
+          mutation,
+          variables
+        );
+
+      if (result.errors) {
+        toast.error(
+          result.errors[0].message
+        );
+
+        return;
+      }
+
+      toast.success(
+        t("Deleted successfully")
+      );
+
+      if (type === "image") {
+        setPhotos((prev) =>
+          prev.filter(
+            (p) => p.id !== id
+          )
+        );
+
+        setLimits((prev: any) => ({
+          ...prev,
+
+          uploaded_photos:
+            Math.max(
+              0,
+              prev.uploaded_photos - 1
+            ),
+
+          remaining_photos:
+            prev.remaining_photos + 1,
+
+          can_upload_photo: true,
+        }));
+      }
+
+      if (type === "video") {
+        setVideos((prev) =>
+          prev.filter(
+            (v) => v.id !== id
+          )
+        );
+
+        setLimits((prev: any) => ({
+          ...prev,
+
+          uploaded_videos:
+            Math.max(
+              0,
+              prev.uploaded_videos - 1
+            ),
+
+          remaining_videos:
+            prev.remaining_videos + 1,
+
+          can_upload_video: true,
+        }));
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const handleSubmitProfile =
+    async () => {
+      let finalPlayerId =
+        playerProfileId;
+
+      if (!finalPlayerId) {
+        try {
+          const storedUser =
+            localStorage.getItem(
+              "user"
+            );
+
+          if (storedUser) {
+            const user: UserProfile =
+              JSON.parse(storedUser);
+
+            finalPlayerId =
+              user.playerProfile?.id ||
+              null;
+          }
+        } catch (err) {
+          console.error(
+            "Error getting user profile:",
+            err
+          );
+        }
+      }
+
+      if (!finalPlayerId) {
+        try {
+          const result: any =
+            await fetchGraphQL(
+              `
+          query GetMyPlayerId {
+            myPlayerProfile {
+              id
+            }
+          }
+        `
+            );
+
+          if (
+            result.data
+              ?.myPlayerProfile?.id
+          ) {
+            finalPlayerId =
+              result.data
+                .myPlayerProfile.id;
+
+            setPlayerProfileId(
+              finalPlayerId
+            );
+
+            try {
+              const storedUser =
+                localStorage.getItem(
+                  "user"
+                );
+
+              if (storedUser) {
+                const user =
+                  JSON.parse(
+                    storedUser
+                  );
+
+                if (
+                  !user.playerProfile
+                ) {
+                  user.playerProfile =
+                    {};
+                }
+
+                user.playerProfile.id =
+                  finalPlayerId;
+
+                localStorage.setItem(
+                  "user",
+                  JSON.stringify(user)
+                );
+              }
+            } catch (e) {
+              console.error(
+                "Failed to update localStorage:",
+                e
+              );
+            }
+          }
+        } catch (err) {
+          console.error(
+            "Failed to fetch player ID:",
+            err
+          );
+        }
+      }
+
+      if (!finalPlayerId) {
+        toast.error(
+          t(
+            "Player profile not found"
+          )
+        );
+
+        router.push("/");
+
+        return;
+      }
+
+      const hasUploads =
+        photos.length > 0 ||
+        videos.length > 0;
+
+      if (!hasUploads) {
+        toast.error(
+          t(
+            "Please upload at least one photo or video"
+          )
+        );
+
+        return;
+      }
+
+      toast.success(
+        t(
+          "Profile submitted successfully!"
+        )
+      );
+
+      setTimeout(() => {
+        router.push(
+          `/players/${finalPlayerId}`
+        );
+      }, 1500);
+    };
+
   return (
-    <div
-      className={`min-h-screen py-32 ${
-        isDark ? "bg-[#020617] text-white" : "bg-gray-50 text-black"
-      }`}
-    >
-      <TitleModal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setPendingVideoFile(null);
-        }}
-        onConfirm={handleVideoUploadWithTitle}
-        isLoading={isUploading}
-        isDark={isDark}
-        t={t}
-      />
+  <div
+    className={`min-h-screen py-32 px-6 ${
+      isDark
+        ? "bg-[#020617] text-white"
+        : "bg-gray-50 text-black"
+    }`}
+  >
+    <div className="max-w-6xl mx-auto">
 
-      <div className="max-w-6xl mx-auto px-6">
-        <h1 className="text-center text-3xl font-bold mb-10 text-yellow-400">
-          {t("Images & Reels")}
-        </h1>
+      {/* TITLE */}
+      <h1 className="text-4xl font-black text-center text-yellow-400 mb-14">
+        {t("Images & Videos")}
+      </h1>
 
-        <div className="flex justify-center items-center gap-6 mb-10">
-          <Step icon={<User />} isDark={isDark} />
-          <Line isDark={isDark} />
-          <Step icon={<Trophy />} isDark={isDark} />
-          <Line isDark={isDark} />
-          <Step icon={<DollarSign />} isDark={isDark} />
-          <Line isDark={isDark} />
-          <Step active icon={<ImageIcon />} isDark={isDark} />
+      {/* STEPS */}
+      <div className="flex justify-center items-center gap-6 mb-14">
+        <Step
+          icon={<User />}
+          isDark={isDark}
+        />
+
+        <Line isDark={isDark} />
+
+        <Step
+          icon={<Trophy />}
+          isDark={isDark}
+        />
+
+        <Line isDark={isDark} />
+
+        <Step
+          icon={<DollarSign />}
+          isDark={isDark}
+        />
+
+        <Line isDark={isDark} />
+
+        <Step
+          active
+          icon={<ImageIcon />}
+          isDark={isDark}
+        />
+      </div>
+
+      {/* LIMITS */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+
+        <div className="rounded-3xl bg-gradient-to-br from-cyan-500 to-blue-600 p-6 text-white">
+          <p className="text-sm opacity-80">
+            {t("Photos")}
+          </p>
+
+          <h2 className="text-4xl font-black mt-2">
+            {limits?.remaining_photos || 0}
+          </h2>
+
+          <p className="mt-2 text-sm opacity-70">
+            {limits?.uploaded_photos} / {limits?.max_photos}
+          </p>
         </div>
 
-        <h3
-          className={`font-semibold mb-6 ${
-            isDark ? "text-gray-300" : "text-gray-700"
-          }`}
-        >
-          {t("Photos")}
-        </h3>
-        <div className="flex gap-6 mb-16 flex-wrap items-center">
-          {photos.map((p) => (
-            <PhotoCard
-              key={p.id}
-              img={p.image_url}
-              onDelete={() => handleDelete(p.id, "image")}
-              isDark={isDark}
-            />
-          ))}
+        <div className="rounded-3xl bg-gradient-to-br from-pink-500 to-rose-600 p-6 text-white">
+          <p className="text-sm opacity-80">
+            {t("Videos")}
+          </p>
+
+          <h2 className="text-4xl font-black mt-2">
+            {limits?.remaining_videos || 0}
+          </h2>
+
+          <p className="mt-2 text-sm opacity-70">
+            {limits?.uploaded_videos} / {limits?.max_videos}
+          </p>
+        </div>
+
+        <div className="rounded-3xl bg-gradient-to-br from-yellow-400 to-orange-500 p-6 text-white">
+          <p className="text-sm opacity-80">
+            {t("Ads")}
+          </p>
+
+          <h2 className="text-4xl font-black mt-2">
+            {limits?.remaining_ads || 0}
+          </h2>
+        </div>
+
+      </div>
+
+      {/* BUY EXTRA */}
+     {/* BUY EXTRA */}
+<div className="flex flex-wrap gap-4 mb-14">
+
+  {!canUploadPhoto() && (
+    <button
+      onClick={() =>
+        buyExtra("PHOTO")
+      }
+      className="px-6 py-3 rounded-2xl bg-cyan-500 text-white font-bold"
+    >
+      + {t("Buy Extra Photo")}
+    </button>
+  )}
+
+  {!canUploadVideo() && (
+    <button
+      onClick={() =>
+        buyExtra("VIDEO")
+      }
+      className="px-6 py-3 rounded-2xl bg-pink-500 text-white font-bold"
+    >
+      + {t("Buy Extra Video")}
+    </button>
+  )}
+
+</div>
+
+      {/* PHOTOS */}
+      <div className="mb-16">
+
+        <div className="flex items-center justify-between mb-6">
+
+          <h2 className="text-2xl font-bold">
+            {t("Photos")}
+          </h2>
+
           <label
-            className={`w-24 h-24 rounded-full border-2 border-transparent flex items-center justify-center cursor-pointer hover:border-slate-800 hover:bg-slate-900/50 transition-all ${
-              isDark ? "bg-[#0b1120]" : "bg-gray-100"
+            className={`cursor-pointer ${
+              !canUploadPhoto()
+                ? "opacity-50 pointer-events-none"
+                : ""
             }`}
           >
-            <Plus size={30} className="text-blue-500" />
+
             <input
               type="file"
               accept="image/*"
-              onChange={handlePhotoUpload}
               className="hidden"
-              disabled={isUploading}
+              onChange={
+                handlePhotoUpload
+              }
             />
+
+            <div className="w-14 h-14 rounded-full bg-cyan-500 flex items-center justify-center">
+              <Plus />
+            </div>
+
           </label>
+
         </div>
 
-        <div className="flex justify-between items-center mb-6">
-          <h3
-            className={`font-semibold ${
-              isDark ? "text-gray-300" : "text-gray-700"
-            }`}
-          >
-            {t("Reels & Highlights")}
-          </h3>
-          <div className="relative w-64">
-            <label
-              className={`absolute -top-2 left-2 px-1 text-[10px] z-10 ${
-                isDark
-                  ? "bg-[#020617] text-gray-500"
-                  : "bg-gray-50 text-gray-500"
-              }`}
-            >
-              {t("Target Sport")}
-            </label>
-            <select
-              value={selectedSportId}
-              onChange={(e) => setSelectedSportId(e.target.value)}
-              className={`w-full rounded-xl px-4 py-3 text-sm outline-none focus:border-yellow-400 appearance-none transition-all cursor-pointer ${
-                isDark
-                  ? "bg-[#0b1736] border border-[#1e2d5a] text-white"
-                  : "bg-white border border-gray-300 text-black"
-              }`}
-            >
-              {sports.map((s) => (
-                <option
-                  key={s.id}
-                  value={s.id.toString()}
-                  className={isDark ? "bg-[#0b1736]" : "bg-white"}
-                >
-                  {s.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown
-              className="absolute right-3 top-3.5 text-gray-500 pointer-events-none"
-              size={16}
-            />
-          </div>
-        </div>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
 
-        <div
-          id="main-video"
-          className={`w-full h-[450px] rounded-2xl overflow-hidden mb-6 relative border ${
-            isDark ? "bg-black border-[#1e293b]" : "bg-gray-900 border-gray-200"
-          }`}
-        >
-          {video ? (
-            <video
-              key={video}
-              src={getFullUrl(video)}
-              controls
-              className="w-full h-full object-contain"
-              autoPlay
-            />
-          ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center text-gray-500">
-              <ImageIcon size={48} className="mb-2 opacity-20" />
-              <p className="text-sm">{t("No video selected")}</p>
-            </div>
-          )}
-          {isUploading && (
-            <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-20">
-              <Loader2 className="animate-spin text-yellow-400 w-10 h-10" />
-            </div>
-          )}
-          {!video && !isUploading && (
-            <label className="absolute inset-0 flex items-center justify-center cursor-pointer group">
-              <div className="w-16 h-16 rounded-full bg-yellow-400 flex items-center justify-center group-hover:scale-110 transition-transform shadow-xl">
-                <Plus size={32} className="text-black" />
-              </div>
-              <input
-                type="file"
-                accept="video/*"
-                onChange={handleFileSelect}
-                className="hidden"
+          {photos.map((p) => (
+            <div
+              key={p.id}
+              className="relative h-44 rounded-2xl overflow-hidden group"
+            >
+              <Image
+                src={getFullUrl(
+                  p.image_url
+                )}
+                alt=""
+                fill
+                className="object-cover group-hover:scale-110 transition"
               />
-            </label>
-          )}
-        </div>
 
-        <div className="flex items-start gap-6 flex-wrap mb-10">
-          {reels.map((r) => (
-            <div key={r.id} className="flex flex-col items-start">
-              <div className="relative group">
-                <div
-                  onClick={() => setVideo(r.video_url)}
-                  className={`w-32 h-20 rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${
-                    video === r.video_url
-                      ? "border-yellow-400"
-                      : isDark
-                      ? "border-[#1e293b]"
-                      : "border-gray-300"
-                  }`}
-                >
-                  <video
-                    src={getFullUrl(r.video_url)}
-                    className="w-full h-full object-cover"
-                    preload="metadata"
-                  />
-                </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDelete(r.id, "video");
-                  }}
-                  className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-              <p
-                className={`text-xs mt-1 max-w-[128px] truncate ${
-                  isDark ? "text-gray-400" : "text-gray-600"
-                }`}
-                title={r.title}
+              <button
+                onClick={() =>
+                  handleDelete(
+                    p.id,
+                    "image"
+                  )
+                }
+                className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition"
               >
-                {r.title}
-              </p>
-              <ShareAsReelToggle
-                videoId={r.id}
-                isReel={r.is_reel ?? false}
-                isDark={isDark}
-                onToggle={handleToggleReel}
-                isLoading={togglingReelId === r.id}
-                t={t}
-              />
+                <X size={16} />
+              </button>
             </div>
           ))}
-          <label
-            className={`w-20 h-20 rounded-full border-2 border-transparent flex items-center justify-center cursor-pointer hover:border-slate-800 hover:bg-slate-900/50 transition-all ${
-              isDark ? "bg-[#0b1120]" : "bg-gray-100"
-            }`}
-          >
-            <Plus size={24} className="text-blue-500" />
-            <input
-              type="file"
-              accept="video/*"
-              onChange={handleFileSelect}
-              className="hidden"
-              disabled={isUploading}
-            />
-          </label>
+
         </div>
 
-        <div className="flex justify-between mt-12 pt-8 border-t border-[#1e293b]">
-          <button
-            onClick={() => router.back()}
-            className={`px-10 py-3 rounded-xl border transition-colors ${
-              isDark
-                ? "border-[#1e293b] hover:bg-[#1e293b]"
-                : "border-gray-300 hover:bg-gray-100"
-            }`}
-          >
-            {t("Previous")}
-          </button>
-          <button
-            onClick={handleSubmitProfile}
-            className="bg-yellow-400 text-black px-12 py-3 rounded-xl font-bold hover:bg-yellow-500 shadow-lg"
-          >
-            {t("Submit Profile")}
-          </button>
-        </div>
       </div>
+
+      {/* SPORT */}
+      <div className="mb-6 relative w-64">
+
+        <select
+          value={selectedSportId}
+          onChange={(e) =>
+            setSelectedSportId(
+              e.target.value
+            )
+          }
+          className={`w-full rounded-xl px-4 py-3 appearance-none outline-none ${
+            isDark
+              ? "bg-[#0b1736] border border-[#1e2d5a]"
+              : "bg-white border border-gray-300"
+          }`}
+        >
+          {sports.map((s) => (
+            <option
+              key={s.id}
+              value={s.id}
+            >
+              {s.name}
+            </option>
+          ))}
+        </select>
+
+        <ChevronDown
+          size={16}
+          className="absolute right-3 top-4 text-gray-400"
+        />
+
+      </div>
+
+      {/* MAIN VIDEO */}
+      <div
+        className={`w-full h-[450px] rounded-3xl overflow-hidden mb-8 border ${
+          isDark
+            ? "bg-black border-[#1e293b]"
+            : "bg-white border-gray-300"
+        }`}
+      >
+        {mainVideo ? (
+          <video
+            src={getFullUrl(
+              mainVideo
+            )}
+            controls
+            className="w-full h-full object-contain"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-gray-500">
+            {t("No video selected")}
+          </div>
+        )}
+      </div>
+
+      {/* VIDEOS */}
+      <div className="flex flex-wrap gap-5 mb-10">
+
+        {videos.map((v) => (
+          <div
+            key={v.id}
+            className="relative group"
+          >
+            <video
+              src={getFullUrl(
+                v.video_url
+              )}
+              onClick={() =>
+                setMainVideo(
+                  v.video_url
+                )
+              }
+              className={`w-40 h-28 rounded-2xl object-cover cursor-pointer border-2 ${
+                mainVideo ===
+                v.video_url
+                  ? "border-yellow-400"
+                  : "border-transparent"
+              }`}
+            />
+
+            <button
+              onClick={() =>
+                handleDelete(
+                  v.id,
+                  "video"
+                )
+              }
+              className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition"
+            >
+              <X size={14} />
+            </button>
+
+            <p className="text-xs mt-2 text-center">
+              {v.title}
+            </p>
+          </div>
+        ))}
+
+        {/* ADD VIDEO */}
+        <label
+          className={`w-28 h-28 rounded-2xl flex items-center justify-center cursor-pointer border-2 border-dashed ${
+            !canUploadVideo()
+              ? "opacity-50 pointer-events-none"
+              : ""
+          } ${
+            isDark
+              ? "border-[#1e293b] bg-[#0b1120]"
+              : "border-gray-300 bg-white"
+          }`}
+        >
+          <Plus className="text-pink-500" />
+
+          <input
+            type="file"
+            accept="video/*"
+            className="hidden"
+            onChange={
+              handleVideoUpload
+            }
+          />
+        </label>
+
+      </div>
+
+      {/* SUBMIT */}
+      <div className="flex justify-between mt-14">
+
+        <button
+          onClick={() =>
+            router.back()
+          }
+          className={`px-10 py-3 rounded-2xl ${
+            isDark
+              ? "bg-[#1e293b]"
+              : "bg-gray-200"
+          }`}
+        >
+          {t("Previous")}
+        </button>
+
+        <button
+          onClick={handleSubmitProfile}
+          disabled={isUploading}
+          className="px-12 py-3 rounded-2xl bg-yellow-400 text-black font-bold hover:scale-105 transition disabled:opacity-50"
+        >
+          {isUploading ? (
+            <Loader2 className="animate-spin w-5 h-5" />
+          ) : (
+            t("Submit")
+          )}
+        </button>
+
+      </div>
+
+      {/* LOADING */}
+      {isUploading && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+
+          <Loader2 className="animate-spin text-yellow-400 w-14 h-14" />
+
+        </div>
+      )}
+
     </div>
-  );
+  </div>
+);
 }
 
 function Step({
@@ -794,12 +1113,12 @@ function Step({
 }) {
   return (
     <div
-      className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${
+      className={`w-14 h-14 rounded-full flex items-center justify-center ${
         active
-          ? "bg-yellow-400 text-black scale-110 shadow-lg"
+          ? "bg-yellow-400 text-black"
           : isDark
-          ? "bg-[#0b1120] text-gray-500 border border-[#1e293b]"
-          : "bg-gray-200 text-gray-500 border border-gray-300"
+          ? "bg-[#0b1120] border border-[#1e293b] text-gray-400"
+          : "bg-white border border-gray-300 text-gray-500"
       }`}
     >
       {icon}
@@ -807,47 +1126,18 @@ function Step({
   );
 }
 
-function Line({ isDark }: { isDark: boolean }) {
-  return (
-    <div
-      className={`w-16 h-[2px] ${isDark ? "bg-[#1e293b]" : "bg-gray-300"}`}
-    />
-  );
-}
-
-function PhotoCard({
-  img,
-  onDelete,
+function Line({
   isDark,
 }: {
-  img: string;
-  onDelete: () => void;
   isDark: boolean;
 }) {
   return (
     <div
-      className={`w-32 h-32 rounded-2xl overflow-hidden relative shadow-xl group ${
+      className={`w-16 h-[2px] ${
         isDark
-          ? "border border-[#1e293b] bg-[#0b1120]"
-          : "border border-gray-200 bg-gray-100"
+          ? "bg-[#1e293b]"
+          : "bg-gray-300"
       }`}
-    >
-      <Image
-        src={getFullUrl(img)}
-        alt="Player"
-        fill
-        className="object-cover transition-transform group-hover:scale-110"
-        sizes="128px"
-      />
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete();
-        }}
-        className="absolute top-2 right-2 bg-red-500/80 hover:bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
-      >
-        <X size={16} />
-      </button>
-    </div>
+    />
   );
 }
