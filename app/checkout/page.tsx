@@ -6,7 +6,8 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
-
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { useTheme } from "../context/ThemeContext";
 import { fetchGraphQL } from "../lib/fetchGraphQL";
 
@@ -85,7 +86,7 @@ const translations: any = {
 
 export default function CheckoutPage() {
   const { theme } = useTheme();
-
+const router = useRouter();
   const isDark = theme === "dark";
 
   const lang =
@@ -178,105 +179,134 @@ export default function CheckoutPage() {
   // =========================
   // PAYMENT
   // =========================
-  const handlePayment = async () => {
-    try {
-      setLoading(true);
+const handlePayment = async () => {
+  try {
+    setLoading(true);
 
-      setError("");
+    setError("");
 
-      const stored =
-        localStorage.getItem("selectedPackage");
+    // ✅ لو عنده اشتراك بالفعل
+    const activeSubscription = subscriptions.find(
+      (s) => s.is_active
+    );
 
-      if (!stored) {
-        setError(t.noPackage);
-        return;
-      }
-
-      const parsed = JSON.parse(stored);
-
-      console.log("SELECT RAW ITEM:", parsed);
-
-      // =========================
-      // VALID ENUMS
-      // =========================
-      const allowedEnums = [
-        "PLAYER_BASIC",
-        "PLAYER_PROFESSIONAL",
-        "PLAYER_PREMIUM",
-      ];
-
-      const enumValue = allowedEnums.includes(
-        parsed.package_type
-      )
-        ? parsed.package_type
-        : "PLAYER_BASIC";
-
-      console.log("ENUM SENT:", enumValue);
-
-      const res: any = await fetchGraphQL(
-        `
-        mutation PurchasePackage($input: PurchasePackageInput!) {
-          purchasePlayerPackage(input: $input) {
-            success
-            message
-            subscription_id
-            redirect_url
-          }
-        }
-      `,
-        {
-          input: {
-            package_type: enumValue,
-
-            card: {
-              cardholder_name:
-                cardData.cardholder_name,
-
-              card_number:
-                cardData.card_number,
-
-              expiry_month: Number(
-                cardData.expiry_month
-              ),
-
-              expiry_year: Number(
-                cardData.expiry_year
-              ),
-
-              cvv: cardData.cvv,
-            },
-          },
-        }
+    if (activeSubscription) {
+      toast.success(
+        lang === "ar"
+          ? "تم الدفع بالفعل من قبل"
+          : "You already purchased a package"
       );
 
-      console.log(
-        "PAYMENT RESPONSE:",
-        JSON.stringify(res, null, 2)
-      );
+      router.push("/profile");
 
-      if (
-        res?.data?.purchasePlayerPackage?.success
-      ) {
-        setSuccess(true);
-
-        fetchSubscriptions();
-      } else {
-        setError(
-          res?.errors?.[0]?.message ||
-            res?.data?.purchasePlayerPackage
-              ?.message ||
-            t.paymentError
-        );
-      }
-    } catch (err) {
-      console.log(err);
-
-      setError(t.paymentError);
-    } finally {
-      setLoading(false);
+      return;
     }
-  };
 
+    const stored =
+      localStorage.getItem("selectedPackage");
+
+    if (!stored) {
+      setError(t.noPackage);
+      return;
+    }
+
+    const parsed = JSON.parse(stored);
+
+    const allowedEnums = [
+      "PLAYER_BASIC",
+      "PLAYER_PROFESSIONAL",
+      "PLAYER_PREMIUM",
+    ];
+
+    const enumValue = allowedEnums.includes(
+      parsed.package_type
+    )
+      ? parsed.package_type
+      : "PLAYER_BASIC";
+
+    const res: any = await fetchGraphQL(
+      `
+      mutation PurchasePackage($input: PurchasePackageInput!) {
+        purchasePlayerPackage(input: $input) {
+          success
+          message
+          subscription_id
+          redirect_url
+        }
+      }
+    `,
+      {
+        input: {
+          package_type: enumValue,
+
+          card: {
+            cardholder_name:
+              cardData.cardholder_name,
+
+            card_number:
+              cardData.card_number,
+
+            expiry_month: Number(
+              cardData.expiry_month
+            ),
+
+            expiry_year: Number(
+              cardData.expiry_year
+            ),
+
+            cvv: cardData.cvv,
+          },
+        },
+      }
+    );
+
+    if (
+      res?.data?.purchasePlayerPackage?.success
+    ) {
+      setSuccess(true);
+
+      fetchSubscriptions();
+
+      // ✅ رسالة نجاح
+      toast.success(
+        lang === "ar"
+          ? "تم الدفع بنجاح"
+          : "Payment successful"
+      );
+
+      
+      localStorage.removeItem("selectedPackage");
+
+     
+      setTimeout(() => {
+        router.push("/profile");
+      }, 2000);
+
+    } else {
+      toast.error(
+        res?.errors?.[0]?.message ||
+          res?.data?.purchasePlayerPackage
+            ?.message ||
+          t.paymentError
+      );
+
+      setError(
+        res?.errors?.[0]?.message ||
+          res?.data?.purchasePlayerPackage
+            ?.message ||
+          t.paymentError
+      );
+    }
+  } catch (err) {
+    console.log(err);
+
+    toast.error(t.paymentError);
+
+    setError(t.paymentError);
+  } finally {
+    setLoading(false);
+  }
+};
   // =========================
   // ACTIVE SUB
   // =========================
