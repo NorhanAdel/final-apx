@@ -186,11 +186,7 @@ export default function ClubProfile() {
       icon: <Share2 size={18} />,
       path: "/profile/share",
     },
-    {
-      label: t("Participation Event"),
-      icon: <Users size={18} />,
-      path: "/profile/participationevent",
-    },
+     
     {
       label: t("Participation Prime"),
       icon: <Trophy size={18} />,
