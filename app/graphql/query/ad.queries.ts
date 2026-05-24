@@ -105,3 +105,24 @@ export const HAS_USER_VIEWED_AD = `
     hasUserViewedAd(adId: $adId)
   }
 `;
+
+export const GET_AVAILABLE_AD_DURATIONS = `
+  query GetAvailableAdDurations {
+    availableAdDurationsForPlayer {
+      id
+      days
+      price
+    }
+  }
+`;
+
+export const GET_MY_UPLOAD_LIMITS = `
+  query GetMyUploadLimits {
+    myUploadLimits {
+      max_ads
+      uploaded_ads
+      remaining_ads
+      can_create_ad
+    }
+  }
+`;

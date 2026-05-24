@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Search } from "lucide-react";
-import { PlayerCard } from "../components/PlayerCard";
 import Link from "next/link";
 import { useTheme } from "@/app/context/ThemeContext";
 import { fetchGraphQL } from "@/app/lib/fetchGraphQL";
@@ -10,9 +9,9 @@ import {
   GET_ALL_PLAYERS,
   SEARCH_PLAYERS,
 } from "@/app/graphql/query/player.queries";
-import useTranslate from "../hooks/useTranslate";
-
-import SidebarAds from "../components/SidebarAds";
+import useTranslate from "@/app/hooks/useTranslate";
+import SidebarAds from "@/app/components/SidebarAds";
+import { PlayerCard } from "@/app/components/PlayerCard";
 
 interface PlayerData {
   id: string;

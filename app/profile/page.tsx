@@ -321,53 +321,47 @@ export default function ProfilePage() {
     );
   };
   const getErrorMessage = (result: any) => {
-  if (!result) return "Unknown error";
+    if (!result) return "Unknown error";
 
-  if (result?.errors?.length) {
-    return result.errors[0]?.message || "Error occurred";
-  }
+    if (result?.errors?.length) {
+      return result.errors[0]?.message || "Error occurred";
+    }
 
-  if (result?.message) {
-    return result.message;
-  }
+    if (result?.message) {
+      return result.message;
+    }
 
-  return "Something went wrong";
-};
-const getFriendlyError = (message: string, lang: string) => {
-  if (!message) {
-    return lang === "ar"
-      ? "حدث خطأ ما"
-      : "Something went wrong";
-  }
+    return "Something went wrong";
+  };
+  const getFriendlyError = (message: string, lang: string) => {
+    if (!message) {
+      return lang === "ar" ? "حدث خطأ ما" : "Something went wrong";
+    }
 
-  const msg = message.toLowerCase();
+    const msg = message.toLowerCase();
 
-  if (msg.includes("email")) {
-    return lang === "ar"
-      ? "البريد الإلكتروني غير صحيح أو مستخدم"
-      : "Email is invalid or already used";
-  }
+    if (msg.includes("email")) {
+      return lang === "ar"
+        ? "البريد الإلكتروني غير صحيح أو مستخدم"
+        : "Email is invalid or already used";
+    }
 
-  if (msg.includes("phone")) {
-    return lang === "ar"
-      ? "رقم الهاتف غير صحيح"
-      : "Phone number is invalid";
-  }
+    if (msg.includes("phone")) {
+      return lang === "ar" ? "رقم الهاتف غير صحيح" : "Phone number is invalid";
+    }
 
-  if (msg.includes("unauthorized")) {
-    return lang === "ar"
-      ? "يجب تسجيل الدخول أولاً"
-      : "You must login first";
-  }
+    if (msg.includes("unauthorized")) {
+      return lang === "ar" ? "يجب تسجيل الدخول أولاً" : "You must login first";
+    }
 
-  if (msg.includes("required")) {
-    return lang === "ar"
-      ? "من فضلك املأ جميع البيانات المطلوبة"
-      : "Please fill all required fields";
-  }
+    if (msg.includes("required")) {
+      return lang === "ar"
+        ? "من فضلك املأ جميع البيانات المطلوبة"
+        : "Please fill all required fields";
+    }
 
-  return message;
-};
+    return message;
+  };
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
@@ -449,9 +443,7 @@ const getFriendlyError = (message: string, lang: string) => {
     }
 
     if (result.errors) {
-     toast.error(
-  getFriendlyError(getErrorMessage(result), lang)
-);
+      toast.error(getFriendlyError(getErrorMessage(result), lang));
     } else if (result.data) {
       let updatedData: Partial<PlayerFormData> = {};
       if (isUpdate) {

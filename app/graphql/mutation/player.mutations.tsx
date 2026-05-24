@@ -1,11 +1,12 @@
 import { gql } from "@apollo/client";
 
 export const CREATE_PLAYER_PROFILE = `
-  mutation CreatePlayerProfile($profileImage: Upload!, $verificationDoc: Upload!, $input: CreatePlayerProfileInput!) {
+  mutation CreatePlayerProfile($profileImage: Upload!, $verificationDoc: Upload, $input: CreatePlayerProfileInput!) {
     createPlayerProfile(profileImage: $profileImage, verificationDoc: $verificationDoc, input: $input) {
       id
       first_name
       last_name
+      bio
       email_address
       phone
       nationality
@@ -126,5 +127,14 @@ export const DELETE_PHOTO = gql`
 export const DELETE_VIDEO = gql`
   mutation DeletePlayerVideo($videoId: String!) {
     deletePlayerVideo(videoId: $videoId)
+  }
+`;
+
+export const INCREMENT_UPLOAD_COUNT = `
+  mutation IncrementUploadCount($type: String!) {
+    incrementUploadCount(type: $type) {
+      success
+      remaining
+    }
   }
 `;

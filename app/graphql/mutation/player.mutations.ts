@@ -1,5 +1,5 @@
 export const CREATE_PLAYER_PROFILE = `
-  mutation CreatePlayerProfile($profileImage: Upload!, $verificationDoc: Upload!, $input: CreatePlayerProfileInput!) {
+  mutation CreatePlayerProfile($profileImage: Upload!, $verificationDoc: Upload, $input: CreatePlayerProfileInput!) {
     createPlayerProfile(profileImage: $profileImage, verificationDoc: $verificationDoc, input: $input) {
       id
       first_name
@@ -138,6 +138,15 @@ export const CREATE_REEL_FROM_VIDEO = `
       end_time
       event_type
       clip_url
+    }
+  }
+`;
+
+export const INCREMENT_UPLOAD_COUNT = `
+  mutation IncrementUploadCount($type: String!) {
+    incrementUploadCount(type: $type) {
+      success
+      remaining
     }
   }
 `;
