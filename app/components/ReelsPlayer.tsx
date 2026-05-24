@@ -8,8 +8,7 @@ import { fetchGraphQL } from "../lib/fetchGraphQL";
 import { SEND_REQUEST_MUTATION } from "@/app/graphql/mutation/request.mutations";
 
 const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  "http://72.62.28.146";
+  process.env.NEXT_PUBLIC_API_URL || "http://72.62.28.28";
 
 interface Video {
   id: string | number;
@@ -36,29 +35,16 @@ mutation UnlikeReel($id: ID!) {
 }
 `;
 
-export default function ReelsPlayer({
-  videos = [],
-  playerId,
-}: Props) {
+export default function ReelsPlayer({ videos = [], playerId }: Props) {
   const { t } = useTranslate();
 
-  const [selected, setSelected] =
-    useState<string>("");
+  const [selected, setSelected] = useState<string>("");
 
-  // ✅ likes الحقيقي
-  const [likesMap, setLikesMap] = useState<
-    Record<string, number>
-  >({});
+  const [likesMap, setLikesMap] = useState<Record<string, number>>({});
+  const [likedVideos, setLikedVideos] = useState<Record<string, boolean>>({});
 
-  // ✅ liked الحقيقي
-  const [likedVideos, setLikedVideos] =
-    useState<Record<string, boolean>>({});
-
-  const [loadingLike, setLoadingLike] =
-    useState(false);
-
-  const [sending, setSending] =
-    useState(false);
+  const [loadingLike, setLoadingLike] = useState(false);
+  const [sending, setSending] = useState(false);
 
   const hasSetInitial = useRef(false);
 
@@ -67,24 +53,18 @@ export default function ReelsPlayer({
   // =========================
   const getFullUrl = (url?: string) => {
     if (!url) return "";
-
-    if (url.startsWith("http")) {
-      return url;
-    }
-
+    if (url.startsWith("http")) return url;
     return `${API_URL}${url}`;
   };
 
   // =========================
-  // INITIAL VIDEO + REAL LIKES
+  // INIT
   // =========================
   useEffect(() => {
     if (!videos.length) return;
 
-    // اول فيديو
     if (!hasSetInitial.current) {
       hasSetInitial.current = true;
-
       const first = videos[0]?.video_url;
 
       if (first) {
@@ -92,49 +72,27 @@ export default function ReelsPlayer({
       }
     }
 
-    // ✅ تخزين اللايكات الحقيقية
-    const likesObj: Record<
-      string,
-      number
-    > = {};
-
-    const likedObj: Record<
-      string,
-      boolean
-    > = {};
+    const likesObj: Record<string, number> = {};
+    const likedObj: Record<string, boolean> = {};
 
     videos.forEach((video) => {
       const id = String(video.id);
-
-      likesObj[id] =
-        video.likes_count || 0;
-
-      likedObj[id] =
-        video.is_liked || false;
+      likesObj[id] = video.likes_count || 0;
+      likedObj[id] = video.is_liked || false;
     });
 
     setLikesMap(likesObj);
-
     setLikedVideos(likedObj);
   }, [videos]);
 
-  // =========================
-  // CURRENT VIDEO
-  // =========================
   const currentVideo = videos.find(
-    (v) =>
-      getFullUrl(v.video_url) === selected
+    (v) => getFullUrl(v.video_url) === selected
   );
 
-  const currentId = currentVideo
-    ? String(currentVideo.id)
-    : "";
+  const currentId = currentVideo ? String(currentVideo.id) : "";
 
-  const currentLikes =
-    likesMap[currentId] ?? 0;
-
-  const isLiked =
-    likedVideos[currentId] || false;
+  const currentLikes = likesMap[currentId] ?? 0;
+  const isLiked = likedVideos[currentId] || false;
 
   // =========================
   // LIKE / UNLIKE
@@ -142,24 +100,19 @@ export default function ReelsPlayer({
   const handleLike = async () => {
     if (!currentId || loadingLike) return;
 
-    const token =
-      localStorage.getItem("token");
+    const token = localStorage.getItem("token");
 
     if (!token) {
-      toast.error(
-        t("Login required")
-      );
-
+      toast.error(t("Login required"));
       return;
     }
 
     try {
       setLoadingLike(true);
 
-      const alreadyLiked =
-        likedVideos[currentId] || false;
+      const alreadyLiked = likedVideos[currentId] || false;
 
-      // ✅ optimistic update
+      // optimistic update
       setLikedVideos((prev) => ({
         ...prev,
         [currentId]: !alreadyLiked,
@@ -168,25 +121,15 @@ export default function ReelsPlayer({
       setLikesMap((prev) => ({
         ...prev,
         [currentId]: alreadyLiked
-          ? Math.max(
-              (prev[currentId] ?? 0) - 1,
-              0
-            )
+          ? Math.max((prev[currentId] ?? 0) - 1, 0)
           : (prev[currentId] ?? 0) + 1,
       }));
 
-      // ✅ API
-      const mutation = alreadyLiked
-        ? UNLIKE_REEL
-        : LIKE_REEL;
+      const mutation = alreadyLiked ? UNLIKE_REEL : LIKE_REEL;
 
-      const result = await fetchGraphQL(
-        mutation,
-        {
-          id: currentId,
-        },
-        token
-      );
+      const result = await fetchGraphQL(mutation, {
+        id: currentId,
+      });
 
       if (result.errors) {
         // rollback
@@ -199,30 +142,17 @@ export default function ReelsPlayer({
           ...prev,
           [currentId]: alreadyLiked
             ? (prev[currentId] ?? 0) + 1
-            : Math.max(
-                (prev[currentId] ?? 0) - 1,
-                0
-              ),
+            : Math.max((prev[currentId] ?? 0) - 1, 0),
         }));
 
-        toast.error(
-          result.errors[0].message
-        );
-
+        toast.error(result.errors[0].message);
         return;
       }
 
-      toast.success(
-        alreadyLiked
-          ? t("Unliked")
-          : t("Liked")
-      );
+      toast.success(alreadyLiked ? t("Unliked") : t("Liked"));
     } catch (error) {
       console.error(error);
-
-      toast.error(
-        t("Like failed")
-      );
+      toast.error(t("Like failed"));
     } finally {
       setLoadingLike(false);
     }
@@ -231,58 +161,38 @@ export default function ReelsPlayer({
   // =========================
   // SEND REQUEST
   // =========================
-  const handleSendRequest =
-    async () => {
-      if (!playerId) {
-        toast.error(
-          t("Player ID not found")
-        );
+  const handleSendRequest = async () => {
+    if (!playerId) {
+      toast.error(t("Player ID not found"));
+      return;
+    }
 
-        return;
+    setSending(true);
+
+    try {
+      const result = await fetchGraphQL<{
+        sendRequest: { id: string };
+      }>(SEND_REQUEST_MUTATION, {
+        input: {
+          player_id: playerId,
+          type: "CLUB_OFFER",
+          message: "We have an offer for you",
+        },
+      });
+
+      if (result.errors) {
+        toast.error(result.errors[0].message);
+      } else {
+        toast.success(t("Request sent successfully!"));
       }
+    } catch (error) {
+      console.error(error);
+      toast.error(t("Failed to send request. Please try again."));
+    } finally {
+      setSending(false);
+    }
+  };
 
-      setSending(true);
-
-      try {
-        const result =
-          await fetchGraphQL<{
-            sendRequest: {
-              id: string;
-            };
-          }>(SEND_REQUEST_MUTATION, {
-            input: {
-              player_id: playerId,
-              type: "CLUB_OFFER",
-              message:
-                "We have an offer for you",
-            },
-          });
-
-        if (result.errors) {
-          toast.error(
-            result.errors[0].message
-          );
-        } else {
-          toast.success(
-            t("Request sent successfully!")
-          );
-        }
-      } catch (error) {
-        console.error(error);
-
-        toast.error(
-          t(
-            "Failed to send request. Please try again."
-          )
-        );
-      } finally {
-        setSending(false);
-      }
-    };
-
-  // =========================
-  // EMPTY
-  // =========================
   if (!videos.length) {
     return (
       <div className="w-full py-16 flex items-center justify-center text-gray-400">
@@ -297,7 +207,7 @@ export default function ReelsPlayer({
         {t("Reels")}
       </h2>
 
-      {/* MAIN VIDEO */}
+      {/* VIDEO */}
       <div className="relative rounded-xl overflow-hidden bg-black border border-[#1c2c55]">
         {selected && (
           <video
@@ -310,45 +220,30 @@ export default function ReelsPlayer({
         )}
 
         {/* LIKE */}
-        <div className="absolute top-4 right-4 flex items-center gap-2 bg-black/60 px-3 py-1 rounded-full backdrop-blur-md">
+        <div className="absolute top-4 right-4 flex items-center gap-2 bg-black/60 px-3 py-1 rounded-full">
           <Heart
             onClick={handleLike}
             className={`cursor-pointer transition ${
-              isLiked
-                ? "text-red-500 fill-red-500"
-                : "text-white"
-            } ${
-              loadingLike
-                ? "opacity-50 pointer-events-none"
-                : ""
-            }`}
+              isLiked ? "text-red-500 fill-red-500" : "text-white"
+            } ${loadingLike ? "opacity-50 pointer-events-none" : ""}`}
             size={18}
           />
-
-          <span className="text-sm">
-            {currentLikes}
-          </span>
+          <span className="text-sm">{currentLikes}</span>
         </div>
       </div>
 
       {/* THUMBNAILS */}
       <div className="flex gap-3 mt-4 overflow-x-auto pb-2">
         {videos.map((v) => {
-          const url = getFullUrl(
-            v.video_url
-          );
+          const url = getFullUrl(v.video_url);
 
           return (
             <video
               key={v.id}
               src={url}
-              onClick={() =>
-                setSelected(url)
-              }
-              className={`w-[150px] h-[90px] object-cover rounded-lg cursor-pointer border transition ${
-                selected === url
-                  ? "border-yellow-400"
-                  : "border-[#1c2c55]"
+              onClick={() => setSelected(url)}
+              className={`w-[150px] h-[90px] object-cover rounded-lg cursor-pointer border ${
+                selected === url ? "border-yellow-400" : "border-[#1c2c55]"
               }`}
             />
           );
@@ -359,21 +254,9 @@ export default function ReelsPlayer({
       <button
         onClick={handleSendRequest}
         disabled={sending}
-        className="
-          w-full
-          mt-6
-          py-3
-          bg-[#0a1a3a]
-          hover:bg-[#11265e]
-          rounded-lg
-          font-semibold
-          disabled:opacity-50
-          transition
-        "
+        className="w-full mt-6 py-3 bg-[#0a1a3a] hover:bg-[#11265e] rounded-lg font-semibold disabled:opacity-50 transition"
       >
-        {sending
-          ? t("Sending...")
-          : t("Send Request")}
+        {sending ? t("Sending...") : t("Send Request")}
       </button>
     </div>
   );
