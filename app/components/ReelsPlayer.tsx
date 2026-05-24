@@ -3,15 +3,20 @@
 import { useEffect, useState, useRef } from "react";
 import { Heart } from "lucide-react";
 import { toast } from "sonner";
+import useTranslate from "../hooks/useTranslate";
+import { fetchGraphQL } from "../lib/fetchGraphQL";
+import { SEND_REQUEST_MUTATION } from "@/app/graphql/mutation/request.mutations";
 
 const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://72.62.28.146";
+  process.env.NEXT_PUBLIC_API_URL ||
+  "http://72.62.28.146";
 
 interface Video {
   id: string | number;
+  title?: string;
   video_url: string;
-  likesCount?: number;
-  isLiked?: boolean;
+  likes_count?: number;
+  is_liked?: boolean;
 }
 
 interface Props {
@@ -25,14 +30,9 @@ mutation LikeReel($id: ID!) {
 }
 `;
 
-const GET_REELS = `
-query {
-  recentReels {
-    id
-    clip_url
-    likes_count
-    views_count
-  }
+const UNLIKE_REEL = `
+mutation UnlikeReel($id: ID!) {
+  unlikeReel(id: $id)
 }
 `;
 
@@ -40,195 +40,341 @@ export default function ReelsPlayer({
   videos = [],
   playerId,
 }: Props) {
-  const [reels, setReels] = useState<Video[]>([]);
-  const [selectedVideo, setSelectedVideo] =
-    useState<Video | null>(null);
+  const { t } = useTranslate();
 
-  const [likes, setLikes] = useState(0);
-  const [liked, setLiked] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [selected, setSelected] =
+    useState<string>("");
 
-  const initRef = useRef(false);
+  // ✅ likes الحقيقي
+  const [likesMap, setLikesMap] = useState<
+    Record<string, number>
+  >({});
+
+  // ✅ liked الحقيقي
+  const [likedVideos, setLikedVideos] =
+    useState<Record<string, boolean>>({});
+
+  const [loadingLike, setLoadingLike] =
+    useState(false);
+
+  const [sending, setSending] =
+    useState(false);
+
+  const hasSetInitial = useRef(false);
 
   // =========================
-  // SAME FETCH SYSTEM
+  // FULL URL
   // =========================
-  const gqlFetch = async (
-    query: string,
-    variables?: any,
-    withAuth = false
-  ) => {
-    const token = localStorage.getItem("token");
-
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
-
-    if (withAuth && token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-
-    const res = await fetch(`${API_URL}/graphql`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        query,
-        variables,
-      }),
-    });
-
-    return res.json();
-  };
-
   const getFullUrl = (url?: string) => {
     if (!url) return "";
 
-    if (url.startsWith("http")) return url;
+    if (url.startsWith("http")) {
+      return url;
+    }
 
     return `${API_URL}${url}`;
   };
 
   // =========================
-  // LOAD REELS (SYNC FIX)
+  // INITIAL VIDEO + REAL LIKES
   // =========================
-  const fetchReels = async () => {
-    const res: any = await gqlFetch(GET_REELS);
-
-    const data = res?.data?.recentReels || [];
-
-    const mapped = data.map((r: any) => ({
-      id: r.id,
-      video_url: r.clip_url,
-      likesCount: r.likes_count,
-    }));
-
-    setReels(mapped);
-
-    if (!initRef.current && mapped.length) {
-      initRef.current = true;
-
-      setSelectedVideo(mapped[0]);
-
-      setLikes(mapped[0].likesCount || 0);
-    }
-  };
-
   useEffect(() => {
-    fetchReels();
-  }, []);
+    if (!videos.length) return;
+
+    // اول فيديو
+    if (!hasSetInitial.current) {
+      hasSetInitial.current = true;
+
+      const first = videos[0]?.video_url;
+
+      if (first) {
+        setSelected(getFullUrl(first));
+      }
+    }
+
+    // ✅ تخزين اللايكات الحقيقية
+    const likesObj: Record<
+      string,
+      number
+    > = {};
+
+    const likedObj: Record<
+      string,
+      boolean
+    > = {};
+
+    videos.forEach((video) => {
+      const id = String(video.id);
+
+      likesObj[id] =
+        video.likes_count || 0;
+
+      likedObj[id] =
+        video.is_liked || false;
+    });
+
+    setLikesMap(likesObj);
+
+    setLikedVideos(likedObj);
+  }, [videos]);
 
   // =========================
-  // SELECT VIDEO
+  // CURRENT VIDEO
   // =========================
-  const handleSelect = (v: Video) => {
-    setSelectedVideo(v);
-    setLikes(v.likesCount || 0);
-    setLiked(false);
-  };
+  const currentVideo = videos.find(
+    (v) =>
+      getFullUrl(v.video_url) === selected
+  );
+
+  const currentId = currentVideo
+    ? String(currentVideo.id)
+    : "";
+
+  const currentLikes =
+    likesMap[currentId] ?? 0;
+
+  const isLiked =
+    likedVideos[currentId] || false;
 
   // =========================
-  // LIKE (FIXED)
+  // LIKE / UNLIKE
   // =========================
   const handleLike = async () => {
-    if (!selectedVideo?.id || loading) return;
+    if (!currentId || loadingLike) return;
 
-    const token = localStorage.getItem("token");
+    const token =
+      localStorage.getItem("token");
 
     if (!token) {
-      toast.error("Login required 🔒");
+      toast.error(
+        t("Login required")
+      );
+
       return;
     }
 
     try {
-      setLoading(true);
+      setLoadingLike(true);
 
-      const res: any = await gqlFetch(
-        LIKE_REEL,
-        { id: selectedVideo.id },
-        true
+      const alreadyLiked =
+        likedVideos[currentId] || false;
+
+      // ✅ optimistic update
+      setLikedVideos((prev) => ({
+        ...prev,
+        [currentId]: !alreadyLiked,
+      }));
+
+      setLikesMap((prev) => ({
+        ...prev,
+        [currentId]: alreadyLiked
+          ? Math.max(
+              (prev[currentId] ?? 0) - 1,
+              0
+            )
+          : (prev[currentId] ?? 0) + 1,
+      }));
+
+      // ✅ API
+      const mutation = alreadyLiked
+        ? UNLIKE_REEL
+        : LIKE_REEL;
+
+      const result = await fetchGraphQL(
+        mutation,
+        {
+          id: currentId,
+        },
+        token
       );
 
-      if (res.errors) {
-        toast.error(res.errors[0].message);
+      if (result.errors) {
+        // rollback
+        setLikedVideos((prev) => ({
+          ...prev,
+          [currentId]: alreadyLiked,
+        }));
+
+        setLikesMap((prev) => ({
+          ...prev,
+          [currentId]: alreadyLiked
+            ? (prev[currentId] ?? 0) + 1
+            : Math.max(
+                (prev[currentId] ?? 0) - 1,
+                0
+              ),
+        }));
+
+        toast.error(
+          result.errors[0].message
+        );
+
         return;
       }
 
-      // 🔥 Optimistic update
-      const newState = !liked;
-
-      setLiked(newState);
-
-      setLikes((prev) =>
-        newState ? prev + 1 : prev - 1
+      toast.success(
+        alreadyLiked
+          ? t("Unliked")
+          : t("Liked")
       );
+    } catch (error) {
+      console.error(error);
 
-      // 🔥 IMPORTANT: refresh from server to avoid zero after reload issue
-      setTimeout(() => {
-        fetchReels();
-      }, 300);
-
-      toast.success(newState ? "Liked ❤️" : "Unliked 💔");
-    } catch (err) {
-      console.error(err);
-      toast.error("Like failed");
+      toast.error(
+        t("Like failed")
+      );
     } finally {
-      setLoading(false);
+      setLoadingLike(false);
     }
   };
 
-  if (!reels.length) return null;
+  // =========================
+  // SEND REQUEST
+  // =========================
+  const handleSendRequest =
+    async () => {
+      if (!playerId) {
+        toast.error(
+          t("Player ID not found")
+        );
+
+        return;
+      }
+
+      setSending(true);
+
+      try {
+        const result =
+          await fetchGraphQL<{
+            sendRequest: {
+              id: string;
+            };
+          }>(SEND_REQUEST_MUTATION, {
+            input: {
+              player_id: playerId,
+              type: "CLUB_OFFER",
+              message:
+                "We have an offer for you",
+            },
+          });
+
+        if (result.errors) {
+          toast.error(
+            result.errors[0].message
+          );
+        } else {
+          toast.success(
+            t("Request sent successfully!")
+          );
+        }
+      } catch (error) {
+        console.error(error);
+
+        toast.error(
+          t(
+            "Failed to send request. Please try again."
+          )
+        );
+      } finally {
+        setSending(false);
+      }
+    };
+
+  // =========================
+  // EMPTY
+  // =========================
+  if (!videos.length) {
+    return (
+      <div className="w-full py-16 flex items-center justify-center text-gray-400">
+        {t("No videos available")}
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-[900px] mx-auto mt-20 text-white">
       <h2 className="text-yellow-400 text-3xl font-bold text-center mb-6">
-        Reels
+        {t("Reels")}
       </h2>
 
       {/* MAIN VIDEO */}
-      <div className="relative rounded-xl overflow-hidden bg-black">
-        {selectedVideo && (
+      <div className="relative rounded-xl overflow-hidden bg-black border border-[#1c2c55]">
+        {selected && (
           <video
-            src={getFullUrl(selectedVideo.video_url)}
+            key={selected}
+            src={selected}
             controls
+            playsInline
             className="w-full h-[420px] object-cover"
           />
         )}
 
         {/* LIKE */}
-        <div className="absolute top-4 right-4 flex items-center gap-2 bg-black/60 px-3 py-1 rounded-full">
+        <div className="absolute top-4 right-4 flex items-center gap-2 bg-black/60 px-3 py-1 rounded-full backdrop-blur-md">
           <Heart
             onClick={handleLike}
             className={`cursor-pointer transition ${
-              liked
+              isLiked
                 ? "text-red-500 fill-red-500"
                 : "text-white"
             } ${
-              loading
+              loadingLike
                 ? "opacity-50 pointer-events-none"
                 : ""
             }`}
             size={18}
           />
 
-          <span className="text-sm">{likes}</span>
+          <span className="text-sm">
+            {currentLikes}
+          </span>
         </div>
       </div>
 
       {/* THUMBNAILS */}
-      <div className="flex gap-3 mt-4 overflow-x-auto">
-        {reels.map((v) => (
-          <video
-            key={v.id}
-            src={getFullUrl(v.video_url)}
-            onClick={() => handleSelect(v)}
-            className={`w-[150px] h-[90px] object-cover rounded-lg cursor-pointer border ${
-              selectedVideo?.id === v.id
-                ? "border-yellow-400"
-                : "border-[#1c2c55]"
-            }`}
-          />
-        ))}
+      <div className="flex gap-3 mt-4 overflow-x-auto pb-2">
+        {videos.map((v) => {
+          const url = getFullUrl(
+            v.video_url
+          );
+
+          return (
+            <video
+              key={v.id}
+              src={url}
+              onClick={() =>
+                setSelected(url)
+              }
+              className={`w-[150px] h-[90px] object-cover rounded-lg cursor-pointer border transition ${
+                selected === url
+                  ? "border-yellow-400"
+                  : "border-[#1c2c55]"
+              }`}
+            />
+          );
+        })}
       </div>
+
+      {/* SEND REQUEST */}
+      <button
+        onClick={handleSendRequest}
+        disabled={sending}
+        className="
+          w-full
+          mt-6
+          py-3
+          bg-[#0a1a3a]
+          hover:bg-[#11265e]
+          rounded-lg
+          font-semibold
+          disabled:opacity-50
+          transition
+        "
+      >
+        {sending
+          ? t("Sending...")
+          : t("Send Request")}
+      </button>
     </div>
   );
 }
