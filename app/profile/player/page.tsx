@@ -1,17 +1,38 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { Search } from "lucide-react";
-import Link from "next/link";
-import { useTheme } from "@/app/context/ThemeContext";
-import { fetchGraphQL } from "@/app/lib/fetchGraphQL";
+import React, { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
+  Star,
+  LayoutGrid,
+  Users,
+  Trophy,
+  Share2,
+  Mail,
+  Phone,
+  MapPin,
+  ChevronLeft,
+  ChevronRight,
+  FileText,
+  ArrowRightLeft,
+  Heart,
+  CheckCircle,
+  AlertCircle,
+} from "lucide-react";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Navigation } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/navigation";
+import { motion } from "framer-motion";
+import { useTheme } from "../../context/ThemeContext";
+import useTranslate from "../../hooks/useTranslate";
+import { fetchGraphQL } from "../../lib/fetchGraphQL";
+import {
+  GET_MY_PLAYER_PROFILE,
   GET_ALL_PLAYERS,
-  SEARCH_PLAYERS,
 } from "@/app/graphql/query/player.queries";
-import useTranslate from "@/app/hooks/useTranslate";
-import SidebarAds from "@/app/components/SidebarAds";
-import { PlayerCard } from "@/app/components/PlayerCard";
+import { LogoutButton } from "@/app/components/LogoutButton";
 
 interface PlayerData {
   id: string;
@@ -23,362 +44,412 @@ interface PlayerData {
   age?: number;
   average_rating?: number;
   trust_level?: string;
+  email_address?: string;
+  phone?: string;
+  country?: string;
+  city?: string;
+  is_verified?: boolean;
 }
 
-interface FormattedPlayer {
+interface ClubData {
   id: string;
   name: string;
-  image: string;
-  rating: number;
-  position: string;
+  email: string;
+  phone: string;
   country: string;
-  age: number;
+  city: string;
+  logo_url?: string;
+  cover_url?: string;
+  rating?: number;
+  description?: string;
+  members_count?: number;
+  is_verified?: boolean;
 }
 
-interface GetAllPlayersResponse {
-  getAllPlayers: {
-    data: PlayerData[];
-    total: number;
-  };
+interface Member {
+  name: string;
+  img: string;
+  id: string;
 }
 
-interface SearchPlayersResponse {
-  searchPlayers: {
-    data: PlayerData[];
-    total: number;
-  };
+interface MenuButton {
+  label: string;
+  icon: React.ReactNode;
+  path?: string;
+  color?: string;
+  action?: () => void;
 }
 
-export default function PlayersPage() {
+export default function ClubProfile() {
   const { theme } = useTheme();
-  const { lang, t } = useTranslate();
+  const { t } = useTranslate();
+  const router = useRouter();
+  const [swiperReady, setSwiperReady] = useState(false);
+  const [clubData, setClubData] = useState<ClubData | null>(null);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isVerified, setIsVerified] = useState<boolean>(false);
+  const [hasProfile, setHasProfile] = useState<boolean>(false);
+  const prevRef = useRef<HTMLButtonElement>(null);
+  const nextRef = useRef<HTMLButtonElement>(null);
 
-  const isDark = theme === "dark";
+  useEffect(() => {
+    setSwiperReady(true);
+    fetchClubData();
+    fetchMembers();
+  }, []);
 
-  const [players, setPlayers] = useState<FormattedPlayer[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  const [searchTerm, setSearchTerm] = useState("");
-
-  const [minAge, setMinAge] = useState<string>("");
-
-  const [maxAge, setMaxAge] = useState<string>("");
-
-  const [activeSort, setActiveSort] = useState<
-    "newest" | "highest_rated" | "age" | "name"
-  >("newest");
-
-  const getSortByValue = useCallback(() => {
-    if (activeSort === "highest_rated") return "highest_rated";
-
-    if (activeSort === "age") return "age";
-
-    if (activeSort === "name") return "name";
-
-    return "newest";
-  }, [activeSort]);
-
-  const fetchPlayers = useCallback(async () => {
-    setLoading(true);
-
+  const fetchClubData = async () => {
     try {
-      let playerData: PlayerData[] = [];
-
-      const sortByValue = getSortByValue();
-
-      const minAgeNum = minAge
-        ? parseInt(minAge)
-        : undefined;
-
-      const maxAgeNum = maxAge
-        ? parseInt(maxAge)
-        : undefined;
-
-      if (searchTerm.trim()) {
-        const result =
-          await fetchGraphQL<SearchPlayersResponse>(
-            SEARCH_PLAYERS,
-            {
-              query: searchTerm,
-              skip: 0,
-              take: 50,
-              sortBy: sortByValue,
-              minAge: minAgeNum,
-              maxAge: maxAgeNum,
-            }
-          );
-
-        playerData =
-          result?.data?.searchPlayers?.data || [];
-      } else {
-        const result =
-          await fetchGraphQL<GetAllPlayersResponse>(
-            GET_ALL_PLAYERS,
-            {
-              skip: 0,
-              take: 50,
-              sortBy: sortByValue,
-              minAge: minAgeNum,
-              maxAge: maxAgeNum,
-            }
-          );
-
-        playerData =
-          result?.data?.getAllPlayers?.data || [];
-      }
-
-      if (!playerData || playerData.length === 0) {
-        setPlayers([]);
-
-        return;
-      }
-
-      let formatted = playerData.map(
-        (p: PlayerData) => {
-          const rating = p.average_rating ?? 0;
-
-          let image = "/b2.jpg";
-
-          if (p.profile_image_url) {
-            image = p.profile_image_url.startsWith(
-              "http"
-            )
-              ? p.profile_image_url
-              : `${process.env.NEXT_PUBLIC_API_URL}${p.profile_image_url}`;
-          }
-
-          return {
-            id: p.id,
-            name: `${p.first_name} ${p.last_name}`,
-            image,
-            rating,
-            position: "Player",
-            country:
-              p.nationality || "Unknown",
-            age: p.age || 0,
-          };
-        }
+      const result = await fetchGraphQL<{ myPlayerProfile: PlayerData }>(
+        GET_MY_PLAYER_PROFILE,
       );
-
-      if (activeSort === "name") {
-        formatted = formatted.sort((a, b) =>
-          a.name.localeCompare(b.name)
-        );
+      if (result.data?.myPlayerProfile) {
+        const player = result.data.myPlayerProfile;
+        setClubData({
+          id: player.id,
+          name: `${player.first_name} ${player.last_name}`,
+          email: player.email_address || "",
+          phone: player.phone || "",
+          country: player.country || "",
+          city: player.city || "",
+          logo_url: player.profile_image_url,
+          rating: player.average_rating || 0,
+        });
+        setIsVerified(player.is_verified || false);
+        setHasProfile(true);
+      } else {
+        setHasProfile(false);
+        setClubData(null);
       }
+    } catch (error) {
+      console.error("Error fetching club data:", error);
+      setHasProfile(false);
+      setClubData(null);
+    }
+  };
 
-      setPlayers(formatted);
-    } catch (err) {
-      console.error(err);
-
-      setPlayers([]);
+  const fetchMembers = async () => {
+    try {
+      const result = await fetchGraphQL<{
+        getAllPlayers: { data: PlayerData[]; total: number };
+      }>(GET_ALL_PLAYERS, { skip: 0, take: 20 });
+      if (result.data?.getAllPlayers?.data) {
+        const formattedMembers = result.data.getAllPlayers.data.map(
+          (player) => ({
+            name: `${player.first_name} ${player.last_name}`,
+            img: player.profile_image_url || "",
+            id: player.id,
+          }),
+        );
+        setMembers(formattedMembers);
+      } else {
+        setMembers([]);
+      }
+    } catch (error) {
+      console.error("Error fetching members:", error);
+      setMembers([]);
     } finally {
       setLoading(false);
     }
-  }, [
-    searchTerm,
-    activeSort,
-    getSortByValue,
-    minAge,
-    maxAge,
-  ]);
+  };
 
-  useEffect(() => {
-    fetchPlayers();
-  }, [fetchPlayers, lang]);
+  const getFullImageUrl = (url?: string) => {
+    if (!url) return "";
+    if (url.startsWith("http")) return url;
+    return `${process.env.NEXT_PUBLIC_API_URL}${url}`;
+  };
 
-  const filteredPlayers = players.filter(
-    (player) =>
-      player.name
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase())
-  );
+  const menuButtons: MenuButton[] = [
+    {
+      label: t("Requests"),
+      icon: <LayoutGrid size={18} />,
+      path: "/profile/requests",
+    },
+    {
+      label: t("Deals"),
+      icon: <FileText size={18} />,
+      path: "/profile/deals",
+    },
+    {
+      label: t("My Transfers"),
+      icon: <ArrowRightLeft size={18} />,
+      path: "/profile/transfers",
+    },
+    {
+      label: t("My Contract"),
+      icon: <FileText size={18} />,
+      path: "/profile/mycontract",
+    },
+    {
+      label: t("Share AD"),
+      icon: <Share2 size={18} />,
+      path: "/profile/share",
+    },
+    {
+      label: t("Participation Event"),
+      icon: <Users size={18} />,
+      path: "/profile/participationevent",
+    },
+    {
+      label: t("Participation Prime"),
+      icon: <Trophy size={18} />,
+      path: "/profile/participationprime",
+    },
+    {
+      label: t("Favorite Players"),
+      icon: <Heart size={18} className="text-red-500" />,
+      path: "/profile/favouritePlayers",
+    },
+  ];
 
-  const bg = isDark
-    ? "bg-[#01040a]"
-    : "bg-gray-100";
+  if (loading) {
+    return (
+      <div
+        className={`min-h-screen flex items-center justify-center transition
+        ${
+          theme === "dark" ? "bg-[#020617] text-white" : "bg-white text-black"
+        }`}
+      >
+        <div className="text-yellow-400">{t("Loading...")}</div>
+      </div>
+    );
+  }
 
-  const text = isDark
-    ? "text-white"
-    : "text-black";
-
-  const card = isDark
-    ? "bg-[#030816]"
-    : "bg-white";
-
-  const border = isDark
-    ? "border-white/10"
-    : "border-gray-300";
-
-  const accent = isDark
-    ? "text-[#eab308]"
-    : "text-yellow-600";
+  // If no profile exists, show message to complete registration
+  if (!hasProfile) {
+    return (
+      <div
+        className={`min-h-screen flex flex-col items-center justify-center transition
+        ${
+          theme === "dark" ? "bg-[#020617] text-white" : "bg-white text-black"
+        }`}
+      >
+        <div className="text-center max-w-md px-6">
+          <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-yellow-400/20 flex items-center justify-center">
+            <Users size={48} className="text-yellow-400" />
+          </div>
+          <h2 className="text-2xl font-bold mb-4">
+            {t("Complete Your Profile")}
+          </h2>
+          <p className="text-gray-500 mb-8">
+            {t("Please complete your profile information to continue")}
+          </p>
+          <button
+            onClick={() => router.push("/profile")}
+            className="px-8 py-3 bg-yellow-400 text-black font-semibold rounded-md hover:bg-yellow-500 transition"
+          >
+            {t("Complete Registration")}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
-      className={`min-h-screen py-10 px-4 sm:px-6 md:px-8 pb-10 ${bg} ${text}`}
+      className={`min-h-screen flex justify-center py-40 px-4 transition
+      ${theme === "dark" ? "bg-[#020617] text-white" : "bg-white text-black"}`}
     >
-      {/* ADS */}
-      <div className="flex justify-center mb-8 pt-20 sm:pt-24 md:pt-28">
-        <SidebarAds />
-      </div>
-
-      {/* FILTERS */}
-      <div className="max-w-7xl mx-auto mb-8 flex flex-col gap-4">
-        <div className="relative w-full">
-          <Search
-            className={`absolute left-4 top-1/2 -translate-y-1/2 ${accent}/60`}
-            size={18}
-          />
-
-          <input
-            type="text"
-            placeholder={t(
-              "Search players by name..."
-            )}
-            value={searchTerm}
-            onChange={(e) =>
-              setSearchTerm(e.target.value)
-            }
-            className={`w-full rounded-lg py-2.5 sm:py-3 pl-10 sm:pl-12 pr-4 text-xs sm:text-sm italic font-bold border focus:outline-none transition ${card} ${border} ${accent} focus:border-yellow-500/50`}
-          />
-        </div>
-
-        {/* AGE */}
-        <div className="flex flex-wrap items-center gap-3">
-          <span
-            className={`text-xs font-bold italic ${
-              isDark
-                ? "text-gray-400"
-                : "text-gray-600"
-            }`}
-          >
-            {t("Age Range:")}
-          </span>
-
-          <input
-            type="number"
-            placeholder={t("Min Age")}
-            value={minAge}
-            onChange={(e) =>
-              setMinAge(e.target.value)
-            }
-            className={`w-24 rounded-lg py-2 px-3 text-xs border focus:outline-none transition ${card} ${border} ${accent} focus:border-yellow-500/50`}
-          />
-
-          <span
-            className={`text-xs ${
-              isDark
-                ? "text-gray-400"
-                : "text-gray-600"
-            }`}
-          >
-            -
-          </span>
-
-          <input
-            type="number"
-            placeholder={t("Max Age")}
-            value={maxAge}
-            onChange={(e) =>
-              setMaxAge(e.target.value)
-            }
-            className={`w-24 rounded-lg py-2 px-3 text-xs border focus:outline-none transition ${card} ${border} ${accent} focus:border-yellow-500/50`}
-          />
-        </div>
-
-        {/* SORT */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <button
-            onClick={() =>
-              setActiveSort("newest")
-            }
-            className={`px-3 py-2 rounded-lg text-[10px] sm:text-xs font-bold border transition ${card} ${border} hover:opacity-80 ${
-              activeSort === "newest"
-                ? "border-yellow-400 text-yellow-400"
-                : ""
-            }`}
-          >
-            {t("Newest")}
-          </button>
-
-          <button
-            onClick={() =>
-              setActiveSort("highest_rated")
-            }
-            className={`px-3 py-2 rounded-lg text-[10px] sm:text-xs font-bold border transition ${card} ${border} hover:opacity-80 ${
-              activeSort === "highest_rated"
-                ? "border-yellow-400 text-yellow-400"
-                : ""
-            }`}
-          >
-            {t("Highest Rated")}
-          </button>
-
-          <button
-            onClick={() =>
-              setActiveSort("age")
-            }
-            className={`px-3 py-2 rounded-lg text-[10px] sm:text-xs font-bold border transition ${card} ${border} hover:opacity-80 ${
-              activeSort === "age"
-                ? "border-yellow-400 text-yellow-400"
-                : ""
-            }`}
-          >
-            {t("Age")}
-          </button>
-
-          <button
-            onClick={() =>
-              setActiveSort("name")
-            }
-            className={`px-3 py-2 rounded-lg text-[10px] sm:text-xs font-bold border transition ${card} ${border} hover:opacity-80 ${
-              activeSort === "name"
-                ? "border-yellow-400 text-yellow-400"
-                : ""
-            }`}
-          >
-            {t("Name")}
-          </button>
-        </div>
-      </div>
-
-      {/* PLAYERS */}
-      <div
-        className="
-          max-w-7xl
-          mx-auto
-          grid
-          grid-cols-1
-          sm:grid-cols-2
-          lg:grid-cols-3
-          xl:grid-cols-4
-          gap-4
-          sm:gap-6
-          justify-items-center
-        "
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="max-w-6xl w-full"
       >
-        {loading ? (
-          <p className="col-span-full text-center opacity-70">
-            {t("Loading...")}
-          </p>
-        ) : filteredPlayers.length === 0 ? (
-          <p className="col-span-full text-center opacity-70">
-            {t("No players found")}
-          </p>
-        ) : (
-          filteredPlayers.map((player) => (
-            <Link
-              key={player.id}
-              href={`/players/${player.id}`}
-              className="w-full flex justify-center"
-            >
-              <div className="cursor-pointer w-full max-w-[320px]">
-                <PlayerCard {...player} />
+        {/* ===== Header ===== */}
+        <div className="flex flex-col md:flex-row gap-6 mb-8">
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            className="relative w-[320px] h-[320px] rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-800"
+          >
+            {clubData?.logo_url ? (
+              <Image
+                src={getFullImageUrl(clubData.logo_url)}
+                fill
+                alt="club"
+                className="object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <Users size={64} className="text-gray-400" />
               </div>
-            </Link>
-          ))
+            )}
+          </motion.div>
+
+          <div className="flex-1 space-y-3">
+            <h1 className="text-3xl font-bold">{clubData?.name || ""}</h1>
+
+            {/* 7 Stars Rating */}
+            <div className="flex text-yellow-400">
+              {[...Array(7)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  whileHover={{ scale: 1.2 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Star
+                    size={20}
+                    fill={i < (clubData?.rating || 0) ? "currentColor" : "none"}
+                    className={
+                      i < (clubData?.rating || 0)
+                        ? "text-yellow-400"
+                        : "text-gray-400"
+                    }
+                  />
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Info */}
+            <div className="text-gray-400 space-y-2">
+              {clubData?.country && (
+                <div className="flex items-center gap-2">
+                  <MapPin size={14} />
+                  {clubData.country}
+                </div>
+              )}
+
+              <div className="flex flex-col sm:flex-row gap-4">
+                {clubData?.email && (
+                  <span className="flex items-center gap-1">
+                    <Mail size={14} /> {clubData.email}
+                  </span>
+                )}
+                {clubData?.phone && (
+                  <span className="flex items-center gap-1">
+                    <Phone size={14} /> {clubData.phone}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Verification Status Badge */}
+            <div className="flex justify-start">
+              {isVerified ? (
+                <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-500/20 text-green-500 text-xs">
+                  <CheckCircle size={12} />
+                  {t("Verified Player")}
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-500 text-xs">
+                  <AlertCircle size={12} />
+                  {t("Pending Verification")}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ===== Edit Button ===== */}
+        <motion.button
+          whileTap={{ scale: 0.95 }}
+          whileHover={{ scale: 1.02 }}
+          onClick={() => router.push("/profile")}
+          className={`w-full py-3 mb-6 rounded-md transition border-x-3 border-[#F0B100]
+          ${
+            theme === "dark" ? "bg-[#0B1739] text-white" : "bg-white text-black"
+          }`}
+        >
+          {t("Edit Profile")}
+        </motion.button>
+
+        {/* ===== Menu ===== */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-10">
+          {menuButtons.map((btn, i) => (
+            <motion.button
+              key={i}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => {
+                if (btn.path) router.push(btn.path);
+                if (btn.action) btn.action();
+              }}
+              className={`flex justify-between items-center border-x-3 border-[#F0B100] p-3 rounded-md transition
+              ${
+                theme === "dark"
+                  ? "bg-[#0B1739] text-white"
+                  : "bg-gray-100 text-black"
+              }`}
+            >
+              <span className="text-sm">{btn.label}</span>
+              <span className={btn.color || "text-yellow-400"}>{btn.icon}</span>
+            </motion.button>
+          ))}
+
+          {/* Logout Button */}
+          <LogoutButton variant="default" />
+        </div>
+
+        {/* ===== Members Slider ===== */}
+        {members.length > 0 && (
+          <div className="relative px-10">
+            {swiperReady && (
+              <Swiper
+                modules={[Navigation]}
+                navigation={{
+                  prevEl: prevRef.current,
+                  nextEl: nextRef.current,
+                }}
+                spaceBetween={15}
+                slidesPerView={1}
+                breakpoints={{
+                  640: { slidesPerView: 2 },
+                  768: { slidesPerView: 3 },
+                  1024: { slidesPerView: 4 },
+                }}
+                className="overflow-visible"
+              >
+                {members.map((m) => (
+                  <SwiperSlide key={m.id}>
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer
+                      ${
+                        theme === "dark"
+                          ? "bg-[#051139] border-gray-700 hover:border-yellow-400"
+                          : "bg-white shadow border-gray-200 hover:border-yellow-400"
+                      }`}
+                      onClick={() => router.push(`/players/${m.id}`)}
+                    >
+                      <div className="w-12 h-12 relative rounded-full overflow-hidden bg-gray-300 dark:bg-gray-700">
+                        {m.img ? (
+                          <Image
+                            src={getFullImageUrl(m.img)}
+                            fill
+                            alt="member"
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Users size={20} className="text-gray-500" />
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-sm font-medium">{m.name}</p>
+                    </motion.div>
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+            )}
+
+            {/* Navigation Buttons */}
+            <button
+              ref={prevRef}
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-black/50 hover:bg-black/70 rounded-full p-2 transition"
+            >
+              <ChevronLeft size={24} className="text-white" />
+            </button>
+
+            <button
+              ref={nextRef}
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-black/50 hover:bg-black/70 rounded-full p-2 transition"
+            >
+              <ChevronRight size={24} className="text-white" />
+            </button>
+          </div>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 }
