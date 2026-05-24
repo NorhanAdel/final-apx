@@ -119,8 +119,14 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
       try {
         const result = await fetchGraphQL<{ sports: Sport[] }>(GET_ALL_SPORTS);
         if (result.data?.sports) {
-          setSports(result.data.sports);
-        }
+  const sorted = [...result.data.sports].sort((a, b) => {
+    if (a.name.toLowerCase() === "football") return -1;
+    if (b.name.toLowerCase() === "football") return 1;
+    return 0;
+  });
+
+  setSports(sorted);
+}
       } catch (error) {
         console.error("Failed to fetch sports:", error);
       } finally {
@@ -374,158 +380,179 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
           : "bg-transparent"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-6 py-2 flex justify-between items-center">
-        <Link href="/">
-          <Image src="/logo.png" width={90} height={70} alt="logo" />
-        </Link>
+<div className="max-w-7xl mx-auto px-6 py-2 flex justify-between items-center">
+  <Link href="/">
+    <Image src="/logo.png" width={90} height={70} alt="logo" />
+  </Link>
 
-        <div className="hidden md:flex items-center gap-6">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="hover:text-yellow-400 transition-colors"
-            >
-              {t(link.key)}
-            </Link>
-          ))}
+  <div className="hidden md:flex items-center gap-6">
+    {navLinks.map((link) => (
+      <Link
+        key={link.href}
+        href={link.href}
+        className={`transition-colors font-semibold ${
+          theme === "dark"
+            ? "text-yellow-400 hover:text-yellow-300"
+            : "text-gray-800 hover:text-yellow-600"
+        }`}
+      >
+        {t(link.key)}
+      </Link>
+    ))}
 
-          <div className="relative">
-            <button
-              onClick={() => setSportsOpen(!sportsOpen)}
-              className="flex items-center gap-1 hover:text-yellow-400 transition-colors"
-            >
-              {currentSport?.name || t("Sports")}
-              <ChevronDown size={16} />
-            </button>
+    {/* SPORTS DROPDOWN */}
+    <div className="relative">
+      <button
+        onClick={() => setSportsOpen(!sportsOpen)}
+        className={`flex items-center gap-1 transition-colors font-medium ${
+          theme === "dark"
+            ? "text-white hover:text-yellow-400"
+            : "text-gray-800 hover:text-yellow-600"
+        }`}
+      >
+        {currentSport?.name || t("Sports")}
+        <ChevronDown size={16} />
+      </button>
 
-            <AnimatePresence>
-              {sportsOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className={`absolute left-0 mt-3 w-52 border rounded-xl z-50 overflow-hidden
-                  ${
-                    theme === "dark"
-                      ? "bg-[#14141c] border-white/10"
-                      : "bg-white border-black/10 shadow-lg"
-                  }`}
-                >
-                  {sportsLoading ? (
-                    <div className="px-4 py-2 text-center">Loading...</div>
-                  ) : (
-                  sports.map((sport: Sport) => {
-  const Icon = getSportIcon(sport.name);
-
-  return (
-    <Link
-      key={sport.id}
-      href={`/sports/${sport.id}`}
-      className="flex items-center gap-2 px-4 py-2 hover:bg-[#F0B100] hover:text-black transition-colors"
-      onClick={() => setSportsOpen(false)}
-    >
-      <Icon size={18} />
-      {sport.name}
-    </Link>
-  );
-})
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {renderAuthButton()}
-
-      
-          <button
-            onClick={toggleTheme}
-            className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+      <AnimatePresence>
+        {sportsOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className={`absolute left-0 mt-3 w-52 border rounded-xl z-50 overflow-hidden ${
+              theme === "dark"
+                ? "bg-[#14141c] border-white/10 text-white"
+                : "bg-white border-gray-200 text-gray-800 shadow-lg"
+            }`}
           >
-            {mounted ? (
-              theme === "dark" ? (
-                <Moon size={18} />
-              ) : (
-                <Sun size={18} />
-              )
+            {sportsLoading ? (
+              <div className="px-4 py-2 text-center">Loading...</div>
             ) : (
-              <div className="w-5 h-5" /> // placeholder فارغ أثناء التحميل
+              sports.map((sport: Sport) => {
+                const Icon = getSportIcon(sport.name);
+
+                return (
+                  <Link
+                    key={sport.id}
+                    href={`/sports/${sport.id}`}
+                    className={`flex items-center gap-2 px-4 py-2 transition-colors ${
+                      theme === "dark"
+                        ? "hover:bg-[#F0B100] hover:text-black"
+                        : "hover:bg-yellow-100 hover:text-black"
+                    }`}
+                    onClick={() => setSportsOpen(false)}
+                  >
+                    <Icon size={18} />
+                    {sport.name}
+                  </Link>
+                );
+              })
             )}
-          </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
 
-          <div className="relative">
-            <button
-              onClick={() => setLangOpen(!langOpen)}
-              className="flex items-center gap-1 hover:text-yellow-400 transition-colors"
-            >
-              <Globe size={14} />
-              {lang.toUpperCase()}
-              <ChevronDown size={12} />
-            </button>
+    {renderAuthButton()}
 
-            <AnimatePresence>
-              {langOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className={`absolute right-0 mt-3 w-40 border rounded-xl z-50 overflow-hidden
-                  ${
+    {/* THEME TOGGLE */}
+    <button
+      onClick={toggleTheme}
+      className={`p-2 rounded-lg transition-colors ${
+        theme === "dark" ? "hover:bg-white/10" : "hover:bg-gray-200"
+      }`}
+    >
+      {mounted ? (
+        theme === "dark" ? (
+          <Moon size={18} />
+        ) : (
+          <Sun size={18} />
+        )
+      ) : (
+        <div className="w-5 h-5" />
+      )}
+    </button>
+
+    {/* LANGUAGE */}
+    <div className="relative">
+      <button
+        onClick={() => setLangOpen(!langOpen)}
+        className={`flex items-center gap-1 transition-colors ${
+          theme === "dark"
+            ? "text-white hover:text-yellow-400"
+            : "text-yellow-600"
+        }`}
+      >
+        <Globe size={14} />
+        {lang.toUpperCase()}
+        <ChevronDown size={12} />
+      </button>
+
+      <AnimatePresence>
+        {langOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className={`absolute right-0 mt-3 w-40 border rounded-xl z-50 overflow-hidden ${
+              theme === "dark"
+                ? "bg-[#14141c] border-white/10 text-white"
+                : "bg-white border-gray-200 text-gray-800 shadow-lg"
+            }`}
+          >
+            {languagesLoading ? (
+              <div className="px-4 py-2 text-center">Loading...</div>
+            ) : (
+              languages.map((l) => (
+                <button
+                  key={l.code}
+                  onClick={() => handleLanguageChange(l.code)}
+                  className={`block w-full text-left px-4 py-2 transition-colors ${
                     theme === "dark"
-                      ? "bg-[#14141c] border-white/10"
-                      : "bg-white border-black/10 shadow-lg"
+                      ? "hover:bg-[#F0B100] hover:text-black"
+                      : "hover:bg-yellow-100 hover:text-black"
                   }`}
                 >
-                  {languagesLoading ? (
-                    <div className="px-4 py-2 text-center">Loading...</div>
-                  ) : (
-                    languages.map((l) => (
-                      <button
-                        key={l.code}
-                        onClick={() => handleLanguageChange(l.code)}
-                        className="block w-full text-left px-4 py-2 hover:bg-[#F0B100] hover:text-black transition-colors"
-                      >
-                        {l.name}
-                      </button>
-                    ))
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-
-        <div className="md:hidden flex items-center gap-3">
-         
-          <button onClick={toggleTheme}>
-            {mounted ? (
-              theme === "dark" ? (
-                <Moon size={20} />
-              ) : (
-                <Sun size={20} />
-              )
-            ) : (
-              <div className="w-5 h-5" />
+                  {l.name}
+                </button>
+              ))
             )}
-          </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  </div>
 
-          {!activeUser ? (
-            <Link href="/auth/login">
-              <LogIn size={22} />
-            </Link>
-          ) : (
-            <button onClick={handleLogout}>
-              <LogOut size={22} />
-            </button>
-          )}
+  {/* MOBILE */}
+  <div className="md:hidden flex items-center gap-3">
+    <button onClick={toggleTheme} className=" text-yellow-600">
+      {mounted ? (
+        theme === "dark" ? (
+          <Moon size={20} />
+        ) : (
+          <Sun size={20} />
+        )
+      ) : (
+        <div className="w-5 h-5" />
+      )}
+    </button>
 
-          <button onClick={() => setOpen(!open)}>
-            {open ? <X /> : <Menu />}
-          </button>
-        </div>
-      </div>
+    {!activeUser ? (
+      <Link href="/auth/login" className=" text-yellow-600">
+        <LogIn size={22} />
+      </Link>
+    ) : (
+      <button onClick={handleLogout} className=" text-yellow-600">
+        <LogOut size={22} />
+      </button>
+    )}
 
+    <button onClick={() => setOpen(!open)}className=" text-yellow-600">
+      {open ? <X /> : <Menu />}
+    </button>
+  </div>
+</div>
       <AnimatePresence>
         {open && (
           <motion.div
@@ -534,8 +561,8 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
             exit={{ height: 0, opacity: 0 }}
             className={`md:hidden overflow-hidden border-t ${
               theme === "dark"
-                ? "bg-[#020617] border-white/10"
-                : "bg-white border-black/10"
+                ? "bg-[#020617]  text-yellow-600 border-white/10"
+                : "bg-white  text-yellow-600 border-black/10"
             }`}
           >
             <div className="flex flex-col py-4">
@@ -544,7 +571,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                   key={link.href}
                   href={link.href}
                   onClick={() => setOpen(false)}
-                  className="px-6 py-3 hover:bg-white/5"
+                  className="px-6 py-3  text-yellow-600 hover:bg-white/5"
                 >
                   {t(link.key)}
                 </Link>
