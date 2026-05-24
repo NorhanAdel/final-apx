@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 
 import { fetchGraphQL } from "@/app/lib/fetchGraphQL";
 import useTranslate from "@/app/hooks/useTranslate";
+import { useTheme } from "@/app/context/ThemeContext";
 
 interface Investor {
   id: string;
@@ -39,7 +40,11 @@ export default function Investor() {
   const [loading, setLoading] = useState(true);
 
   const sliderRef = useRef<HTMLDivElement>(null);
+
   const { t, lang } = useTranslate();
+  const { theme } = useTheme();
+
+  const isDark = theme === "dark";
 
   const GET_ALL_INVESTORS = `
     query GetAllInvestors {
@@ -73,6 +78,7 @@ export default function Investor() {
 
   useEffect(() => {
     const slider = sliderRef.current;
+
     if (!slider) return;
 
     let animationFrame: number;
@@ -97,15 +103,29 @@ export default function Investor() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-24 bg-[#020617]">
+      <div
+        className={`flex items-center justify-center py-24 ${
+          isDark ? "bg-[#020617]" : "bg-[#f3f4f6]"
+        }`}
+      >
         <Loader2 className="w-12 h-12 animate-spin text-yellow-400" />
       </div>
     );
   }
 
   return (
-    <section className="relative py-24 mt-10 overflow-hidden bg-[#020617]">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#1e293b,transparent_70%)] opacity-40" />
+    <section
+      className={`relative py-24 mt-10 overflow-hidden transition-all duration-500 ${
+        isDark ? "bg-[#020617]" : "bg-[#f8fafc]"
+      }`}
+    >
+      <div
+        className={`absolute inset-0 opacity-40 ${
+          isDark
+            ? "bg-[radial-gradient(circle_at_top,#1e293b,transparent_70%)]"
+            : "bg-[radial-gradient(circle_at_top,#fde68a,transparent_70%)]"
+        }`}
+      />
 
       <div className="relative max-w-7xl mx-auto">
         {/* ===== TITLE ===== */}
@@ -125,9 +145,9 @@ export default function Investor() {
           </span>
 
           <h2
-            className={`text-4xl md:text-6xl font-black text-white mt-4 leading-tight ${
-              lang === "ar" ? "font-[Cairo]" : "font-sans"
-            }`}
+            className={`text-4xl md:text-6xl font-black mt-4 leading-tight ${
+              isDark ? "text-white" : "text-black"
+            } ${lang === "ar" ? "font-[Cairo]" : "font-sans"}`}
           >
             {currentTitle.subtitle}
           </h2>
@@ -135,8 +155,21 @@ export default function Investor() {
 
         {/* ===== SLIDER ===== */}
         <div className="relative">
-          <div className="absolute left-0 top-0 h-full w-32 bg-gradient-to-r from-[#020617] to-transparent z-10 pointer-events-none" />
-          <div className="absolute right-0 top-0 h-full w-32 bg-gradient-to-l from-[#020617] to-transparent z-10 pointer-events-none" />
+          <div
+            className={`absolute left-0 top-0 h-full w-32 z-10 pointer-events-none ${
+              isDark
+                ? "bg-gradient-to-r from-[#020617] to-transparent"
+                : "bg-gradient-to-r from-[#f8fafc] to-transparent"
+            }`}
+          />
+
+          <div
+            className={`absolute right-0 top-0 h-full w-32 z-10 pointer-events-none ${
+              isDark
+                ? "bg-gradient-to-l from-[#020617] to-transparent"
+                : "bg-gradient-to-l from-[#f8fafc] to-transparent"
+            }`}
+          />
 
           <div
             ref={sliderRef}
@@ -147,17 +180,32 @@ export default function Investor() {
                 key={`${investor.id}-${index}`}
                 initial={{ opacity: 0, scale: 0.8 }}
                 whileInView={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: index * 0.05 }}
+                transition={{
+                  duration: 0.5,
+                  delay: index * 0.05,
+                }}
                 whileHover={{ y: -12, scale: 1.04 }}
                 className="min-w-[280px] group relative"
               >
                 <div className="absolute inset-0 rounded-[35px] bg-yellow-400/20 blur-3xl opacity-0 group-hover:opacity-100 transition-all duration-700" />
 
-                <div className="relative h-[340px] rounded-[35px] overflow-hidden border border-white/10 bg-white/5 backdrop-blur-2xl transition-all duration-500 group-hover:border-yellow-400/50">
-                  <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-black/40 opacity-0 group-hover:opacity-100 transition-all duration-500" />
+                <div
+                  className={`relative h-[340px] rounded-[35px] overflow-hidden border backdrop-blur-2xl transition-all duration-500 group-hover:border-yellow-400/50 ${
+                    isDark
+                      ? "border-white/10 bg-white/5"
+                      : "border-black/10 bg-white"
+                  }`}
+                >
+                  <div
+                    className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-500 ${
+                      isDark
+                        ? "bg-gradient-to-b from-white/10 via-transparent to-black/40"
+                        : "bg-gradient-to-b from-yellow-100/40 via-transparent to-yellow-200/20"
+                    }`}
+                  />
 
                   <div className="relative w-full h-full flex flex-col items-center justify-center p-8">
-                    <div className="relative w-36 h-36 rounded-full overflow-hidden border-[5px]shadow-[0_0_40px_rgba(250,204,21,0.35)]">
+                    <div className="relative w-36 h-36 rounded-full overflow-hidden border-[5px] shadow-[0_0_40px_rgba(250,204,21,0.35)]">
                       <Image
                         src={`${process.env.NEXT_PUBLIC_API_URL}${investor.logo_url}`}
                         alt={investor.name}
@@ -167,8 +215,12 @@ export default function Investor() {
                     </div>
 
                     <h3
-                      className={`text-white text-2xl font-bold text-center mt-8 leading-relaxed ${
-                        lang === "ar" ? "font-[Cairo]" : "font-sans"
+                      className={`text-2xl font-bold text-center mt-8 leading-relaxed ${
+                        isDark ? "text-white" : "text-black"
+                      } ${
+                        lang === "ar"
+                          ? "font-[Cairo]"
+                          : "font-sans"
                       }`}
                     >
                       {lang === "ar"
