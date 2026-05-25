@@ -18,6 +18,8 @@ interface Ad {
   is_active: boolean;
   package_name: string;
   media_type: string;
+  views?: number;
+  clicks?: number;
 }
 
 const texts = {
@@ -53,6 +55,24 @@ export default function SidebarAds() {
   `;
 
   // =========================
+  // TRACK VIEW
+  // =========================
+  const TRACK_AD_VIEW = `
+    mutation TrackSponsoredAdView($adId: String!) {
+      trackSponsoredAdView(adId: $adId)
+    }
+  `;
+
+  // =========================
+  // TRACK CLICK
+  // =========================
+  const TRACK_AD_CLICK = `
+    mutation TrackSponsoredAdClick($adId: String!) {
+      trackSponsoredAdClick(adId: $adId)
+    }
+  `;
+
+  // =========================
   // FETCH ADS
   // =========================
   useEffect(() => {
@@ -63,7 +83,16 @@ export default function SidebarAds() {
         );
 
         const data = res?.data?.getAllSponsoredAds || [];
-        setAds(data.filter((ad) => ad.is_active));
+
+        setAds(
+          data
+            .filter((ad) => ad.is_active)
+            .map((ad) => ({
+              ...ad,
+              views: 0,
+              clicks: 0,
+            }))
+        );
       } catch (err) {
         console.error(err);
         setAds([]);
@@ -88,6 +117,38 @@ export default function SidebarAds() {
     return () => clearInterval(interval);
   }, [ads]);
 
+  const ad = ads[index];
+
+  // =========================
+  // TRACK AD VIEW
+  // =========================
+  useEffect(() => {
+    if (!ad?.id) return;
+
+    const trackView = async () => {
+      try {
+        await fetchGraphQL(TRACK_AD_VIEW, {
+          adId: ad.id,
+        });
+
+        setAds((prev) =>
+          prev.map((item) =>
+            item.id === ad.id
+              ? {
+                  ...item,
+                  views: (item.views || 0) + 1,
+                }
+              : item
+          )
+        );
+      } catch (err) {
+        console.error("Track view error:", err);
+      }
+    };
+
+    trackView();
+  }, [index, ads]);
+
   if (loading) {
     return (
       <div className="fixed right-4 bottom-4 z-50">
@@ -97,8 +158,6 @@ export default function SidebarAds() {
   }
 
   if (closed || ads.length === 0) return null;
-
-  const ad = ads[index];
 
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -143,9 +202,7 @@ export default function SidebarAds() {
                   loop
                   playsInline
                   controls
-                  onError={() =>
-                    console.log("Video failed:", mediaUrl)
-                  }
+                  onError={() => console.log("Video failed:", mediaUrl)}
                 />
               ) : (
                 <Image
@@ -182,12 +239,39 @@ export default function SidebarAds() {
               {ad.description}
             </p>
 
-            {/* ✅ FIXED LINK BLOCK (no syntax error) */}
+            {/* STATS */}
+            <div className="flex items-center justify-between mt-3 text-[11px] text-gray-400 border-t border-white/10 pt-3">
+              <span>👁 Views: {ad.views || 0}</span>
+
+              <span>🖱 Clicks: {ad.clicks || 0}</span>
+            </div>
+
+            {/* LINK */}
             {ad.target_url && (
               <a
                 href={ad.target_url}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={async () => {
+                  try {
+                    await fetchGraphQL(TRACK_AD_CLICK, {
+                      adId: ad.id,
+                    });
+
+                    setAds((prev) =>
+                      prev.map((item) =>
+                        item.id === ad.id
+                          ? {
+                              ...item,
+                              clicks: (item.clicks || 0) + 1,
+                            }
+                          : item
+                      )
+                    );
+                  } catch (err) {
+                    console.error("Track click error:", err);
+                  }
+                }}
                 className="mt-4 inline-flex items-center justify-center gap-2 w-full bg-yellow-400 hover:bg-yellow-300 text-black text-sm font-bold py-2.5 rounded-xl"
               >
                 {t.learnMore}
