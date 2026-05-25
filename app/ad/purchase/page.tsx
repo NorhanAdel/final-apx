@@ -8,7 +8,7 @@ import { fetchGraphQL } from "@/app/lib/fetchGraphQL";
 import { useTheme } from "@/app/context/ThemeContext";
 
 import AdDurationSelector from "@/app/components/AdDurationSelector";
-import PaymentForm from "@/app/components/PaymentForm";
+import { PaymentForm } from "@/app/components/PaymentForm";
 
 interface Duration {
   id: string;
@@ -37,8 +37,7 @@ export default function PurchaseAdPage() {
   const [selectedDuration, setSelectedDuration] =
     useState<Duration | null>(null);
 
-  const [isProcessing, setIsProcessing] =
-    useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const [cardData, setCardData] = useState({
     cardholder_name: "",
@@ -68,9 +67,7 @@ export default function PurchaseAdPage() {
         `,
         {
           input: {
-            ad_duration_pricing_id:
-              selectedDuration.id,
-
+            ad_duration_pricing_id: selectedDuration.id,
             card: cardData,
           },
         }
@@ -81,10 +78,7 @@ export default function PurchaseAdPage() {
         return;
       }
 
-      if (
-        result?.data?.purchaseAdWithDuration
-          ?.success
-      ) {
+      if (result?.data?.purchaseAdWithDuration?.success) {
         toast.success(
           `Ad slot purchased successfully! (${selectedDuration.days} days)`
         );
@@ -93,7 +87,6 @@ export default function PurchaseAdPage() {
       }
     } catch (error) {
       console.error(error);
-
       toast.error("Purchase failed");
     } finally {
       setIsProcessing(false);
@@ -109,18 +102,14 @@ export default function PurchaseAdPage() {
       }`}
     >
       <div className="max-w-2xl mx-auto">
-        {/* TITLE */}
         <h1
           className={`text-3xl font-bold text-center mb-8 ${
-            theme === "dark"
-              ? "text-white"
-              : "text-gray-900"
+            theme === "dark" ? "text-white" : "text-gray-900"
           }`}
         >
           Purchase Ad Slot
         </h1>
 
-        {/* CARD */}
         <div
           className={`rounded-2xl p-6 shadow-lg border transition-colors duration-300 ${
             theme === "dark"
@@ -128,24 +117,19 @@ export default function PurchaseAdPage() {
               : "bg-white border-gray-200"
           }`}
         >
-          {/* HEADER */}
           <h2
             className={`text-xl font-semibold mb-4 ${
-              theme === "dark"
-                ? "text-white"
-                : "text-gray-900"
+              theme === "dark" ? "text-white" : "text-gray-900"
             }`}
           >
             Select Duration
           </h2>
 
-          {/* DURATION SELECTOR */}
           <AdDurationSelector
             selectedId={selectedDuration?.id}
             onSelect={setSelectedDuration}
           />
 
-          {/* SUMMARY */}
           {selectedDuration && (
             <>
               <div
@@ -157,23 +141,15 @@ export default function PurchaseAdPage() {
               >
                 <p
                   className={`text-center ${
-                    theme === "dark"
-                      ? "text-gray-200"
-                      : "text-gray-800"
+                    theme === "dark" ? "text-gray-200" : "text-gray-800"
                   }`}
                 >
                   You are about to purchase a{" "}
-                  <strong>
-                    {selectedDuration.days}-day
-                  </strong>{" "}
-                  ad slot for{" "}
-                  <strong>
-                    ${selectedDuration.price}
-                  </strong>
+                  <strong>{selectedDuration.days}-day</strong> ad slot for{" "}
+                  <strong>${selectedDuration.price}</strong>
                 </p>
               </div>
 
-              {/* PAYMENT FORM */}
               <PaymentForm
                 onSubmit={handlePurchase}
                 isLoading={isProcessing}
