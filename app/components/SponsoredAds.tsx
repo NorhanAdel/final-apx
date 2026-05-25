@@ -211,45 +211,46 @@ export default function BannerAds() {
 
               {/* CTA (SMALL + RESPONSIVE + FIXED CLICK) */}
               {ad.target_url && (
-                <a
-                  href={ad.target_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={async (e) => {
-                    e.preventDefault();
+            <a
+  href={ad.target_url}
+  target="_blank"
+  rel="noopener noreferrer"
+  onClick={async (e) => {
+    e.preventDefault();
 
-                    const adId = ad.id;
+    const adId = ad.id;
 
-                    setStats((prev) => ({
-                      ...prev,
-                      [adId]: {
-                        views: prev[adId]?.views || 0,
-                        clicks: (prev[adId]?.clicks || 0) + 1,
-                      },
-                    }));
+    setStats((prev) => ({
+      ...prev,
+      [adId]: {
+        views: prev[adId]?.views || 0,
+        clicks: (prev[adId]?.clicks || 0) + 1,
+      },
+    }));
 
-                    try {
-                      await fetchGraphQL(TRACK_CLICK, { adId });
-                    } catch (err) {
-                      console.error(err);
-                    }
+    try {
+      await fetchGraphQL(TRACK_CLICK, { adId });
+    } catch (err) {
+      console.error(err);
+    }
 
-                    window.open(ad.target_url!, "_blank");
-                  }}
-                  className="
-                    mt-4 sm:mt-5
-                    inline-flex items-center gap-1.5
-                    bg-yellow-400 text-black font-bold
-                    px-3 sm:px-4
-                    py-1.5 sm:py-2
-                    rounded-lg sm:rounded-xl
-                    text-[11px] sm:text-sm
-                    transition hover:bg-yellow-500
-                  "
-                >
-                  {t.learnMore}
-                  <ExternalLink size={14} />
-                </a>
+    window.open(ad.target_url!, "_blank");
+  }}
+  className="
+    mt-3
+    inline-flex items-center gap-1
+    self-start whitespace-nowrap
+    bg-yellow-400 text-black font-semibold
+    px-2.5 sm:px-3
+    py-1
+    rounded-md
+    text-[10px] sm:text-xs
+    transition hover:bg-yellow-500
+  "
+>
+  {t.learnMore}
+  <ExternalLink size={12} />
+</a>
               )}
             </div>
           </motion.div>
