@@ -239,13 +239,7 @@ export default function SidebarAds() {
               {ad.description}
             </p>
 
-            {/* STATS */}
-            <div className="flex items-center justify-between mt-3 text-[11px] text-gray-400 border-t border-white/10 pt-3">
-              <span>👁 Views: {ad.views || 0}</span>
-
-              <span>🖱 Clicks: {ad.clicks || 0}</span>
-            </div>
-
+        
             {/* LINK */}
             {ad.target_url && (
               <a
