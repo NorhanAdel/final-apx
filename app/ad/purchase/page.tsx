@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { fetchGraphQL } from "@/app/lib/fetchGraphQL";
 import { useTheme } from "@/app/context/ThemeContext";
 
-import AdDurationSelector from "@/app/components/AdDurationSelector";
+import { AdDurationSelector } from "@/app/components/AdDurationSelector";
 import { PaymentForm } from "@/app/components/PaymentForm";
 
 interface Duration {
