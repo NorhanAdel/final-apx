@@ -21,28 +21,11 @@ interface Ad {
   package_name: string;
 }
 
-/* 🌍 MULTI LANGUAGE STATIC */
 const texts = {
-  en: {
-    sponsored: "Sponsored",
-    learnMore: "Learn More",
-    noAds: "No ads available",
-  },
-  ar: {
-    sponsored: "إعلان ممول",
-    learnMore: "اعرف المزيد",
-    noAds: "لا توجد إعلانات حاليا",
-  },
-  pt: {
-    sponsored: "Patrocinado",
-    learnMore: "Saiba Mais",
-    noAds: "Nenhum anúncio disponível",
-  },
-  zh: {
-    sponsored: "赞助广告",
-    learnMore: "了解更多",
-    noAds: "暂无广告",
-  },
+  en: { sponsored: "Sponsored", learnMore: "Learn More", noAds: "No ads available" },
+  ar: { sponsored: "إعلان ممول", learnMore: "اعرف المزيد", noAds: "لا توجد إعلانات حاليا" },
+  pt: { sponsored: "Patrocinado", learnMore: "Saiba Mais", noAds: "Nenhum anúncio disponível" },
+  zh: { sponsored: "赞助广告", learnMore: "了解更多", noAds: "暂无广告" },
 };
 
 export default function BannerAds() {
@@ -50,10 +33,7 @@ export default function BannerAds() {
   const [index, setIndex] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  // 👇 STATS (views + clicks)
-  const [stats, setStats] = useState<
-    Record<string, { views: number; clicks: number }>
-  >({});
+  const [stats, setStats] = useState<Record<string, { views: number; clicks: number }>>({});
 
   const { lang } = useTranslate();
   const { theme } = useTheme();
@@ -78,9 +58,6 @@ export default function BannerAds() {
     }
   `;
 
-  // =========================
-  // TRACK ENDPOINTS
-  // =========================
   const TRACK_VIEW = `
     mutation TrackSponsoredAdView($adId: String!) {
       trackSponsoredAdView(adId: $adId)
@@ -93,24 +70,15 @@ export default function BannerAds() {
     }
   `;
 
-  // =========================
-  // FETCH ADS
-  // =========================
   useEffect(() => {
     const fetchAds = async () => {
       try {
         const res = await fetchGraphQL<{ getAllSponsoredAds: Ad[] }>(GET_ADS);
 
-        const data = res?.data?.getAllSponsoredAds;
-
-        if (!data || !Array.isArray(data)) {
-          setAds([]);
-          return;
-        }
-
-        setAds(data.filter((a) => a?.is_active));
+        const data = res?.data?.getAllSponsoredAds || [];
+        setAds(data.filter((a) => a.is_active));
       } catch (err) {
-        console.error("Ads error:", err);
+        console.error(err);
         setAds([]);
       } finally {
         setLoading(false);
@@ -120,9 +88,6 @@ export default function BannerAds() {
     fetchAds();
   }, [lang]);
 
-  // =========================
-  // AUTO ROTATE
-  // =========================
   useEffect(() => {
     if (ads.length <= 1) return;
 
@@ -136,7 +101,7 @@ export default function BannerAds() {
   const ad = ads[index];
 
   // =========================
-  // TRACK VIEW + SHOW STATS
+  // FIXED VIEW TRACKING
   // =========================
   useEffect(() => {
     if (!ad?.id) return;
@@ -152,18 +117,11 @@ export default function BannerAds() {
     }));
 
     fetchGraphQL(TRACK_VIEW, { adId }).catch(console.error);
-  }, [index]);
+  }, [ad?.id]);
 
-  // =========================
-  // LOADING
-  // =========================
   if (loading) {
     return (
-      <div
-        className={`flex items-center justify-center py-24 ${
-          isDark ? "bg-[#020617]" : "bg-[#f5f7fb]"
-        }`}
-      >
+      <div className={`flex items-center justify-center py-24 ${isDark ? "bg-[#020617]" : "bg-[#f5f7fb]"}`}>
         <Loader2 className="w-10 h-10 animate-spin text-yellow-400" />
       </div>
     );
@@ -171,11 +129,7 @@ export default function BannerAds() {
 
   if (!ad) {
     return (
-      <div
-        className={`flex items-center justify-center py-24 ${
-          isDark ? "bg-[#020617]" : "bg-[#f5f7fb]"
-        }`}
-      >
+      <div className={`flex items-center justify-center py-24 ${isDark ? "bg-[#020617]" : "bg-[#f5f7fb]"}`}>
         <p className={isDark ? "text-gray-400" : "text-gray-500"}>
           {t.noAds}
         </p>
@@ -194,11 +148,7 @@ export default function BannerAds() {
     ad.media_type?.toLowerCase().includes("video");
 
   return (
-    <section
-      className={`w-full py-6 sm:py-8 md:py-10 ${
-        isDark ? "bg-[#020617]" : "bg-[#f5f7fb]"
-      }`}
-    >
+    <section className={`w-full py-6 sm:py-8 md:py-10 ${isDark ? "bg-[#020617]" : "bg-[#f5f7fb]"}`}>
       <div className="max-w-7xl mx-auto px-3 sm:px-5 md:px-6">
 
         <AnimatePresence mode="wait">
@@ -232,13 +182,11 @@ export default function BannerAds() {
               ))}
 
             {/* OVERLAY */}
-            <div
-              className={`absolute inset-0 ${
-                isDark
-                  ? "bg-gradient-to-r from-black/85 via-black/50 to-black/10"
-                  : "bg-gradient-to-r from-black/70 via-black/30 to-transparent"
-              }`}
-            />
+            <div className={`absolute inset-0 ${
+              isDark
+                ? "bg-gradient-to-r from-black/85 via-black/50 to-black/10"
+                : "bg-gradient-to-r from-black/70 via-black/30 to-transparent"
+            }`} />
 
             {/* CONTENT */}
             <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-8 md:px-10 z-10 max-w-2xl">
@@ -260,15 +208,16 @@ export default function BannerAds() {
               }`}>
                 {ad.description}
               </p>
- 
 
-              {/* CTA + CLICK TRACK */}
+              {/* CTA (SMALL + RESPONSIVE + FIXED CLICK) */}
               {ad.target_url && (
                 <a
                   href={ad.target_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={async () => {
+                  onClick={async (e) => {
+                    e.preventDefault();
+
                     const adId = ad.id;
 
                     setStats((prev) => ({
@@ -284,21 +233,22 @@ export default function BannerAds() {
                     } catch (err) {
                       console.error(err);
                     }
+
+                    window.open(ad.target_url!, "_blank");
                   }}
-                 className="
-  mt-4 sm:mt-5
-  inline-flex items-center gap-2
-  bg-yellow-400 text-black font-bold
-  px-3 sm:px-5
-  py-2 sm:py-3
-  rounded-lg sm:rounded-xl
-  text-xs sm:text-sm
-  transition
-  hover:bg-yellow-500
-"
+                  className="
+                    mt-4 sm:mt-5
+                    inline-flex items-center gap-1.5
+                    bg-yellow-400 text-black font-bold
+                    px-3 sm:px-4
+                    py-1.5 sm:py-2
+                    rounded-lg sm:rounded-xl
+                    text-[11px] sm:text-sm
+                    transition hover:bg-yellow-500
+                  "
                 >
                   {t.learnMore}
-                  <ExternalLink size={16} />
+                  <ExternalLink size={14} />
                 </a>
               )}
             </div>
