@@ -97,8 +97,8 @@ export default function PurchaseAdPage() {
     <div
       className={`min-h-screen py-32 px-6 transition-colors duration-300 ${
         theme === "dark"
-          ? "bg-[#001a4d] text-white"
-          : "bg-gray-100 text-black"
+          ? "bg-[#020617] text-white"
+          : "bg-white text-black"
       }`}
     >
       <div className="max-w-2xl mx-auto">
