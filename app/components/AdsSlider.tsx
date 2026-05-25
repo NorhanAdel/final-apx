@@ -104,7 +104,7 @@ export default function AdsSlider() {
             isDark ? "text-white" : "text-[#F0B100]"
           }`}
         >
-          {t("ads")}
+          {t("ad")}
         </motion.h2>
         <div className="flex gap-2">
           <motion.button
