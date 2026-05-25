@@ -78,9 +78,7 @@ export default function SidebarAds() {
   useEffect(() => {
     const fetchAds = async () => {
       try {
-        const res = await fetchGraphQL<{ getAllSponsoredAds: Ad[] }>(
-          GET_ADS
-        );
+        const res = await fetchGraphQL<{ getAllSponsoredAds: Ad[] }>(GET_ADS);
 
         const data = res?.data?.getAllSponsoredAds || [];
 
@@ -120,24 +118,21 @@ export default function SidebarAds() {
   const ad = ads[index];
 
   // =========================
-  // TRACK AD VIEW
+  // FIXED TRACK VIEW (IMPORTANT FIX)
   // =========================
   useEffect(() => {
     if (!ad?.id) return;
 
+    const adId = ad.id;
+
     const trackView = async () => {
       try {
-        await fetchGraphQL(TRACK_AD_VIEW, {
-          adId: ad.id,
-        });
+        await fetchGraphQL(TRACK_AD_VIEW, { adId });
 
         setAds((prev) =>
           prev.map((item) =>
-            item.id === ad.id
-              ? {
-                  ...item,
-                  views: (item.views || 0) + 1,
-                }
+            item.id === adId
+              ? { ...item, views: (item.views || 0) + 1 }
               : item
           )
         );
@@ -147,7 +142,7 @@ export default function SidebarAds() {
     };
 
     trackView();
-  }, [index, ads]);
+  }, [ad?.id]);
 
   if (loading) {
     return (
@@ -161,12 +156,10 @@ export default function SidebarAds() {
 
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
 
-  // ✅ FIX URL SAFE
   const mediaUrl = ad.media_url
     ? `${baseUrl.replace(/\/$/, "")}${ad.media_url}`
     : null;
 
-  // ✅ detect video (Arabic + fallback)
   const isVideo =
     ad.media_type === "فيديو" ||
     ad.media_type?.toLowerCase().includes("video");
@@ -202,7 +195,6 @@ export default function SidebarAds() {
                   loop
                   playsInline
                   controls
-                  onError={() => console.log("Video failed:", mediaUrl)}
                 />
               ) : (
                 <Image
@@ -239,31 +231,33 @@ export default function SidebarAds() {
               {ad.description}
             </p>
 
-        
-            {/* LINK */}
+            {/* LINK + FIXED CLICK TRACK */}
             {ad.target_url && (
               <a
                 href={ad.target_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={async () => {
+                onClick={async (e) => {
+                  e.preventDefault();
+
+                  const adId = ad.id;
+
                   try {
-                    await fetchGraphQL(TRACK_AD_CLICK, {
-                      adId: ad.id,
-                    });
+                    await fetchGraphQL(TRACK_AD_CLICK, { adId });
 
                     setAds((prev) =>
                       prev.map((item) =>
-                        item.id === ad.id
-                          ? {
-                              ...item,
-                              clicks: (item.clicks || 0) + 1,
-                            }
+                        item.id === adId
+                          ? { ...item, clicks: (item.clicks || 0) + 1 }
                           : item
                       )
                     );
+
+                    window.open(ad.target_url!, "_blank");
                   } catch (err) {
                     console.error("Track click error:", err);
+
+                    window.open(ad.target_url!, "_blank");
                   }
                 }}
                 className="mt-4 inline-flex items-center justify-center gap-2 w-full bg-yellow-400 hover:bg-yellow-300 text-black text-sm font-bold py-2.5 rounded-xl"
