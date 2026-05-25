@@ -260,16 +260,7 @@ export default function BannerAds() {
               }`}>
                 {ad.description}
               </p>
-
-              {/* STATS UI */}
-              <div className="mt-3 flex gap-4 text-xs text-gray-300">
-                <span>
-                  👁 Views: {stats[ad.id]?.views || 0}
-                </span>
-                <span>
-                  🖱 Clicks: {stats[ad.id]?.clicks || 0}
-                </span>
-              </div>
+ 
 
               {/* CTA + CLICK TRACK */}
               {ad.target_url && (
@@ -294,7 +285,17 @@ export default function BannerAds() {
                       console.error(err);
                     }
                   }}
-                  className="mt-5 inline-flex items-center gap-2 bg-yellow-400 text-black font-bold px-5 py-3 rounded-xl"
+                 className="
+  mt-4 sm:mt-5
+  inline-flex items-center gap-2
+  bg-yellow-400 text-black font-bold
+  px-3 sm:px-5
+  py-2 sm:py-3
+  rounded-lg sm:rounded-xl
+  text-xs sm:text-sm
+  transition
+  hover:bg-yellow-500
+"
                 >
                   {t.learnMore}
                   <ExternalLink size={16} />
