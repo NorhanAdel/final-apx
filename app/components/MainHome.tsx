@@ -29,7 +29,7 @@ export default function MainHome() {
       <PositionSlider sportId={sportId} />
 
   <EventsSection sportId={sportId} />
-      <NewestPlayers />
+      <NewestPlayers sportId={sportId}  />
       <TransfersSection  />
       <SponsoredAds/>
       <Investor/>
