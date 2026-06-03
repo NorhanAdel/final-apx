@@ -21,10 +21,11 @@ import {
   UPDATE_AD,
   DELETE_AD,
 } from "@/app/graphql/mutation/ad.mutations";
-import { GET_MY_ADS } from "@/app/graphql/query/ad.queries";
+import { GET_MY_ADS, GET_MY_UPLOAD_LIMITS } from "@/app/graphql/query/ad.queries";
 import { toast } from "sonner";
 import BackButton from "@/app/components/BackButton";
-
+import { ShoppingCart } from "lucide-react";
+import { useRouter } from "next/navigation";
 interface Ad {
   id: string;
   title: string;
@@ -45,6 +46,13 @@ interface Ad {
   };
 }
 
+
+interface UploadLimits {
+  max_ads: number;
+  uploaded_ads: number;
+  remaining_ads: number;
+  can_create_ad: boolean;
+}
 function getFullUrl(url: string | undefined): string {
   if (!url) return "";
   if (url.startsWith("blob:") || url.startsWith("http")) return url;
@@ -161,7 +169,10 @@ function VideoPreviewModal({
 export default function ShareAdPage() {
   const { theme } = useTheme();
   const { t } = useTranslate();
+const router = useRouter();
 
+const [uploadLimits, setUploadLimits] =
+  useState<UploadLimits | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [targetRole, setTargetRole] = useState("");
@@ -198,15 +209,30 @@ export default function ShareAdPage() {
       setLoading(false);
     }
   }, [t]);
+const fetchUploadLimits = useCallback(async () => {
+  try {
+    const result = await fetchGraphQL<{
+      myUploadLimits: UploadLimits;
+    }>(GET_MY_UPLOAD_LIMITS);
 
-  useEffect(() => {
-    fetchMyAds();
-  }, [fetchMyAds]);
+    if (result.data?.myUploadLimits) {
+      setUploadLimits(result.data.myUploadLimits);
+    }
+  } catch (error) {
+    console.error("Error fetching upload limits:", error);
+  }
+}, []);
+ useEffect(() => {
+  fetchMyAds();
+  fetchUploadLimits();
+}, [fetchMyAds, fetchUploadLimits]);
 
   const handleImageClick = () => {
     imageFileRef.current?.click();
   };
-
+const handleBuyAd = () => {
+  router.push("/ad/purchase");
+};
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -417,7 +443,29 @@ const handleUpdateAd = async () => {
     >
       <div className="w-full max-w-3xl py-12">
         <BackButton className="mb-6" />
+<div
+  className={`p-4 rounded-xl mb-6 flex items-center justify-between ${
+    isDark
+      ? "bg-[#0a0f2c] border border-[#1e2a5a]"
+      : "bg-white border border-gray-200 shadow"
+  }`}
+>
+  <div>
+    <p className="text-sm opacity-70">{t("Remaining Ads")}</p>
+    <p className="text-2xl font-bold">
+      {uploadLimits?.remaining_ads || 0} /
+      {uploadLimits?.max_ads || 0}
+    </p>
+  </div>
 
+  <button
+    onClick={handleBuyAd}
+    className="px-4 py-2 rounded-lg bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-bold hover:scale-105 transition flex items-center gap-2"
+  >
+    <ShoppingCart size={18} />
+    {t("Buy Ad Slot")}
+  </button>
+</div>
         <h1
           className={`text-center text-2xl sm:text-3xl font-bold mb-8
           ${isDark ? "text-yellow-400" : "text-[#F0B100]"}`}
