@@ -17,45 +17,55 @@ import { motion } from "framer-motion";
 import { useTheme } from "../context/ThemeContext";
 import useTranslate from "../hooks/useTranslate";
 import { fetchGraphQL } from "../lib/fetchGraphQL";
-import { GET_ALL_PLAYERS } from "@/app/graphql/query/player.queries";
+import { GET_PLAYERS_BY_SPORT } from "@/app/graphql/query/player.queries";
 
-interface Player {
-  id: string;
-  first_name: string;
-  last_name: string;
-  profile_image_url: string;
-  nationality: string;
-  age: number;
-  average_rating: number;
+ 
+interface NewestPlayersProps {
+  sportId: string;
 }
-
-export default function NewestPlayers() {
+export default function NewestPlayers({
+  sportId,
+}: NewestPlayersProps) {
   const { theme } = useTheme();
   const { t } = useTranslate();
   const isDark = theme === "dark";
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+useEffect(() => {
+  if (sportId) {
     fetchPlayers();
-  }, []);
+  }
+}, [sportId]);
 
-  const fetchPlayers = async () => {
-    try {
-      const result = await fetchGraphQL<{ getAllPlayers: { data: Player[] } }>(
-        GET_ALL_PLAYERS,
-        { skip: 0, take: 10, sortBy: "newest" },
-      );
-      if (result.data?.getAllPlayers?.data) {
-        setPlayers(result.data.getAllPlayers.data);
-      }
-    } catch (error) {
-      console.error("Error fetching players:", error);
-    } finally {
-      setLoading(false);
+const fetchPlayers = async () => {
+  try {
+    setLoading(true);
+
+    const result = await fetchGraphQL<{
+      playersBySport: {
+        data: Player[];
+        total: number;
+      };
+    }>(GET_PLAYERS_BY_SPORT, {
+      sportId,
+    });
+
+    console.log("sportId:", sportId);
+    console.log("PLAYERS RESPONSE:", result);
+
+    if (result.data?.playersBySport?.data) {
+      setPlayers(result.data.playersBySport.data);
+    } else {
+      setPlayers([]);
     }
-  };
-
+  } catch (error) {
+    console.error("Error fetching players:", error);
+    setPlayers([]);
+  } finally {
+    setLoading(false);
+  }
+};
   const getFullImageUrl = (url: string) => {
     if (!url) return "/b2.jpg";
     if (url.startsWith("http")) return url;
@@ -155,7 +165,9 @@ export default function NewestPlayers() {
             >
               <div className="relative w-full h-[220px] sm:h-[250px] overflow-hidden">
                 <Image
-                  src={getFullImageUrl(player.profile_image_url)}
+                  src={getFullImageUrl(
+  player.photos?.[0]?.image_url || ""
+)}
                   alt={player.first_name}
                   fill
                   className="object-cover transition-transform duration-500 hover:scale-110"
