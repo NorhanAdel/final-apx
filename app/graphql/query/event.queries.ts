@@ -39,23 +39,23 @@ export const GET_EVENTS_BY_STATUS = `
 `;
 
 export const GET_EVENTS_BY_SPORT = `
-  query GetEventsBySport($sportId: ID!) {
-    eventsBySport(sportId: $sportId) {
-      id
-      title
-      description
-      event_type
-      sport_id
-      location
-      image_url
-      date_start
-      date_end
-      max_participants
-      status
-      created_at
-      updated_at
-    }
+query GetEventsBySport(
+  $sportId: ID!,
+  $skip: Float,
+  $take: Float
+) {
+  eventsBySport(
+    sportId: $sportId,
+    skip: $skip,
+    take: $take
+  ) {
+    id
+    title
+    date_start
+    status
+    image_url
   }
+}
 `;
 
 export const GET_EVENT_BY_ID = `
