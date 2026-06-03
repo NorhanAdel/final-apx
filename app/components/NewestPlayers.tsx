@@ -1,216 +1,262 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  LocateFixed,
-  Star,
-  StarHalf,
-  ChevronLeft,
-  ChevronRight,
-  User,
-} from "lucide-react";
-import Image from "next/image";
-import { Swiper, SwiperSlide } from "swiper/react";
-import { Navigation } from "swiper/modules";
-import "swiper/css";
-import { motion } from "framer-motion";
-import { useTheme } from "../context/ThemeContext";
-import useTranslate from "../hooks/useTranslate";
+import React, { useEffect, useState } from "react";
+import { Search, ChevronDown } from "lucide-react";
+import TournamentCard from "../components/TournamentCard";
 import { fetchGraphQL } from "../lib/fetchGraphQL";
-import { GET_PLAYERS_BY_SPORT } from "@/app/graphql/query/player.queries";
-
- 
-interface NewestPlayersProps {
-  sportId: string;
-}
-export default function NewestPlayers({
-  sportId,
-}: NewestPlayersProps) {
-  const { theme } = useTheme();
-  const { t } = useTranslate();
-  const isDark = theme === "dark";
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [loading, setLoading] = useState(true);
-
-useEffect(() => {
-  if (sportId) {
-    fetchPlayers();
+import { useTheme } from "../context/ThemeContext";
+const CHAMPIONS_QUERY = `
+  query {
+    champions(skip: 0, take: 50) {
+      champions {
+        id
+        title
+        status
+        answers_count
+        winners_count
+        created_at
+        expiry_date
+        photo_url
+      }
+      total
+    }
   }
-}, [sportId]);
+`;
 
-const fetchPlayers = async () => {
-  try {
-    setLoading(true);
+// =========================
+// TRANSLATION
+// =========================
+const tDict: any = {
+  ar: {
+    search: "بحث",
+    sort: "ترتيب",
+    noData: "لا يوجد مسابقات",
+    newest: "الأحدث",
+    oldest: "الأقدم",
+    endingSoon: "الأقرب انتهاء",
+    popular: "الأكثر تفاعلاً",
+    winners: "أكبر عدد فائزين",
+    active: "النشطة أولاً",
+  },
+  en: {
+    search: "Search",
+    sort: "Sort",
+    noData: "No Champions Found",
+    newest: "Newest",
+    oldest: "Oldest",
+    endingSoon: "Ending Soon",
+    popular: "Most Popular",
+    winners: "Most Winners",
+    active: "Active First",
+  },
+  zh: {
+    search: "搜索",
+    sort: "排序",
+    noData: "没有比赛",
+    newest: "最新",
+    oldest: "最旧",
+    endingSoon: "即将结束",
+    popular: "最受欢迎",
+    winners: "最多获胜者",
+    active: "优先活动",
+  },
+  ru: {
+    search: "Поиск",
+    sort: "Сортировка",
+    noData: "Нет данных",
+    newest: "Новые",
+    oldest: "Старые",
+    endingSoon: "Скоро заканчивается",
+    popular: "Популярные",
+    winners: "Больше победителей",
+    active: "Активные",
+  },
+};
 
-    const result = await fetchGraphQL<{
-      playersBySport: {
-        data: Player[];
-        total: number;
-      };
-    }>(GET_PLAYERS_BY_SPORT, {
-      sportId,
+export default function TournamentGallery() {
+  const [data, setData] = useState<any[]>([]);
+  const [filtered, setFiltered] = useState<any[]>([]);
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState("newest");
+  const [lang, setLang] = useState("ar");
+const { theme } = useTheme();
+  const t = tDict[lang] || tDict.ar;
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setLang(localStorage.getItem("lang") || "ar");
+    }
+  }, []);
+
+  const fetchData = async () => {
+    const res: any = await fetchGraphQL(CHAMPIONS_QUERY, {
+      headers: { Accept: lang },
     });
 
-    console.log("sportId:", sportId);
-    console.log("PLAYERS RESPONSE:", result);
+    const champions = res?.data?.champions?.champions || [];
 
-    if (result.data?.playersBySport?.data) {
-      setPlayers(result.data.playersBySport.data);
-    } else {
-      setPlayers([]);
+    setData(champions);
+    setFiltered(champions);
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [lang]);
+
+  // =========================
+  // SEARCH + SORT
+  // =========================
+  useEffect(() => {
+    let result = [...data];
+
+    // SEARCH
+    if (search.trim()) {
+      result = result.filter((item) =>
+        item.title.toLowerCase().includes(search.toLowerCase())
+      );
     }
-  } catch (error) {
-    console.error("Error fetching players:", error);
-    setPlayers([]);
-  } finally {
-    setLoading(false);
-  }
-};
-  const getFullImageUrl = (url: string) => {
-    if (!url) return "/b2.jpg";
-    if (url.startsWith("http")) return url;
-    return `${process.env.NEXT_PUBLIC_API_URL}${url}`;
-  };
 
-  // Function to render 7 stars based on rating (0-7 scale)
-  const renderStars = (rating: number = 0) => {
-    const maxStars = 7;
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating - fullStars >= 0.5;
-    const emptyStars = maxStars - fullStars - (hasHalfStar ? 1 : 0);
+    // SORT LOGIC
+    if (sort === "newest") {
+      result.sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() -
+          new Date(a.created_at).getTime()
+      );
+    }
 
-    return (
-      <div className="flex items-center gap-0.5">
-        {[...Array(fullStars)].map((_, i) => (
-          <Star
-            key={`full-${i}`}
-            size={12}
-            className="fill-yellow-400 text-yellow-400"
-          />
-        ))}
-        {hasHalfStar && (
-          <StarHalf size={12} className="fill-yellow-400 text-yellow-400" />
-        )}
-        {[...Array(emptyStars)].map((_, i) => (
-          <Star key={`empty-${i}`} size={12} className="text-gray-500" />
-        ))}
-      </div>
-    );
-  };
+    if (sort === "oldest") {
+      result.sort(
+        (a, b) =>
+          new Date(a.created_at).getTime() -
+          new Date(b.created_at).getTime()
+      );
+    }
 
-  if (loading || players.length === 0) return null;
+    if (sort === "endingSoon") {
+      result.sort(
+        (a, b) =>
+          new Date(a.expiry_date).getTime() -
+          new Date(b.expiry_date).getTime()
+      );
+    }
+
+    if (sort === "popular") {
+      result.sort((a, b) => b.answers_count - a.answers_count);
+    }
+
+    if (sort === "winners") {
+      result.sort((a, b) => b.winners_count - a.winners_count);
+    }
+
+    if (sort === "active") {
+      result.sort((a, b) => {
+        if (a.status === b.status) return 0;
+        if (a.status === "Active") return -1;
+        return 1;
+      });
+    }
+
+    setFiltered(result);
+  }, [search, sort, data]);
+
+  // =========================
+  // SORT OPTIONS (NO SELECT)
+  // =========================
+  const sortOptions = [
+    { key: "newest", label: t.newest },
+    { key: "oldest", label: t.oldest },
+    { key: "endingSoon", label: t.endingSoon },
+    { key: "popular", label: t.popular },
+    { key: "winners", label: t.winners },
+    { key: "active", label: t.active },
+  ];
 
   return (
-    <div className="mt-14 px-3 sm:px-6 lg:px-10">
-      <div className="flex justify-between items-center mb-6">
-        <motion.h2
-          initial={{ opacity: 0, x: -30 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          className={`text-lg sm:text-2xl font-bold italic tracking-wide ${
-            isDark ? "text-white" : "text-[#F0B100]"
-          }`}
-        >
-          {t("Newest Players")}
-        </motion.h2>
-        <div className="flex gap-2">
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            className={`prevPlayer w-9 h-9 flex items-center justify-center border rounded-md transition ${
-              isDark
-                ? "bg-[#0b1120] border-[#1e293b] text-white"
-                : "bg-gray-200 border-gray-300 text-black"
-            }`}
-          >
-            <ChevronLeft size={16} />
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            className={`nextPlayer w-9 h-9 flex items-center justify-center border rounded-md transition ${
-              isDark
-                ? "bg-[#0b1120] border-[#1e293b] text-white"
-                : "bg-gray-200 border-gray-300 text-black"
-            }`}
-          >
-            <ChevronRight size={16} />
-          </motion.button>
-        </div>
-      </div>
+    <main
+  className={`min-h-screen p-6 md:p-12 font-sans transition-colors duration-300 ${
+    theme === "dark"
+      ? "bg-[#020b1c] text-white"
+      : "bg-gray-50 text-gray-900"
+  }`}
+>
+      <div className="max-w-7xl mx-auto py-30">
 
-      <Swiper
-        modules={[Navigation]}
-        navigation={{ nextEl: ".nextPlayer", prevEl: ".prevPlayer" }}
-        spaceBetween={20}
-        breakpoints={{
-          0: { slidesPerView: 1.1 },
-          640: { slidesPerView: 1.5 },
-          768: { slidesPerView: 2.2 },
-          1024: { slidesPerView: 3.2 },
-        }}
-      >
-        {players.map((player) => (
-          <SwiperSlide key={player.id}>
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              whileHover={{ scale: 1.04, y: -8 }}
-              transition={{ duration: 0.4 }}
-              className={`rounded-2xl overflow-hidden border shadow-lg transition-all cursor-pointer ${
-                isDark
-                  ? "bg-[#0b1120] border-[#1e293b]"
-                  : "bg-white border-gray-200"
-              }`}
-              onClick={() => (window.location.href = `/players/${player.id}`)}
-            >
-              <div className="relative w-full h-[220px] sm:h-[250px] overflow-hidden">
-                <Image
-                  src={getFullImageUrl(
-  player.photos?.[0]?.image_url || ""
-)}
-                  alt={player.first_name}
-                  fill
-                  className="object-cover transition-transform duration-500 hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-              </div>
-              <div className="p-4">
-                <div className="flex justify-between items-center mb-3">
-                  <h3
-                    className={`text-base sm:text-lg font-bold truncate ${
-                      isDark ? "text-white" : "text-black"
-                    }`}
-                  >
-                    {player.first_name} {player.last_name}
-                  </h3>
-                  <motion.div initial={{ scale: 0 }} whileInView={{ scale: 1 }}>
-                    {renderStars(player.average_rating || 0)}
-                  </motion.div>
-                </div>
-                <div
-                  className={`flex flex-col gap-2 text-xs ${
-                    isDark ? "text-gray-400" : "text-gray-600"
-                  }`}
-                >
-                  <div className="flex justify-between items-center">
-                    <span>{t("Player")}</span>
-                    <span className="flex items-center">
-                      <LocateFixed size={12} className="text-yellow-500 mr-1" />
-                      {player.nationality || t("Unknown")}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-yellow-500 flex items-center">
-                      <User size={12} className="mr-1" />
-                      {player.age || 0}Y
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </SwiperSlide>
-        ))}
-      </Swiper>
-    </div>
+        {/* SEARCH + SORT */}
+        <div className="flex flex-col lg:flex-row justify-between items-center mb-10 gap-6">
+
+          {/* SEARCH */}
+          <div className="relative w-full lg:w-1/3">
+            <Search
+              className={`absolute left-3 top-1/2 -translate-y-1/2 ${
+  theme === "dark" ? "text-gray-400" : "text-gray-500"
+}`}
+              size={18}
+            />
+
+            <input
+              type="text"
+              placeholder={t.search}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+           className={`w-full rounded-md py-2.5 pl-10 pr-4 text-sm border transition-colors ${
+  theme === "dark"
+    ? "bg-[#0a0a20] border-blue-900/30 text-white"
+    : "bg-white border-gray-300 text-gray-900"
+}`}
+            />
+          </div>
+
+          {/* SORT BUTTONS (NO SELECT) */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-gray-400 text-xs uppercase font-bold mr-2">
+              {t.sort}
+            </span>
+
+            {sortOptions.map((opt) => (
+              <button
+                key={opt.key}
+                onClick={() => setSort(opt.key)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-md text-[11px] font-bold uppercase border transition
+                ${
+  sort === opt.key
+    ? theme === "dark"
+      ? "bg-blue-950 border-blue-600 text-white"
+      : "bg-blue-100 border-blue-400 text-blue-900"
+    : theme === "dark"
+      ? "bg-[#0a0a20] border-blue-900/50 text-white hover:bg-blue-950"
+      : "bg-white border-gray-300 text-gray-700 hover:bg-gray-100"
+}
+                `}
+              >
+                {opt.label}
+
+                <ChevronDown size={14} className="text-gray-400" />
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* LIST */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {filtered.length > 0 ? (
+            filtered.map((tItem) => (
+              <TournamentCard
+                key={tItem.id}
+                id={tItem.id}
+                title={tItem.title}
+                image={tItem.photo_url}
+                date={tItem.status}
+              />
+            ))
+          ) : (
+            <p className="text-white text-center col-span-2">
+              {t.noData}
+            </p>
+          )}
+        </div>
+
+      </div>
+    </main>
   );
 }
