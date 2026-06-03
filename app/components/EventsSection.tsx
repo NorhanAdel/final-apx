@@ -14,7 +14,7 @@ import { motion } from "framer-motion";
 import { useTheme } from "../context/ThemeContext";
 import useTranslate from "../hooks/useTranslate";
 import { fetchGraphQL } from "../lib/fetchGraphQL";
-import { GET_ALL_EVENTS } from "@/app/graphql/query/event.queries";
+import { GET_EVENTS_BY_SPORT } from "@/app/graphql/query/event.queries";
 
 interface Event {
   id: string;
@@ -25,7 +25,7 @@ interface Event {
   image_url?: string;
 }
 
-/* ✅ ضفنا ده بس */
+ 
 interface EventsSectionProps {
   sportId: string;
 }
@@ -38,34 +38,45 @@ export default function EventsSection({ sportId }: EventsSectionProps) {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
+ useEffect(() => {
+  if (sportId) {
     fetchEvents();
-  }, [lang]);
+  }
+}, [sportId, lang]);
 
   const fetchEvents = async () => {
     setLoading(true);
     try {
-      const result = await fetchGraphQL<{ events: Event[] }>(
-        GET_ALL_EVENTS,
-        { skip: 0, take: 10 }
-      );
+    const result = await fetchGraphQL<{
+  eventsBySport: Event[];
+}>(
+  GET_EVENTS_BY_SPORT,
+  {
+    sportId,
+    skip: 0,
+    take: 10,
+  }
+);
 
-      if (result.data?.events) {
-        const formatted = result.data.events.map((event) => ({
-          id: event.id,
-          title: event.title,
-          location: event.location || "Location TBD",
-          date_start: event.date_start,
-          status: event.status,
-          image_url: event.image_url
-            ? event.image_url.startsWith("http")
-              ? event.image_url
-              : `${process.env.NEXT_PUBLIC_API_URL}${event.image_url}`
-            : "/r1.png",
-        }));
+console.log("EVENTS RESPONSE:", result);
+ if (result.data?.eventsBySport) {
+  const formatted = result.data.eventsBySport.map((event) => ({
+    id: event.id,
+    title: event.title,
+    location: event.location || "Location TBD",
+    date_start: event.date_start,
+    status: event.status,
+    image_url: event.image_url
+      ? event.image_url.startsWith("http")
+        ? event.image_url
+        : `${process.env.NEXT_PUBLIC_API_URL}${event.image_url}`
+      : "/r1.png",
+  }));
 
-        setEvents(formatted);
-      } else setEvents([]);
+  setEvents(formatted);
+} else {
+  setEvents([]);
+}
     } finally {
       setLoading(false);
     }
