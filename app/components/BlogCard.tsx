@@ -23,44 +23,41 @@ export default function BlogCard({ blog }: { blog: Blog }) {
     return `${process.env.NEXT_PUBLIC_API_URL}${url}`;
   };
 
-  return (
-    <div
-      onClick={() => router.push(`/blog/${blog.id}`)}
-      className={`cursor-pointer rounded-xl overflow-hidden border transition hover:scale-[1.02]
-      ${
-        theme === "dark"
-          ? "bg-[#0a0c14] border-white/5"
-          : "bg-white border-gray-200"
-      }`}
-    >
-      {/* IMAGE */}
-      <div className="h-[220px] relative">
-        <Image
-          src={getImage(blog.cover_image_url)}
-          alt={blog.title}
-          fill
-          className="object-cover"
-        />
-      </div>
+return (
+  <div
+    onClick={() => router.push(`/blog/${blog.id}`)}
+    className="cursor-pointer group"
+  >
+    <div className="relative w-full h-[520px] rounded-3xl overflow-hidden shadow-2xl">
 
-      {/* CONTENT */}
-      <div className="p-4">
-        <h3 className="font-bold mb-2 line-clamp-2">
+      <Image
+        src={getImage(blog.cover_image_url)}
+        alt={blog.title}
+        fill
+        className="object-cover transition duration-500 group-hover:scale-105"
+      />
+
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition" />
+
+      {/* Content */}
+      <div className="absolute bottom-5 left-0 right-0 text-center text-white px-4">
+
+        <p className="text-sm opacity-70 mb-2">
+          {new Date(blog.created_at).toLocaleDateString()}
+        </p>
+
+        {/* Views */}
+        <div className="flex items-center justify-center gap-2 text-sm opacity-80 mb-2">
+          👁️ {blog.views_count} views
+        </div>
+
+        <h3 className="text-xl md:text-2xl font-semibold line-clamp-2">
           {blog.title}
         </h3>
 
-        <div className="flex justify-between text-xs text-gray-400">
-          <span className="flex items-center gap-1">
-            <Calendar size={12} />
-            {new Date(blog.created_at).toLocaleDateString()}
-          </span>
-
-          <span className="flex items-center gap-1">
-            <Eye size={12} />
-            {blog.views_count}
-          </span>
-        </div>
       </div>
     </div>
-  );
+  </div>
+);
 }
