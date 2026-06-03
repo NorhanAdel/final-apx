@@ -299,7 +299,7 @@ export default function BlogPage() {
       {filteredBlogs.length === 0 ? (
         <p className="text-center text-gray-400">No blogs found</p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 mt-10 lg:grid-cols-4 gap-6">
           {filteredBlogs.map((blog) => (
             <BlogCard key={blog.id} blog={blog} />
           ))}
