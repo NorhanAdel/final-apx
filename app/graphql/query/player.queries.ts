@@ -139,6 +139,7 @@ export const GET_PLAYER_PROFILE = `
   }
 `;
 
+
 export const GET_ALL_PLAYERS = `
   query GetAllPlayers($skip: Int, $take: Int, $sortBy: String, $minAge: Int, $maxAge: Int) {
     getAllPlayers(skip: $skip, take: $take, sortBy: $sortBy, minAge: $minAge, maxAge: $maxAge) {
@@ -245,26 +246,32 @@ export const SEARCH_PLAYERS = `
 `;
 
 export const GET_PLAYERS_BY_SPORT = `
-  query GetPlayersBySport($sportId: String!, $skip: Int, $take: Int, $sortBy: String) {
-    playersBySport(sportId: $sportId, skip: $skip, take: $take, sortBy: $sortBy) {
-      data {
-        id
-        first_name
-        last_name
-        profile_image_url
-        nationality
-        date_of_birth
-        age
-        average_rating
-        football_info {
-          position {
-            name
-          }
+query GetPlayersBySport($sportId: String!) {
+  playersBySport(sportId: $sportId) {
+    data {
+      id
+      first_name
+      last_name
+      nationality
+      country
+      city
+
+      football_info {
+        jersey_number
+        preferred_foot
+        position {
+          name
         }
       }
-      total
+
+      photos {
+        image_url
+      }
     }
+
+    total
   }
+}
 `;
 
 export const SEARCH_PLAYERS_BY_SPORT = `
