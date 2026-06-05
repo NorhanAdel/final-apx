@@ -44,6 +44,7 @@ interface User {
   email: string;
   username: string;
   role: "PLAYER" | "CLUB" | "ADMIN" | "SCOUT" | "AGENT" | "USER";
+    has_active_subscription?: boolean;
   playerProfile?: { id: string; full_name: string };
   clubProfile?: { id: string; club_name: string };
   scoutProfile?: { id: string; full_name: string };
@@ -216,6 +217,33 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
   );
 
   const activeUser = localUser || user;
+ 
+
+const getCheckoutRoute = () => {
+  if (!activeUser) return "/auth/login";
+
+  switch (activeUser.role) {
+    case "PLAYER":
+      return "/profile/participationprime";
+    case "CLUB":
+      return "/clubprofile/participationprime";
+    case "SCOUT":
+      return "/scout/profile/participationprime";
+    case "AGENT":
+      return "/agent/participationprime";
+    default:
+      return "/";
+  }
+};
+const requireSubscription = (callback: () => void) => {
+  if (!activeUser?.has_active_subscription) {
+    router.push(getCheckoutRoute());
+    return;
+  }
+
+  callback();
+};
+
 
   const getProfileLink = (): string => {
     if (!activeUser) return "/auth/login";
@@ -235,6 +263,10 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
         return "/profile";
     }
   };
+
+
+
+
 
   const getProfileName = (): string => {
     if (!activeUser) return "";
@@ -337,14 +369,22 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                   </span>
                 </div>
 
-                <Link
-                  href={getProfileLink()}
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-[#F0B100] hover:text-black transition-colors"
-                  onClick={() => setProfileOpen(false)}
-                >
-                  {getProfileIcon()}
-                  <span>{t("My Profile")}</span>
-                </Link>
+  <Link
+  href={getProfileLink()}
+  onClick={(e) => {
+    if (!activeUser?.has_active_subscription) {
+      e.preventDefault();
+      router.push(getCheckoutRoute());
+      return;
+    }
+
+    setProfileOpen(false);
+  }}
+  className="flex items-center gap-3 px-4 py-3 hover:bg-[#F0B100] hover:text-black transition-colors"
+>
+  {getProfileIcon()}
+  <span>{t("My Profile")}</span>
+</Link>
 
                 <button
                   onClick={handleLogout}
