@@ -173,7 +173,7 @@ export default function ReelsPage() {
 const [isPaused, setIsPaused] = useState<Record<string, boolean>>({});
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const viewsIncremented = useRef<Set<string>>(new Set());
- const [muted, setMuted] = useState<Record<string, boolean>>({});
+const [muted, setMuted] = useState(false);
 
   const gqlFetch = async (
     query: string,
@@ -204,12 +204,7 @@ const [isPaused, setIsPaused] = useState<Record<string, boolean>>({});
     const json = await gqlFetch(GET_RECENT_REELS);
     const reelsData = json?.data?.recentReels || [];
     setReels(reelsData);
-   const initialMuted: Record<string, boolean> = {};
-reelsData.forEach((reel: Reel) => {
-  initialMuted[reel.id] = false;  
-});
-setMuted(initialMuted);
-
+ 
     for (const reel of reelsData) {
       fetchCommentsCount(reel.id);
     }
@@ -255,26 +250,16 @@ setMuted(initialMuted);
     }
   }, [currentIndex, reels]);
 
- const toggleSound = (reelId: string, index: number) => {
-  setMuted((prev) => {
-    const newMuted = !prev[reelId];
+const toggleSound = () => {
+  const newMuted = !muted;
 
-    const video = videoRefs.current[index];
+  setMuted(newMuted);
+
+  videoRefs.current.forEach((video) => {
     if (video) {
       video.muted = newMuted;
-
-       
       video.volume = newMuted ? 0 : 1;
-
-      if (!newMuted) {
-        video.play().catch(() => {});
-      }
     }
-
-    return {
-      ...prev,
-      [reelId]: newMuted,
-    };
   });
 };
   const toggleLike = async (id: string) => {
@@ -454,7 +439,7 @@ const togglePlay = (reelId: string, index: number) => {
       {reels.map((reel, index) => {
         const videoSrc = getFullImageUrl(reel.clip_url);
         const isLiked = liked[reel.id] || false;
-        const isMuted = muted[reel.id] ?? true;
+ 
 
         return (
           <div
@@ -470,7 +455,7 @@ const togglePlay = (reelId: string, index: number) => {
   loop
   playsInline
   autoPlay
-  muted={muted[reel.id] ?? false}
+muted={muted}
   onClick={() => togglePlay(reel.id, index)}
 />
 {isPaused[reel.id] && (
@@ -482,10 +467,10 @@ const togglePlay = (reelId: string, index: number) => {
 )}
          <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/80 pointer-events-none" />
 <button
-  onClick={() => toggleSound(reel.id, index)}
+  onClick={toggleSound}
   className="absolute top-28 right-4 z-[999] text-white"
 >
-  {muted[reel.id] ? <VolumeX /> : <Volume2 />}
+  {muted ? <VolumeX /> : <Volume2 />}
 </button>
 
             <div className="absolute right-4 bottom-24 flex flex-col gap-6 z-10 text-white">
