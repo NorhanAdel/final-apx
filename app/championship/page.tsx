@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Search, ChevronDown } from "lucide-react";
 import TournamentCard from "../components/TournamentCard";
 import { fetchGraphQL } from "../lib/fetchGraphQL";
-
+import { useTheme } from "../context/ThemeContext";
 const CHAMPIONS_QUERY = `
   query {
     champions(skip: 0, take: 50) {
@@ -79,7 +79,7 @@ export default function TournamentGallery() {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState("newest");
   const [lang, setLang] = useState("ar");
-
+const { theme } = useTheme();
   const t = tDict[lang] || tDict.ar;
 
   useEffect(() => {
@@ -173,7 +173,13 @@ export default function TournamentGallery() {
   ];
 
   return (
-    <main className="min-h-screen bg-[#020208] p-6 md:p-12 font-sans">
+    <main
+  className={`min-h-screen p-6 md:p-12 font-sans transition-colors duration-300 ${
+    theme === "dark"
+      ? "bg-[#020b1c] text-white"
+      : "bg-gray-50 text-gray-900"
+  }`}
+>
       <div className="max-w-7xl mx-auto py-30">
 
         {/* SEARCH + SORT */}
@@ -182,7 +188,9 @@ export default function TournamentGallery() {
           {/* SEARCH */}
           <div className="relative w-full lg:w-1/3">
             <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              className={`absolute left-3 top-1/2 -translate-y-1/2 ${
+  theme === "dark" ? "text-gray-400" : "text-gray-500"
+}`}
               size={18}
             />
 
@@ -191,7 +199,11 @@ export default function TournamentGallery() {
               placeholder={t.search}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-[#0a0a20] border border-blue-900/30 rounded-md py-2.5 pl-10 pr-4 text-sm text-white"
+           className={`w-full rounded-md py-2.5 pl-10 pr-4 text-sm border transition-colors ${
+  theme === "dark"
+    ? "bg-[#0a0a20] border-blue-900/30 text-white"
+    : "bg-white border-gray-300 text-gray-900"
+}`}
             />
           </div>
 
@@ -206,11 +218,15 @@ export default function TournamentGallery() {
                 key={opt.key}
                 onClick={() => setSort(opt.key)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-md text-[11px] font-bold uppercase border transition
-                  ${
-                    sort === opt.key
-                      ? "bg-blue-950 border-blue-600 text-white"
-                      : "bg-[#0a0a20] border-blue-900/50 text-white hover:bg-blue-950"
-                  }
+                ${
+  sort === opt.key
+    ? theme === "dark"
+      ? "bg-blue-950 border-blue-600 text-white"
+      : "bg-blue-100 border-blue-400 text-blue-900"
+    : theme === "dark"
+      ? "bg-[#0a0a20] border-blue-900/50 text-white hover:bg-blue-950"
+      : "bg-white border-gray-300 text-gray-700 hover:bg-gray-100"
+}
                 `}
               >
                 {opt.label}
