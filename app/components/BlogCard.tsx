@@ -28,7 +28,7 @@ return (
     onClick={() => router.push(`/blog/${blog.id}`)}
     className="cursor-pointer group"
   >
-    <div className="relative w-full h-[520px] rounded-3xl overflow-hidden shadow-2xl">
+    <div className="relative w-full h-[450px] rounded-3xl overflow-hidden shadow-2xl">
 
       <Image
         src={getImage(blog.cover_image_url)}
