@@ -8,6 +8,7 @@ interface User {
   id: string;
   email: string;
   username: string;
+    has_active_subscription?: boolean;
   role: UserRole;
   playerProfile?: {
     id: string;
