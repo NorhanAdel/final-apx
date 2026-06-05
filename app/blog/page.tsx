@@ -131,7 +131,7 @@ export default function BlogPage() {
   /* ================= UI ================= */
   return (
     <div
-      className={`min-h-screen px-4 sm:px-6 md:px-12 lg:px-30 py-40 transition ${
+      className={`min-h-screen px-4 sm:px-6 md:px-12 lg:px-60 py-40 transition${
         theme === "dark"
           ? "bg-[#020b1c] text-white"
           : "bg-gray-100 text-black"
@@ -299,7 +299,7 @@ export default function BlogPage() {
       {filteredBlogs.length === 0 ? (
         <p className="text-center text-gray-400">No blogs found</p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 mt-10 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 mt-10 lg:grid-cols-3 gap-6">
           {filteredBlogs.map((blog) => (
             <BlogCard key={blog.id} blog={blog} />
           ))}
