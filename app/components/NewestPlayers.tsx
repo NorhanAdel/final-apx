@@ -38,6 +38,8 @@ interface Player {
   date_of_birth?: string;
   age?: number;
   average_rating?: number;
+  super7_level?: string;    
+  super7_score?: number;    
   photos?: {
     image_url: string;
   }[];
@@ -168,67 +170,88 @@ const fetchPlayers = async () => {
           1024: { slidesPerView: 3.2 },
         }}
       >
-        {players.map((player) => (
-          <SwiperSlide key={player.id}>
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              whileHover={{ scale: 1.04, y: -8 }}
-              transition={{ duration: 0.4 }}
-              className={`rounded-2xl overflow-hidden border shadow-lg transition-all cursor-pointer ${
-                isDark
-                  ? "bg-[#0b1120] border-[#1e293b]"
-                  : "bg-white border-gray-200"
-              }`}
-              onClick={() => (window.location.href = `/players/${player.id}`)}
-            >
-              <div className="relative w-full h-[220px] sm:h-[250px] overflow-hidden">
-                <Image
-                  src={getFullImageUrl(
-  player.photos?.[0]?.image_url || ""
-)}
-                  alt={player.first_name}
-                  fill
-                  className="object-cover transition-transform duration-500 hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-              </div>
-              <div className="p-4">
-                <div className="flex justify-between items-center mb-3">
-                  <h3
-                    className={`text-base sm:text-lg font-bold truncate ${
-                      isDark ? "text-white" : "text-black"
-                    }`}
-                  >
-                    {player.first_name} {player.last_name}
-                  </h3>
-                  <motion.div initial={{ scale: 0 }} whileInView={{ scale: 1 }}>
-                    {renderStars(player.average_rating || 0)}
-                  </motion.div>
-                </div>
-                <div
-                  className={`flex flex-col gap-2 text-xs ${
-                    isDark ? "text-gray-400" : "text-gray-600"
-                  }`}
-                >
-                  <div className="flex justify-between items-center">
-                    <span>{t("Player")}</span>
-                    <span className="flex items-center">
-                      <LocateFixed size={12} className="text-yellow-500 mr-1" />
-                      {player.nationality || t("Unknown")}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-yellow-500 flex items-center">
-                      <User size={12} className="mr-1" />
-                      {player.age || 0}Y
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </SwiperSlide>
-        ))}
+       {players.map((player) => (
+  <SwiperSlide key={player.id}>
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      whileHover={{ scale: 1.04, y: -8 }}
+      transition={{ duration: 0.4 }}
+      className={`rounded-2xl overflow-hidden border shadow-lg transition-all cursor-pointer relative ${
+        isDark
+          ? "bg-[#0b1120] border-[#1e293b]"
+          : "bg-white border-gray-200"
+      }`}
+      onClick={() => (window.location.href = `/players/${player.id}`)}
+    >
+      {/* Image */}
+      <div className="relative w-full h-[220px] sm:h-[250px] overflow-hidden">
+        <Image
+          src={getFullImageUrl(player.photos?.[0]?.image_url || "")}
+          alt={player.first_name}
+          fill
+          className="object-cover transition-transform duration-500 hover:scale-110"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+
+        {/* ⭐ Super7 Score Badge */}
+        {player.super7_score !== undefined && (
+          <div className="absolute top-3 right-3 px-2 py-1 rounded-full bg-yellow-500/90 text-black text-xs font-bold shadow-md">
+            🏆 {player.super7_score}
+          </div>
+        )}
+      </div>
+
+      {/* Content */}
+      <div className="p-4">
+        {/* Name + Rating */}
+        <div className="flex justify-between items-center mb-3">
+          <h3
+            className={`text-base sm:text-lg font-bold truncate ${
+              isDark ? "text-white" : "text-black"
+            }`}
+          >
+            {player.first_name} {player.last_name}
+          </h3>
+
+          <motion.div initial={{ scale: 0 }} whileInView={{ scale: 1 }}>
+            {renderStars(player.average_rating || 0)}
+          </motion.div>
+        </div>
+
+        {/* Info */}
+        <div
+          className={`flex flex-col gap-2 text-xs ${
+            isDark ? "text-gray-400" : "text-gray-600"
+          }`}
+        >
+          {/* Nationality */}
+          <div className="flex justify-between items-center">
+            <span>{t("Player")}</span>
+            <span className="flex items-center">
+              <LocateFixed size={12} className="text-yellow-500 mr-1" />
+              {player.nationality || t("Unknown")}
+            </span>
+          </div>
+
+          {/* Age + Super7 inline */}
+          <div className="flex justify-between items-center">
+            <span className="flex items-center text-yellow-500">
+              <User size={12} className="mr-1" />
+              {player.age || 0}Y
+            </span>
+
+            {player.super7_score && (
+              <span className="px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-400 text-[13px] font-semibold border border-yellow-500/30">
+             S7Score   : {player.super7_score}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  </SwiperSlide>
+))}
       </Swiper>
     </div>
   );
