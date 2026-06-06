@@ -220,7 +220,7 @@ export default function ReelsPlayer({ videos = [], playerId }: Props) {
         )}
 
         {/* LIKE */}
-        <div className="absolute top-4 right-4 flex items-center gap-2 bg-black/60 px-3 py-1 rounded-full">
+        {/* <div className="absolute top-4 right-4 flex items-center gap-2 bg-black/60 px-3 py-1 rounded-full">
           <Heart
             onClick={handleLike}
             className={`cursor-pointer transition ${
@@ -229,7 +229,7 @@ export default function ReelsPlayer({ videos = [], playerId }: Props) {
             size={18}
           />
           <span className="text-sm">{currentLikes}</span>
-        </div>
+        </div> */}
       </div>
 
       {/* THUMBNAILS */}
