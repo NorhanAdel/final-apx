@@ -95,9 +95,11 @@ export const GET_PLAYER_PROFILE = `
       profile_image_url
       verification_doc_url
       is_verified
-      trust_level
+     
       views_count
       age
+      super7_level  
+      super7_score
       average_rating
       created_at
       updated_at
@@ -152,7 +154,7 @@ export const GET_ALL_PLAYERS = `
         date_of_birth
         age
         average_rating
-        trust_level
+         super7_score
       }
       total
     }
