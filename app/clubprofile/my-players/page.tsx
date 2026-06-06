@@ -23,6 +23,7 @@ interface IncomingPlayer {
     total_ratings: number;
     date_of_birth: string;
     age: number;
+      super7Score: number;
   };
 }
 
@@ -186,6 +187,7 @@ export default function MyPlayersPage() {
                   position={item.player?.position || "Forward"}
                   country={getCountryName(item.player?.nationality)}
                   age={item.player?.age || 0}
+                   super7Score={item.player.super7Score || 0}
                 />
               </div>
             ))}
