@@ -13,6 +13,7 @@ interface PlayerCardProps {
   age: number;
   country: string;
   super7Score: number;
+  position: string;
 }
 
 export const PlayerCard = ({
@@ -23,7 +24,7 @@ export const PlayerCard = ({
   country,
   age,
   super7Score,
-}: PlayerProps) => {
+}: PlayerCardProps) => {
   const { theme } = useTheme();
   const { t } = useTranslate();
   const isDark = theme === "dark";
