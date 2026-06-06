@@ -31,6 +31,7 @@ interface Player {
   country: string;
   age: number;
   date_of_birth?: string;
+  super7Score?: number;
 }
 
 interface FavoriteItem {
