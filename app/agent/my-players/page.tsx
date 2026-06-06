@@ -22,6 +22,7 @@ interface Player {
   total_ratings: number;
   date_of_birth: string;
   age: number;
+    super7Score: number;
 }
 
 interface MyPlayersResponse {
@@ -178,14 +179,15 @@ export default function AgentMyPlayers() {
                 onClick={() => handlePlayerClick(player.id)}
                 className="cursor-pointer"
               >
-                <PlayerCard
-                  name={getPlayerFullName(player)}
-                  image={getFullImageUrl(player.profile_image_url)}
-                  rating={player.average_rating || 0}
-                  position={player.position || "Forward"}
-                  country={getCountryName(player.nationality)}
-                  age={player.age || 0}
-                />
+               <PlayerCard
+  name={getPlayerFullName(player)}
+  image={getFullImageUrl(player.profile_image_url)}
+  rating={player.average_rating || 0}
+  position={player.position || "Forward"}
+  country={getCountryName(player.nationality)}
+  age={player.age || 0}
+    super7Score={player. super7_score || 0}
+/>
               </div>
             ))}
           </div>
