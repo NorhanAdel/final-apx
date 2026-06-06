@@ -23,7 +23,7 @@ interface PlayerData {
   date_of_birth?: string;
   age?: number;
   average_rating?: number;
-  trust_level?: string;
+  super7_score?: number;
 }
 
 interface FormattedPlayer {
@@ -34,6 +34,7 @@ interface FormattedPlayer {
   position: string;
   country: string;
   age: number;
+  super7Score: number;
 }
 
 interface GetAllPlayersResponse {
@@ -123,16 +124,19 @@ export default function PlayersPage() {
               maxAge: maxAgeNum,
             }
           );
+console.log("FULL RESULT", result);
 
-        playerData =
-          result?.data?.getAllPlayers?.data || [];
+playerData =
+  result?.data?.getAllPlayers?.data || [];
+
+        console.log("playerData", playerData);
+        console.log(JSON.stringify(result, null, 2));
       }
 
-      if (!playerData || playerData.length === 0) {
-        setPlayers([]);
-
-        return;
-      }
+      if (!Array.isArray(playerData)) {
+  setPlayers([]);
+  return;
+}
 
       let formatted = playerData.map(
         (p: PlayerData) => {
@@ -149,15 +153,15 @@ export default function PlayersPage() {
           }
 
           return {
-            id: p.id,
-            name: `${p.first_name} ${p.last_name}`,
-            image,
-            rating,
-            position: "Player",
-            country:
-              p.nationality || "Unknown",
-            age: p.age || 0,
-          };
+  id: p.id,
+  name: `${p.first_name} ${p.last_name}`,
+  image,
+  rating,
+  position: "Player",
+  country: p.nationality || "Unknown",
+  age: p.age || 0,
+  super7Score: p.super7_score || 0,
+};
         }
       );
 
@@ -167,7 +171,7 @@ export default function PlayersPage() {
         );
       }
 
-      setPlayers(formatted);
+    setPlayers(Array.isArray(formatted) ? formatted : []);
     } catch (err) {
       console.error(err);
 
