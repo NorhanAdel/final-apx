@@ -72,7 +72,7 @@ interface PlayerProfile {
   profile_image_url?: string;
   verification_doc_url?: string;
   is_verified: boolean;
-  trust_level?: string;
+  super7_level?: string;
   views_count: number;
   age?: number;
   average_rating?: number;
@@ -196,7 +196,7 @@ export default function PlayerProfilePage() {
     email_address: showContact ? player.email_address : null,
     phone: showContact ? player.phone : null,
     bio: player.bio,
-    trust_level: player.trust_level,
+    super7_level: player.super7_level,
     views_count: player.views_count,
   };
 
