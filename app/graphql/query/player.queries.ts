@@ -258,6 +258,9 @@ query GetPlayersBySport($sportId: String!) {
       country
       city
 
+      super7_level    
+      super7_score    
+
       football_info {
         jersey_number
         preferred_foot
