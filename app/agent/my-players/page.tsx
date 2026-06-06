@@ -22,7 +22,7 @@ interface Player {
   total_ratings: number;
   date_of_birth: string;
   age: number;
-    super7Score: number;
+   super7_score: number;
 }
 
 interface MyPlayersResponse {
@@ -186,7 +186,7 @@ export default function AgentMyPlayers() {
   position={player.position || "Forward"}
   country={getCountryName(player.nationality)}
   age={player.age || 0}
-    super7Score={player. super7_score || 0}
+    super7Score={player.super7_score || 0}
 />
               </div>
             ))}
