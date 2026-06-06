@@ -17,7 +17,7 @@ interface Player {
   email_address?: string | null;
   phone?: string | null;
   bio?: string | null;
-  trust_level?: string | null;
+  super7_level?: string | null;
   views_count?: number | null;
 }
 
@@ -68,7 +68,7 @@ export default function PersonalInfo({
       {/* Bio & Stats Section */}
       {(player.bio ||
         (player.views_count ?? 0) > 0 ||
-        player.trust_level ||
+        player.super7_level ||
         (player.country && player.city)) && (
         <div>
           {player.bio && (
@@ -89,11 +89,11 @@ export default function PersonalInfo({
                 👁️ {player.views_count} {t("views")}
               </span>
             )}
-            {player.trust_level && (
-              <span>
-                🏆 {player.trust_level} {t("level")}
-              </span>
-            )}
+          {player.super7_level && (
+  <span>
+    🏆 {player.super7_level} {t("level")}
+  </span>
+)}
             {player.country && player.city && (
               <span>
                 📍 {player.city}, {player.country}
