@@ -6,13 +6,13 @@ import { Star, Trophy, MapPin, User } from "lucide-react";
 import { useTheme } from "@/app/context/ThemeContext";
 import useTranslate from "@/app/hooks/useTranslate";
 
-interface PlayerProps {
+interface PlayerCardProps {
   name: string;
   image: string;
   rating: number;
-  position: string;
-  country: string;
   age: number;
+  country: string;
+  super7Score: number;
 }
 
 export const PlayerCard = ({
@@ -22,6 +22,7 @@ export const PlayerCard = ({
   position,
   country,
   age,
+  super7Score,
 }: PlayerProps) => {
   const { theme } = useTheme();
   const { t } = useTranslate();
@@ -65,6 +66,7 @@ export const PlayerCard = ({
           >
             {name}
           </h3>
+          
           <div className="flex gap-0.5">
             {[...Array(maxStars)].map((_, i) => (
               <Star
@@ -78,6 +80,12 @@ export const PlayerCard = ({
         <div
           className={`flex items-center justify-between text-[10px] font-bold italic ${textSecondary}`}
         >
+
+    <div className="px-2 py-1 rounded-full bg-[#eab308]/20 border border-[#eab308]/40">
+      <span className="text-[#eab308] text-xs font-bold">
+        S7Score {super7Score}
+      </span>
+    </div>
           <div className="flex items-center gap-1.5">
             <Trophy size={14} className="text-[#eab308]" />
             <span>{t(position)}</span>
