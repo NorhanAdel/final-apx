@@ -14,6 +14,9 @@ import {
   Star,
   Send,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
+
+ 
 
 import { useTheme } from "../../context/ThemeContext";
 
@@ -191,7 +194,7 @@ const translations: any = {
 export default function OrganizationCheckoutPage() {
 
   const { theme } = useTheme();
-
+const router = useRouter();
   const isDark =
     theme === "dark";
 
@@ -464,15 +467,32 @@ export default function OrganizationCheckoutPage() {
           )
         );
 
-        if (
-          !res?.errors
-        ) {
+       if (!res?.errors) {
 
-          setSuccess(true);
+  setSuccess(true);
 
-          fetchSubscriptions();
+  fetchSubscriptions();
 
-        } else {
+  const currentUser = JSON.parse(
+    localStorage.getItem("user") || "{}"
+  );
+
+  currentUser.has_active_subscription = true;
+
+  localStorage.setItem(
+    "user",
+    JSON.stringify(currentUser)
+  );
+
+  window.dispatchEvent(
+    new Event("user-updated")
+  );
+
+  setTimeout(() => {
+    router.push("/clubprofile/profile");
+  }, 2000);
+
+} else  {
 
           setError(
             res?.errors?.[0]
