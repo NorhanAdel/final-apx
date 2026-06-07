@@ -185,7 +185,7 @@ const handlePayment = async () => {
 
     setError("");
 
-    // ✅ لو عنده اشتراك بالفعل
+ 
     const activeSubscription = subscriptions.find(
       (s) => s.is_active
     );
@@ -260,29 +260,41 @@ const handlePayment = async () => {
       }
     );
 
-    if (
-      res?.data?.purchasePlayerPackage?.success
-    ) {
-      setSuccess(true);
+   if (
+  res?.data?.purchasePlayerPackage?.success
+) {
 
-      fetchSubscriptions();
+  const updatedUser = {
+    ...JSON.parse(localStorage.getItem("user") || "{}"),
+    has_active_subscription: true,
+  };
 
-      // ✅ رسالة نجاح
-      toast.success(
-        lang === "ar"
-          ? "تم الدفع بنجاح"
-          : "Payment successful"
-      );
+  localStorage.setItem(
+    "user",
+    JSON.stringify(updatedUser)
+  );
 
-      
-      localStorage.removeItem("selectedPackage");
+  window.dispatchEvent(
+    new Event("user-updated")
+  );
 
-     
-      setTimeout(() => {
-        router.push("/profile");
-      }, 2000);
+  setSuccess(true);
 
-    } else {
+  fetchSubscriptions();
+
+  toast.success(
+    lang === "ar"
+      ? "تم الدفع بنجاح"
+      : "Payment successful"
+  );
+
+  localStorage.removeItem("selectedPackage");
+
+  setTimeout(() => {
+    router.push("/profile");
+  }, 2000);
+
+} else {
       toast.error(
         res?.errors?.[0]?.message ||
           res?.data?.purchasePlayerPackage
