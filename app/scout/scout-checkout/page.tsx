@@ -15,6 +15,7 @@ import {
 
 import { useTheme } from "../../context/ThemeContext";
 import { fetchGraphQL } from "../../lib/fetchGraphQL";
+import { useRouter } from "next/navigation";
 
 // =========================
 // TRANSLATIONS
@@ -132,7 +133,7 @@ const translations: any = {
 
 export default function ScoutCheckoutPage() {
   const { theme } = useTheme();
-
+const router = useRouter();
   const isDark = theme === "dark";
 
   const lang =
@@ -226,8 +227,7 @@ export default function ScoutCheckoutPage() {
 
      let enumValue =
   parsed.package_type;
-
-// تحويل الاسم للـ ENUM الحقيقي
+ 
 if (
   enumValue === "Basic Scout" ||
   enumValue === "كشاف مبتدئ"
@@ -295,18 +295,43 @@ console.log(
           )
         );
 
-        if (
-          res?.data
-            ?.purchaseOrganizationPackage
-        ) {
-          setSuccess(true);
-        } else {
-          setError(
-            res?.errors?.[0]
-              ?.message ||
-              t.paymentError
-          );
-        }
+if (
+  res?.data?.purchaseOrganizationPackage
+) {
+  const oldUser = JSON.parse(
+    localStorage.getItem("user") || "{}"
+  );
+
+  const updatedUser = {
+    ...oldUser,
+    has_active_subscription: true,
+  };
+
+  localStorage.setItem(
+    "user",
+    JSON.stringify(updatedUser)
+  );
+
+  window.dispatchEvent(
+    new Event("user-updated")
+  );
+
+  setSuccess(true);
+
+  localStorage.removeItem(
+    "selectedScoutPackage"
+  );
+
+  setTimeout(() => {
+    router.push("/scout/profile");
+  }, 1500);
+
+} else {
+  setError(
+    res?.errors?.[0]?.message ||
+    t.paymentError
+  );
+}
       } catch (err) {
         console.log(err);
 
