@@ -125,13 +125,28 @@ export default function AgentCheckoutPage() {
 
       console.log("PAYMENT:", res);
 
-      if (!res?.errors) {
-        setSuccess(true);
+  if (!res?.errors) {
+  setSuccess(true);
 
-        setTimeout(() => {
-          router.push("/");
-        }, 1500);
-      } else {
+  // تحديث بيانات المستخدم
+  const updatedUser = {
+    ...JSON.parse(localStorage.getItem("user") || "{}"),
+    has_active_subscription: true,
+  };
+
+  localStorage.setItem(
+    "user",
+    JSON.stringify(updatedUser)
+  );
+
+  window.dispatchEvent(
+    new Event("user-updated")
+  );
+
+  setTimeout(() => {
+    router.push("/agent/profile");
+  }, 1500);
+} else {
         setError(res?.errors?.[0]?.message);
       }
     } catch (err) {
