@@ -48,7 +48,6 @@ export const GET_AD_BY_ID = `
       target_role
       status
       views_count
-      expires_at
       created_at
       updated_at
       user {
@@ -61,7 +60,6 @@ export const GET_AD_BY_ID = `
     }
   }
 `;
-
 export const GET_AD_WITH_USER = `
   query GetAdWithUser($id: ID!) {
     ad(id: $id) {
