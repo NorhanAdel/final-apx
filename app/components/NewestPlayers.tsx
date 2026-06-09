@@ -40,6 +40,7 @@ interface Player {
   average_rating?: number;
   super7_level?: string;    
   super7_score?: number;    
+ 
   photos?: {
     image_url: string;
   }[];
