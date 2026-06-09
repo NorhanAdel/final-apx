@@ -257,9 +257,12 @@ query GetPlayersBySport($sportId: String!) {
       nationality
       country
       city
+      age
 
-      super7_level    
-      super7_score    
+      average_rating
+
+      super7_level
+      super7_score
 
       football_info {
         jersey_number
