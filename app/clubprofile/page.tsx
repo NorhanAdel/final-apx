@@ -393,7 +393,7 @@ export default function ClubProfile() {
                   <div
                     className={`p-4 rounded-xl flex items-center gap-3 cursor-pointer hover:scale-105 transition-transform
                     ${isDark ? "bg-[#051139]" : "bg-white shadow"}`}
-                    onClick={() => router.push(`/player/${player.id}`)}
+                    onClick={() => router.push(`/players/${player.id}`)}
                   >
                     <div className="w-12 h-12 relative rounded-full overflow-hidden bg-gray-300 dark:bg-gray-700">
                       {player.profile_image_url ? (
