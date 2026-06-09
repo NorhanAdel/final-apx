@@ -7,12 +7,13 @@ import { Calendar, Eye, User } from "lucide-react";
 import { fetchGraphQL } from "../../lib/fetchGraphQL";
 import useTranslate from "../../hooks/useTranslate";
 import BackButton from "@/app/components/BackButton";
-import { GET_AD_WITH_USER } from "@/app/graphql/query/ad.queries";
+import { GET_AD_BY_ID } from "@/app/graphql/query/ad.queries";
 import { motion } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
 
 interface UserType {
   id: string;
+  email: string;
   first_name: string;
   last_name: string;
   role: string;
@@ -23,15 +24,19 @@ interface Ad {
   title: string;
   description: string;
   image_url?: string;
+  video_url?: string;
+  target_role: string;
   status: string;
   views_count: number;
   created_at: string;
+  updated_at: string;
   user: UserType;
 }
 
 export default function AdDetailsPage() {
   const params = useParams();
   const adId = params.id as string;
+
   const { lang } = useTranslate();
   const { theme } = useTheme();
 
@@ -48,12 +53,16 @@ export default function AdDetailsPage() {
 
   const fetchAd = useCallback(async () => {
     setLoading(true);
+
     try {
-      const result = await fetchGraphQL<{ ad: Ad }>(GET_AD_WITH_USER, {
+      const result = await fetchGraphQL<{ ad: Ad }>(GET_AD_BY_ID, {
         id: adId,
       });
-
+console.log("RESULT =>", result);
+ 
       setAd(result.data?.ad || null);
+    } catch (error) {
+      console.error("Error fetching ad:", error);
     } finally {
       setLoading(false);
     }
@@ -70,7 +79,9 @@ export default function AdDetailsPage() {
   };
 
   const formatDate = (date: string) =>
-    new Date(date).toLocaleDateString(lang === "ar" ? "ar-EG" : "en-US");
+    new Date(date).toLocaleDateString(
+      lang === "ar" ? "ar-EG" : "en-US"
+    );
 
   const formatViews = (v: number) =>
     v >= 1000 ? (v / 1000).toFixed(1) + "K" : v.toString();
@@ -134,7 +145,6 @@ export default function AdDetailsPage() {
 
           {/* DETAILS */}
           <div className="flex flex-col gap-6">
-
             {/* TITLE */}
             <h1
               className={`text-4xl font-bold ${
@@ -156,8 +166,10 @@ export default function AdDetailsPage() {
                 <span className="flex items-center gap-1">
                   <Eye size={14} /> {formatViews(ad.views_count)}
                 </span>
+
                 <span className="flex items-center gap-1">
-                  <Calendar size={14} /> {formatDate(ad.created_at)}
+                  <Calendar size={14} />{" "}
+                  {formatDate(ad.created_at)}
                 </span>
               </div>
 
@@ -186,12 +198,13 @@ export default function AdDetailsPage() {
                   {ad.user.first_name} {ad.user.last_name}
                 </span>
               </div>
+
               <span className="text-sm text-gray-400 capitalize">
                 {ad.user.role}
               </span>
             </div>
 
-            {/* DESCRIPTION (SCROLL) */}
+            {/* DESCRIPTION */}
             <div
               className={`rounded-2xl p-5 border transition ${
                 isDark
@@ -225,6 +238,7 @@ export default function AdDetailsPage() {
         .custom-scroll::-webkit-scrollbar {
           width: 5px;
         }
+
         .custom-scroll::-webkit-scrollbar-thumb {
           background: #f0b100;
           border-radius: 10px;
