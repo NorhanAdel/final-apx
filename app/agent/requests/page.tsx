@@ -178,6 +178,8 @@ export default function AgentRequests() {
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(
     null,
   );
+
+  const [openPlayers, setOpenPlayers] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
@@ -512,102 +514,71 @@ export default function AgentRequests() {
               >
                 {t("Select Player")} *
               </label>
-              <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#FFD700]">
-                  <Star size={18} fill="currentColor" />
-                </div>
-                <select
-                  value={selectedTargetId}
-                  onChange={(e) => setSelectedTargetId(e.target.value)}
-                  className={`w-full rounded-xl py-4 pl-12 pr-10 text-sm outline-none italic appearance-none cursor-pointer ${
-                    isDark
-                      ? "bg-[#0A1A44]/40 border border-blue-900/50 text-white"
-                      : "bg-white border border-gray-300 text-black"
-                  }`}
-                  required
-                >
-                  <option value="">{t("Select Player")}</option>
-                  {players.map((player) => (
-                    <option key={player.id} value={player.id}>
-                      {player.first_name} {player.last_name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[#FFD700] pointer-events-none"
-                  size={18}
-                />
-              </div>
+            
+                 
+ <div className="relative">
+  
+  <button
+    type="button"
+    onClick={() => setOpenPlayers(!openPlayers)}
+    className={`w-full rounded-xl py-4 px-4 flex items-center justify-between transition ${
+      isDark
+        ? "bg-[#0A1A44]/40 border border-blue-900/50 text-white"
+        : "bg-white border border-gray-300 text-black"
+    }`}
+  >
+    <div className="flex items-center gap-3">
+      <Star size={18} className="text-[#FFD700]" fill="currentColor" />
 
-              {selectedPlayer && (
-                <div
-                  className={`p-3 rounded-lg flex items-center justify-between transition mt-4 ${
-                    isDark
-                      ? "bg-[#051139]/50 border border-blue-900/30"
-                      : "bg-white shadow"
-                  }`}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 relative rounded-md overflow-hidden">
-                      {selectedPlayer.profile_image_url ? (
-                        <Image
-                          src={getFullImageUrl(
-                            selectedPlayer.profile_image_url,
-                          )}
-                          alt={selectedPlayer.first_name}
-                          fill
-                          className="object-cover"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = "/placeholder-player.jpg";
-                          }}
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gray-500 flex items-center justify-center">
-                          <User size={20} className="text-white" />
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold">
-                        {selectedPlayer.first_name} {selectedPlayer.last_name}
-                      </h4>
-                      <p
-                        className={`${
-                          isDark ? "text-gray-500" : "text-gray-400"
-                        } text-xs`}
-                      >
-                        {t("Player")}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex text-[#FFD700]">
-                      {[...Array(7)].map((_, i) => (
-                        <Star
-                          key={i}
-                          size={10}
-                          fill={
-                            i < Math.floor(selectedPlayer.average_rating || 0)
-                              ? "currentColor"
-                              : "none"
-                          }
-                          className={
-                            i < Math.floor(selectedPlayer.average_rating || 0)
-                              ? "text-yellow-400"
-                              : "text-gray-500"
-                          }
-                        />
-                      ))}
-                    </div>
-                    <span className="text-[10px] text-gray-500">
-                      {selectedPlayer.average_rating?.toFixed(1) || "0"}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
+      <span>
+        {selectedPlayer
+          ? `${selectedPlayer.first_name} ${selectedPlayer.last_name}`
+          : t("Select Player")}
+      </span>
+    </div>
 
+    <ChevronDown
+      size={18}
+      className={`transition-transform ${
+        openPlayers ? "rotate-180" : ""
+      }`}
+    />
+  </button>
+
+  {openPlayers && (
+    <div
+      className={`absolute top-full left-0 mt-2 w-full rounded-xl overflow-hidden z-50 max-h-72 overflow-y-auto shadow-xl ${
+        isDark
+          ? "bg-[#0A1A44] border border-blue-900/50"
+          : "bg-white border border-gray-300"
+      }`}
+    >
+      {players.map((player) => (
+        <button
+          key={player.id}
+          type="button"
+          onClick={() => {
+            setSelectedTargetId(player.id);
+            setOpenPlayers(false);
+          }}
+          className={`w-full p-3 text-left flex items-center gap-3 transition ${
+            selectedTargetId === player.id
+              ? "bg-yellow-500/20 text-yellow-400"
+              : "hover:bg-yellow-500/10"
+          }`}
+        >
+          <User size={16} />
+
+          <span>
+            {player.first_name} {player.last_name}
+          </span>
+        </button>
+      ))}
+    </div>
+  )}
+</div>
+          
+</div>
             <textarea
               rows={6}
               value={details}
