@@ -249,7 +249,7 @@ export default function ClubRequests() {
   >("player");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-
+const [openTargets, setOpenTargets] = useState(false);
   const fetchPlayers = useCallback(async () => {
     try {
       const result = await fetchGraphQL<GetAllPlayersResponse>(
@@ -375,7 +375,7 @@ export default function ClubRequests() {
   setLoading(true);
 
   try {
-    // ✅ CHECK PLAYER LIMIT FIRST
+     
     if (requestType === "player") {
       const contactCheck = await fetchGraphQL<CanContactPlayerResponse>(
         CAN_CONTACT_PLAYER,
@@ -391,13 +391,13 @@ export default function ClubRequests() {
 
       const canContact = contactCheck.data?.canContactPlayer;
 
-      // ✅ HANDLE UNDEFINED RESPONSE
+    
       if (!canContact) {
         toast.error(t("Unable to verify player contact"));
         return;
       }
 
-      // ❌ BLOCK REQUEST IF PLAYER STARS > PACKAGE LIMIT
+      
       if (!canContact.can_contact) {
         toast.error(canContact.reason);
         return;
@@ -722,41 +722,76 @@ export default function ClubRequests() {
               >
                 {requestType === "player" ? t("Player") : t("Scout")}
               </label>
-              <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#FFD700]">
-                  <Star size={18} fill="currentColor" />
-                </div>
-                <select
-                  value={selectedTargetId}
-                  onChange={(e) => setSelectedTargetId(e.target.value)}
-                  className={`w-full rounded-xl py-4 pl-12 pr-10 text-sm outline-none italic appearance-none cursor-pointer ${
-                    isDark
-                      ? "bg-[#0A1A44]/40 border border-blue-900/50 text-white"
-                      : "bg-white border border-gray-300 text-black"
-                  }`}
-                >
-                  <option value="">
-                    {requestType === "player"
-                      ? t("Select Player")
-                      : t("Select Scout")}
-                  </option>
-                  {requestType === "player"
-                    ? players.map((player) => (
-                        <option key={player.id} value={player.id}>
-                          {player.first_name} {player.last_name}
-                        </option>
-                      ))
-                    : scouts.map((scout) => (
-                        <option key={scout.id} value={scout.id}>
-                          {scout.first_name} {scout.last_name} - {scout.country}
-                        </option>
-                      ))}
-                </select>
-                <ChevronDown
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[#FFD700] pointer-events-none"
-                  size={18}
-                />
-              </div>
+           <div className="relative">
+  <button
+    type="button"
+    onClick={() => setOpenTargets(!openTargets)}
+    className={`w-full rounded-xl py-4 px-4 flex items-center justify-between transition ${
+      isDark
+        ? "bg-[#0A1A44]/40 border border-blue-900/50 text-white"
+        : "bg-white border border-gray-300 text-black"
+    }`}
+  >
+    <div className="flex items-center gap-3">
+      <Star
+        size={18}
+        className="text-[#FFD700]"
+        fill="currentColor"
+      />
+
+      <span>
+        {requestType === "player"
+          ? selectedPlayer
+            ? `${selectedPlayer.first_name} ${selectedPlayer.last_name}`
+            : t("Select Player")
+          : selectedScout
+          ? `${selectedScout.first_name} ${selectedScout.last_name}`
+          : t("Select Scout")}
+      </span>
+    </div>
+
+    <ChevronDown
+      size={18}
+      className={`transition-transform ${
+        openTargets ? "rotate-180" : ""
+      }`}
+    />
+  </button>
+
+  {openTargets && (
+    <div
+      className={`absolute top-full left-0 mt-2 w-full rounded-xl overflow-hidden z-50 max-h-72 overflow-y-auto shadow-xl ${
+        isDark
+          ? "bg-[#0A1A44] border border-blue-900/50"
+          : "bg-white border border-gray-300"
+      }`}
+    >
+      {(requestType === "player" ? players : scouts).map((item) => (
+        <button
+          key={item.id}
+          type="button"
+          onClick={() => {
+            setSelectedTargetId(item.id);
+            setOpenTargets(false);
+          }}
+          className={`w-full p-3 text-left flex items-center gap-3 transition ${
+            selectedTargetId === item.id
+              ? "bg-yellow-500/20 text-yellow-400"
+              : "hover:bg-yellow-500/10"
+          }`}
+        >
+          <User size={16} />
+
+          <span>
+            {"first_name" in item
+              ? `${item.first_name} ${item.last_name}`
+              : ""}
+          </span>
+        </button>
+      ))}
+    </div>
+  )}
+</div>
 
               {selectedPlayer && requestType === "player" && (
                 <div
