@@ -67,6 +67,7 @@ const navLinks = [
   { key: "Home", href: "/" },
   { key: "Reels", href: "/reels" },
   { key: "Players", href: "/players" },
+  { key: "Scales", href: "/scales" },
   { key: "Blog", href: "/blog" },
   { key: "Events", href: "/events" },
   { key: "Championships", href: "/championship" },
