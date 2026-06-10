@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   ImagePlus,
@@ -171,7 +171,7 @@ function VideoPreviewModal({
   );
 }
 
-export default function ShareAdPage() {
+function ShareAdPageContent() {
   const { theme } = useTheme();
   const { t } = useTranslate();
   const router = useRouter();
@@ -962,5 +962,13 @@ export default function ShareAdPage() {
         isDark={isDark}
       />
     </div>
+  );
+}
+
+export default function ShareAdPage() {
+  return (
+    <Suspense>
+      <ShareAdPageContent />
+    </Suspense>
   );
 }
