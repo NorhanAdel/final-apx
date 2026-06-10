@@ -16,6 +16,7 @@ import {
   DELETE_PHOTO,
   DELETE_VIDEO,
   INCREMENT_UPLOAD_COUNT,
+  TOGGLE_REEL_STATUS,
 } from "@/app/graphql/mutation/player.mutations";
 
 import { StepIndicator } from "./components/StepIndicator";
@@ -48,6 +49,9 @@ interface PlayerVideo {
   id: string;
   video_url: string;
   title: string;
+  is_reel?: boolean;
+  duration_seconds?: number;
+  type?: string;
 }
 
 interface Sport {
@@ -88,7 +92,7 @@ export default function ImagesReels() {
         query {
           sports { id name }
           myPhotos { id image_url }
-          myVideos { id video_url title }
+          myVideos { id video_url title type is_reel duration_seconds }
           myUploadLimits {
             max_photos max_videos max_ads
             uploaded_photos uploaded_videos uploaded_ads
@@ -177,13 +181,9 @@ export default function ImagesReels() {
     }
   };
 
-  const handleVideoUpload = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const handleVideoUpload = async (file: File, title: string) => {
     if ((limits?.remaining_videos || 0) <= 0) {
       toast.error(t("Video limit reached. Please purchase extra videos."));
-      e.target.value = "";
       return;
     }
 
@@ -192,7 +192,7 @@ export default function ImagesReels() {
       const result: any = await uploadGraphQL(UPLOAD_VIDEO, {
         file,
         input: {
-          title: "Highlight",
+          title: title || "Highlight",
           type: "HIGHLIGHT",
           sport_id: selectedSportId,
           duration_seconds: 30,
@@ -213,7 +213,6 @@ export default function ImagesReels() {
       toast.error(t("Upload failed. Please try again."));
     } finally {
       setIsUploading(false);
-      e.target.value = "";
     }
   };
 
@@ -238,6 +237,28 @@ export default function ImagesReels() {
     } catch (err) {
       console.error(err);
       toast.error(t("Delete failed"));
+    }
+  };
+
+  const handleToggleReel = async (videoId: string) => {
+    try {
+      const result: any = await fetchGraphQL(TOGGLE_REEL_STATUS, {
+        id: videoId,
+      });
+      if (result.errors) {
+        toast.error(result.errors[0].message);
+        return;
+      }
+      // Update local state optimistically
+      setVideos((prev) =>
+        prev.map((v) =>
+          v.id === videoId ? { ...v, is_reel: !v.is_reel } : v,
+        ),
+      );
+      toast.success(t("Reel status updated"));
+    } catch (err) {
+      console.error("Error toggling reel:", err);
+      toast.error(t("Failed to update reel status"));
     }
   };
 
@@ -350,6 +371,7 @@ export default function ImagesReels() {
           onUpload={handleVideoUpload}
           onDelete={(id) => handleDelete(id, "video")}
           onSetMainVideo={setMainVideo}
+          onToggleReel={handleToggleReel}
           getFullUrl={getFullUrl}
           t={t}
         />

@@ -195,6 +195,7 @@ export const GET_MY_FOOTBALL_INFO = `
       position {
         id
         name
+        sport_id
       }
       preferred_foot
       jersey_number

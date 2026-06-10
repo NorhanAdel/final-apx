@@ -39,15 +39,13 @@ export default function PurchaseAdPage() {
 
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const [cardData, setCardData] = useState({
-    cardholder_name: "",
-    card_number: "",
-    expiry_month: "",
-    expiry_year: "",
-    cvv: "",
-  });
-
-  const handlePurchase = async () => {
+  const handlePurchase = async (cardData: {
+    cardholder_name: string;
+    card_number: string;
+    expiry_month: number;
+    expiry_year: number;
+    cvv: string;
+  }) => {
     if (!selectedDuration) {
       toast.error("Please select duration");
       return;
@@ -68,7 +66,13 @@ export default function PurchaseAdPage() {
         {
           input: {
             ad_duration_pricing_id: selectedDuration.id,
-            card: cardData,
+            card: {
+              cardholder_name: cardData.cardholder_name,
+              card_number: cardData.card_number,
+              expiry_month: cardData.expiry_month,
+              expiry_year: cardData.expiry_year,
+              cvv: cardData.cvv,
+            },
           },
         }
       )) as PurchaseResponse;
@@ -83,7 +87,7 @@ export default function PurchaseAdPage() {
           `Ad slot purchased successfully! (${selectedDuration.days} days)`
         );
 
-        router.push("/profile/share");
+        router.push(`/profile/share?days=${selectedDuration.days}`);
       }
     } catch (error) {
       console.error(error);

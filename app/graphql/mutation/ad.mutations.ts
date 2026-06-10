@@ -8,7 +8,6 @@ export const CREATE_AD_WITH_IMAGE = `
       video_url
       target_role
       status
-      expires_at
       created_at
     }
   }
@@ -24,7 +23,6 @@ export const CREATE_AD_WITH_VIDEO = `
       video_url
       target_role
       status
-      expires_at
       created_at
     }
   }
@@ -40,7 +38,6 @@ export const CREATE_AD_WITH_BOTH = `
       video_url
       target_role
       status
-      expires_at
       created_at
     }
   }
@@ -53,7 +50,6 @@ export const UPDATE_AD = `
       title
       description
       target_role
-      expires_at
       updated_at
     }
   }

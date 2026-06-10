@@ -24,7 +24,6 @@ export const GET_MY_ADS = `
       status
       target_role
       views_count
-      expires_at
       created_at
       updated_at
       user {
@@ -71,7 +70,6 @@ export const GET_AD_WITH_USER = `
       target_role
       status
       views_count
-      expires_at
       created_at
       user {
         id

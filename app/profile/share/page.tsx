@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   ImagePlus,
   Video,
@@ -180,6 +181,24 @@ export default function ShareAdPage() {
   const [targetRole, setTargetRole] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
   const [mediaType, setMediaType] = useState<"image" | "video">("image");
+  const [autoExpiryDays, setAutoExpiryDays] = useState<number | null>(null);
+
+  const searchParams = useSearchParams();
+
+  // Auto-set expiry date from purchased duration
+  useEffect(() => {
+    const daysParam = searchParams.get("days");
+    if (daysParam) {
+      const days = parseInt(daysParam, 10);
+      if (!isNaN(days) && days > 0) {
+        const expiry = new Date();
+        expiry.setDate(expiry.getDate() + days);
+        const formatted = expiry.toISOString().split("T")[0];
+        setExpiresAt(formatted);
+        setAutoExpiryDays(days);
+      }
+    }
+  }, [searchParams]);
 
   const imageFileRef = useRef<HTMLInputElement | null>(null);
   const videoFileRef = useRef<HTMLInputElement | null>(null);
@@ -294,7 +313,6 @@ export default function ShareAdPage() {
         title: title.trim(),
         description: description.trim() || undefined,
         target_role: targetRole || undefined,
-        expires_at: expiresAt ? new Date(expiresAt).toISOString() : undefined,
       };
 
       let result;
@@ -349,7 +367,6 @@ export default function ShareAdPage() {
       };
       if (description.trim()) input.description = description.trim();
       if (targetRole) input.target_role = targetRole;
-      if (expiresAt) input.expires_at = new Date(expiresAt).toISOString();
 
       const result = await fetchGraphQL<{ updateAd: Ad }>(UPDATE_AD, {
         adId: editingAd.id,
@@ -745,14 +762,21 @@ export default function ShareAdPage() {
               <input
                 type="date"
                 value={expiresAt}
-                onChange={(e) => setExpiresAt(e.target.value)}
-                className={`w-full rounded-lg px-4 py-3 outline-none border transition
+                readOnly
+                className={`w-full rounded-lg px-4 py-3 outline-none border transition cursor-not-allowed opacity-70
                 ${
                   isDark
-                    ? "bg-[#0a0f2c] border-[#1e2a5a] text-white focus:border-yellow-400"
-                    : "bg-white border-gray-300 text-black shadow-sm focus:border-[#F0B100]"
+                    ? "bg-[#0a0f2c] border-[#1e2a5a] text-white"
+                    : "bg-gray-100 border-gray-300 text-black shadow-sm"
                 }`}
               />
+              {autoExpiryDays && (
+                <p className={`mt-1.5 text-xs ${
+                  isDark ? "text-yellow-400/70" : "text-yellow-600"
+                }`}>
+                  ✓ {t("Auto-set from your")} {autoExpiryDays}-{t("day purchased ad duration")}
+                </p>
+              )}
             </div>
 
             <div className="flex gap-4">
