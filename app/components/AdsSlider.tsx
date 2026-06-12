@@ -1,9 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import useTranslate from "../hooks/useTranslate";
 import { fetchGraphQL } from "../lib/fetchGraphQL";
@@ -26,9 +26,10 @@ export default function AdsCarousel() {
   const isDark = theme === "dark";
 
   const router = useRouter();
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const [ads, setAds] = useState<Ad[]>([]);
-  const [index, setIndex] = useState(0);
+  const [active, setActive] = useState(0);
 
   useEffect(() => {
     fetchAds();
@@ -49,6 +50,7 @@ export default function AdsCarousel() {
     `;
 
     const res = await fetchGraphQL<{ activeAds: Ad[] }>(query, {});
+
     if (!res.data?.activeAds) return;
 
     const formatted = res.data.activeAds.map((ad) => ({
@@ -61,159 +63,197 @@ export default function AdsCarousel() {
     setAds(formatted);
   };
 
-  const next = () => setIndex((prev) => (prev + 1) % ads.length);
-  const prev = () => setIndex((prev) => (prev - 1 + ads.length) % ads.length);
+  const scrollTo = (index: number) => {
+    const el = scrollRef.current?.children[index] as HTMLElement;
 
-  const getPosition = (i: number) => {
-    const diff = i - index;
-    if (diff === 0) return "center";
-    if (diff === 1 || diff === -(ads.length - 1)) return "right";
-    if (diff === -1 || diff === ads.length - 1) return "left";
-    return "hidden";
+    el?.scrollIntoView({
+      behavior: "smooth",
+      inline: "center",
+      block: "nearest",
+    });
   };
 
-  if (ads.length === 0) return null;
+  const handleScroll = () => {
+    if (!scrollRef.current) return;
+
+    const children = Array.from(
+      scrollRef.current.children
+    ) as HTMLElement[];
+
+    const center =
+      scrollRef.current.scrollLeft +
+      scrollRef.current.offsetWidth / 2;
+
+    let closest = 0;
+    let dist = Infinity;
+
+    children.forEach((child, i) => {
+      const childCenter =
+        child.offsetLeft + child.offsetWidth / 2;
+
+      const d = Math.abs(center - childCenter);
+
+      if (d < dist) {
+        dist = d;
+        closest = i;
+      }
+    });
+
+    setActive(closest);
+  };
+
+  const move = (dir: "left" | "right") => {
+    const next =
+      dir === "left"
+        ? Math.max(active - 1, 0)
+        : Math.min(active + 1, ads.length - 1);
+
+    scrollTo(next);
+  };
 
   return (
-    <section className="mt-14 px-6">
-      {/* Title */}
-      <div className="mb-6">
-        <h2 className={`text-2xl font-bold ${isDark ? "text-white" : "text-black"}`}>
-          {t("ad")}
-        </h2>
+    <section className="mt-16 px-4 md:px-8">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-10">
+        <div>
+          <h2
+            className={`text-3xl font-extrabold ${
+              isDark ? "text-white" : "text-[#F0B100]"
+            }`}
+          >
+            {t("ad")}
+          </h2>
+
+          <p
+            className={`text-sm mt-1 ${
+              isDark ? "text-gray-400" : "text-gray-500"
+            }`}
+          >
+            Featured sponsored campaigns
+          </p>
+        </div>
+
+        <div className="flex gap-3">
+          <button
+            onClick={() => move("left")}
+            className={`w-11 h-11 rounded flex items-center justify-center transition-all duration-300 ${
+              isDark
+                ? "bg-white/10 hover:bg-white/20 text-white border border-white/10"
+                : "bg-white hover:bg-gray-100 text-black border border-gray-200 shadow-sm"
+            }`}
+          >
+            <ChevronLeft size={18} />
+          </button>
+
+          <button
+            onClick={() => move("right")}
+            className={`w-11 h-11 rounded flex items-center justify-center transition-all duration-300 ${
+              isDark
+                ? "bg-white/10 hover:bg-white/20 text-white border border-white/10"
+                : "bg-white hover:bg-gray-100 text-black border border-gray-200 shadow-sm"
+            }`}
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
       </div>
 
-      {/* 3D Carousel */}
-      <div className="relative h-[420px] flex items-center justify-center overflow-hidden">
+      {/* Carousel */}
+      <div
+  ref={scrollRef}
+  onScroll={handleScroll}
+  className="flex gap-8 overflow-x-auto scroll-smooth snap-x snap-mandatory px-2"
+  style={{
+    scrollbarWidth: "none",
+    msOverflowStyle: "none",
+  }}
+>
         {ads.map((ad, i) => {
-          const position = getPosition(i);
+          const isActive = i === active;
 
           return (
             <motion.div
               key={ad.id}
-              drag="x"
-              dragConstraints={{ left: 0, right: 0 }}
-              onDragEnd={(e, info) => {
-                if (info.offset.x < -100) next();
-                if (info.offset.x > 100) prev();
-              }}
-              animate={{
-                x:
-                  position === "center"
-                    ? 0
-                    : position === "left"
-                    ? -280
-                    : position === "right"
-                    ? 280
-                    : 0,
-                scale:
-                  position === "center"
-                    ? 1
-                    : position === "hidden"
-                    ? 0.7
-                    : 0.85,
-                opacity:
-                  position === "center"
-                    ? 1
-                    : position === "hidden"
-                    ? 0
-                    : 0.5,
-                zIndex: position === "center" ? 10 : 1,
-              }}
-              transition={{ type: "spring", stiffness: 120, damping: 15 }}
-              className="absolute cursor-grab active:cursor-grabbing"
               onClick={() => router.push(`/ad/${ad.id}`)}
+              animate={{
+                scale: isActive ? 1 : 0.92,
+                opacity: isActive ? 1 : 0.65,
+              }}
+              transition={{ duration: 0.35 }}
+              className="relative min-w-[350px] md:min-w-[650px] h-[450px] snap-center cursor-pointer overflow-hidden rounded-[32px] group"
             >
-              <div
-                className={`w-[280px] h-[400px] md:w-[340px] md:h-[420px] rounded-2xl overflow-hidden shadow-2xl relative group ${
-                  position === "center"
-                    ? "ring-1 ring-[#F0B100]/20 shadow-[0_0_40px_rgba(240,177,0,0.1)]"
-                    : ""
-                }`}
-              >
-                {/* Image */}
-                {ad.image_url && (
-                  <Image
-                    src={ad.image_url}
-                    alt={ad.title}
-                    fill
-                    className="object-cover transition-transform duration-700 group-hover:scale-110"
-                  />
-                )}
+              {/* Image */}
+              <Image
+                src={ad.image_url!}
+                alt={ad.title}
+                fill
+                className="object-cover transition-transform duration-700 group-hover:scale-110"
+              />
 
-                {/* Dark overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent group-hover:from-black/90 transition-all duration-500" />
+              {/* Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/10" />
 
-                {/* Views badge */}
-                {ad.views_count !== undefined && (
-                  <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-black/40 backdrop-blur-md text-white/90 text-xs px-3 py-1.5 rounded-full border border-white/10">
-                    <Eye size={12} />
-                    <span>{ad.views_count}</span>
-                  </div>
-                )}
+              {/* Badge */}
+              
 
-                {/* Bottom content */}
-                <div className="absolute bottom-0 w-full px-5 pb-5 pt-16 bg-gradient-to-t from-black/70 to-transparent">
-                  {/* Date */}
-                  <p className="text-sm text-white/60 mb-1.5">
-                    {ad.created_at
-                      ? new Date(ad.created_at).toLocaleDateString(lang)
-                      : ""}
-                  </p>
+              {/* Active Indicator */}
+              {isActive && (
+                <div className="absolute top-6 right-6 z-20">
+                  <span className="bg-[#F0B100] backdrop-blur-md text-white px-4 py-1 rounded-full text-xs border border-white/20">
+                    Active
+                  </span>
+                </div>
+              )}
 
-                  {/* Title */}
-                  <h3 className="text-lg font-bold text-white truncate">
+              {/* Content */}
+              <div className="absolute bottom-0 left-0 right-0 z-20 p-8">
+                <motion.div
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{
+                    y: isActive ? 0 : 10,
+                    opacity: 1,
+                  }}
+                >
+                  <h3 className="text-white text-3xl font-bold mb-3 line-clamp-2">
                     {ad.title}
                   </h3>
 
-                  {/* Description */}
                   {ad.description && (
-                    <p className="text-xs text-gray-300/80 line-clamp-2 mt-1.5 leading-relaxed">
+                    <p className="text-gray-200 text-sm md:text-base max-w-[80%] line-clamp-3 mb-6">
                       {ad.description}
                     </p>
                   )}
-                </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-5 text-sm text-gray-300">
+                      <span>
+                        👁 {ad.views_count?.toLocaleString() || 0}
+                      </span>
+
+                      {ad.created_at && (
+                        <span>
+                          {new Date(
+                            ad.created_at
+                          ).toLocaleDateString(lang)}
+                        </span>
+                      )}
+                    </div>
+
+                    <button className="bg-[#F0B100] text-white px-6 py-3 rounded-full text-sm font-semibold hover:scale-105 transition-transform">
+                      View Details
+                    </button>
+                  </div>
+                </motion.div>
               </div>
+
+              {/* Border Effect */}
+              <div className="absolute inset-0 rounded-[32px] border border-white/10 group-hover:border-[#F0B100]/70 transition-all duration-500" />
+
+              {/* Glow */}
+              <div className="absolute inset-0 rounded-[32px] opacity-0 group-hover:opacity-100 transition-opacity duration-500 shadow-[0_0_80px_rgba(240,177,0,0.25)]" />
             </motion.div>
           );
         })}
-
-        {/* Navigation Buttons */}
-        <button
-          onClick={prev}
-          className="
-            absolute left-2 md:left-5 
-            top-1/2 -translate-y-1/2 
-            z-20 
-            px-3 py-2 md:px-4 md:py-3
-            rounded-xl
-            bg-black/30 backdrop-blur-md
-            text-white
-            border border-white/10
-            hover:bg-black/50 hover:scale-105
-            transition-all duration-200
-          "
-        >
-          <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
-        </button>
-
-        <button
-          onClick={next}
-          className="
-            absolute right-2 md:right-5 
-            top-1/2 -translate-y-1/2 
-            z-20 
-            px-3 py-2 md:px-4 md:py-3
-            rounded-xl
-            bg-black/30 backdrop-blur-md
-            text-white
-            border border-white/10
-            hover:bg-black/50 hover:scale-105
-            transition-all duration-200
-          "
-        >
-          <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
-        </button>
       </div>
     </section>
   );
