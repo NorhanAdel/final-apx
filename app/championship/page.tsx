@@ -238,7 +238,7 @@ const { theme } = useTheme();
         </div>
 
         {/* LIST */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {filtered.length > 0 ? (
             filtered.map((tItem) => (
               <TournamentCard
