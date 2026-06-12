@@ -61,10 +61,59 @@ export default function AdsCarousel() {
     }));
 
     setAds(formatted);
+
+    const middleIndex = Math.floor(formatted.length / 2);
+
+    setTimeout(() => {
+      setActive(middleIndex);
+
+      const el = scrollRef.current?.children[middleIndex] as HTMLElement;
+
+      el?.scrollIntoView({
+        behavior: "smooth",
+        inline: "center",
+        block: "nearest",
+      });
+    }, 200);
+  };
+
+  const incrementAdViews = async (adId: string) => {
+  const mutation = `
+  mutation IncrementAdViews($adId: ID!) {
+    incrementAdViews(adId: $adId) {
+      id
+      views_count
+    }
+  }
+`;
+
+    try {
+      await fetchGraphQL(mutation, { adId });
+
+      setAds((prev) =>
+        prev.map((ad) =>
+          ad.id === adId
+            ? {
+                ...ad,
+                views_count: (ad.views_count || 0) + 1,
+              }
+            : ad
+        )
+      );
+    } catch (error) {
+      console.error("Error incrementing ad views:", error);
+    }
+  };
+
+  const handleAdClick = async (adId: string) => {
+    await incrementAdViews(adId);
+    router.push(`/ad/${adId}`);
   };
 
   const scrollTo = (index: number) => {
     const el = scrollRef.current?.children[index] as HTMLElement;
+
+    setActive(index);
 
     el?.scrollIntoView({
       behavior: "smooth",
@@ -160,29 +209,28 @@ export default function AdsCarousel() {
 
       {/* Carousel */}
       <div
-  ref={scrollRef}
-  onScroll={handleScroll}
-  className="flex gap-8 overflow-x-auto scroll-smooth snap-x snap-mandatory px-2"
-  style={{
-    scrollbarWidth: "none",
-    msOverflowStyle: "none",
-  }}
->
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="flex gap-8 overflow-x-auto scroll-smooth snap-x snap-mandatory px-[25vw]"
+        style={{
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
+        }}
+      >
         {ads.map((ad, i) => {
           const isActive = i === active;
 
           return (
             <motion.div
               key={ad.id}
-              onClick={() => router.push(`/ad/${ad.id}`)}
+              onClick={() => handleAdClick(ad.id)}
               animate={{
                 scale: isActive ? 1 : 0.92,
                 opacity: isActive ? 1 : 0.65,
               }}
               transition={{ duration: 0.35 }}
-              className="relative min-w-[350px] md:min-w-[650px] h-[450px] snap-center cursor-pointer overflow-hidden rounded-[32px] group"
+              className="relative min-w-[350px] md:min-w-[550px] h-[400px] snap-center cursor-pointer overflow-hidden rounded-[32px] group"
             >
-              {/* Image */}
               <Image
                 src={ad.image_url!}
                 alt={ad.title}
@@ -190,22 +238,16 @@ export default function AdsCarousel() {
                 className="object-cover transition-transform duration-700 group-hover:scale-110"
               />
 
-              {/* Overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/10" />
 
-              {/* Badge */}
-              
-
-              {/* Active Indicator */}
               {isActive && (
                 <div className="absolute top-6 right-6 z-20">
-                  <span className="bg-[#F0B100] backdrop-blur-md text-white px-4 py-1 rounded-full text-xs border border-white/20">
+                  <span className="bg-[#F0B100] text-white px-4 py-1 rounded-full text-xs border border-white/20">
                     Active
                   </span>
                 </div>
               )}
 
-              {/* Content */}
               <div className="absolute bottom-0 left-0 right-0 z-20 p-8">
                 <motion.div
                   initial={{ y: 20, opacity: 0 }}
@@ -232,24 +274,26 @@ export default function AdsCarousel() {
 
                       {ad.created_at && (
                         <span>
-                          {new Date(
-                            ad.created_at
-                          ).toLocaleDateString(lang)}
+                          {new Date(ad.created_at).toLocaleDateString(lang)}
                         </span>
                       )}
                     </div>
 
-                    <button className="bg-[#F0B100] text-white px-6 py-3 rounded-full text-sm font-semibold hover:scale-105 transition-transform">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAdClick(ad.id);
+                      }}
+                      className="bg-[#F0B100] text-white px-6 py-3 rounded-full text-sm font-semibold hover:scale-105 transition-transform"
+                    >
                       View Details
                     </button>
                   </div>
                 </motion.div>
               </div>
 
-              {/* Border Effect */}
               <div className="absolute inset-0 rounded-[32px] border border-white/10 group-hover:border-[#F0B100]/70 transition-all duration-500" />
 
-              {/* Glow */}
               <div className="absolute inset-0 rounded-[32px] opacity-0 group-hover:opacity-100 transition-opacity duration-500 shadow-[0_0_80px_rgba(240,177,0,0.25)]" />
             </motion.div>
           );
