@@ -29,7 +29,7 @@ const TournamentCard = ({ id, title, date, image }: CardProps) => {
   return (
     <div
       onClick={() => router.push(`/championship/${id}`)}
-      className="group relative bg-[#050510] border border-yellow-600/30 overflow-hidden cursor-pointer"
+      className="group relative bg-[#050510] rounded-2xl border border-yellow-600/30 overflow-hidden cursor-pointer"
     >
       <div className="relative aspect-square w-full">
 
