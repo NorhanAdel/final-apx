@@ -221,15 +221,15 @@ export default function VerifyOtpPage() {
   const getRedirectPath = (role: string, hasProfile: boolean): string => {
     switch (role) {
       case "PLAYER":
-        return hasProfile ? "/" : "/profile";
+        return hasProfile ? "/" : "/";
       case "CLUB":
-        return hasProfile ? "/" : "/clubprofile/profile";
+        return hasProfile ? "/" : "/";
       case "SCOUT":
-        return hasProfile ? "/" : "/scout/profile";
+        return hasProfile ? "/" : "/";
       case "AGENT":
-        return hasProfile ? "/" : "/agent/profile";
+        return hasProfile ? "/" : "/";
       case "USER":
-        return hasProfile ? "/" : "/user/profile";
+        return hasProfile ? "/" : "/";
       case "ADMIN":
         return "/admin/dashboard";
       default:
