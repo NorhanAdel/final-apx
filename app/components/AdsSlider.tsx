@@ -60,21 +60,8 @@ export default function AdsCarousel() {
         : `${API_URL}${ad.image_url}`,
     }));
 
-    setAds(formatted);
-
-    const middleIndex = Math.floor(formatted.length / 2);
-
-    setTimeout(() => {
-      setActive(middleIndex);
-
-      const el = scrollRef.current?.children[middleIndex] as HTMLElement;
-
-      el?.scrollIntoView({
-        behavior: "smooth",
-        inline: "center",
-        block: "nearest",
-      });
-    }, 200);
+ setAds(formatted);
+setActive(0);
   };
 
   const incrementAdViews = async (adId: string) => {
@@ -211,7 +198,7 @@ export default function AdsCarousel() {
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex gap-8 overflow-x-auto scroll-smooth snap-x snap-mandatory px-[25vw]"
+       className="flex gap-8 overflow-x-auto scroll-smooth snap-x snap-mandatory px-2"
         style={{
           scrollbarWidth: "none",
           msOverflowStyle: "none",
