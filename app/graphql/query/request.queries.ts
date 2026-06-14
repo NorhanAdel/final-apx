@@ -8,7 +8,9 @@ export const GET_INCOMING_REQUESTS = `
       sender_role
       senderName
       playerName
-      payload
+      payload {
+        message
+      }
       created_at
       updated_at
     }
@@ -39,7 +41,9 @@ export const GET_MY_SENT_REQUESTS = `
       player_id
       senderName
       playerName
-      payload
+      payload {
+        message
+      }
       created_at
       updated_at
     }

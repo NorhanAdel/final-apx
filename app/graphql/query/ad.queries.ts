@@ -112,12 +112,33 @@ export const GET_AVAILABLE_AD_DURATIONS = `
   }
 `;
 
+export const GET_AVAILABLE_AD_DURATIONS_FOR_ORG = `
+  query GetAvailableAdDurationsForOrg {
+    availableAdDurationsForOrg {
+      id
+      days
+      price
+    }
+  }
+`;
+
 export const GET_MY_UPLOAD_LIMITS = `
   query GetMyUploadLimits {
     myUploadLimits {
       max_ads
       uploaded_ads
       remaining_ads
+      can_create_ad
+    }
+  }
+`;
+
+export const GET_MY_ORGANIZATION_LIMITS = `
+  query MyOrganizationLimits {
+    myOrganizationLimits {
+      max_ads
+      ads_used
+      ads_remaining
       can_create_ad
     }
   }

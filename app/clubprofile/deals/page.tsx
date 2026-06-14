@@ -13,6 +13,8 @@ import {
   Loader2,
   Filter,
   ChevronDown,
+  Search,
+  X,
 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import useTranslate from "../../hooks/useTranslate";
@@ -21,6 +23,7 @@ import {
   GET_DEALS_BY_STATUS,
   GET_PLAYERS_FOR_DEALS,
 } from "@/app/graphql/query/deal.queries";
+import { SEARCH_PLAYERS } from "@/app/graphql/query/player.queries";
 import {
   CREATE_DEAL,
   UPDATE_DEAL,
@@ -127,6 +130,9 @@ export default function ClubDealsPage() {
   const [filteredDeals, setFilteredDeals] = useState<Deal[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [searchingPlayers, setSearchingPlayers] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [dealToDelete, setDealToDelete] = useState<Deal | null>(null);
@@ -188,6 +194,29 @@ export default function ClubDealsPage() {
         deals.filter((deal) => deal.status.toUpperCase() === statusFilter),
       );
   }, [statusFilter, deals]);
+
+  useEffect(() => {
+    if (!searchTerm || !isDropdownOpen) return;
+
+    const delayDebounceFn = setTimeout(async () => {
+      setSearchingPlayers(true);
+      try {
+        const result = await fetchGraphQL<{ searchPlayers: { data: Player[] } }>(
+          SEARCH_PLAYERS,
+          { query: searchTerm, skip: 0, take: 50 },
+        );
+        if (result.data?.searchPlayers?.data) {
+          setPlayers(result.data.searchPlayers.data);
+        }
+      } catch (error) {
+        console.error("Error searching players:", error);
+      } finally {
+        setSearchingPlayers(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm, isDropdownOpen]);
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -479,29 +508,102 @@ export default function ClubDealsPage() {
                 >
                   {t("Player")} <span className="text-red-500">*</span>
                 </label>
-                <select
-                  name="player_id"
-                  value={formData.player_id}
-                  onChange={handleInputChange}
-                  disabled={!!editingDeal}
-                  className={`w-full rounded-lg px-4 py-2 outline-none border ${
-                    isDark
-                      ? "bg-[#0b1736] border-[#1e2a5a] text-white focus:border-yellow-400"
-                      : "bg-white border-gray-300 text-black focus:border-yellow-400"
-                  } ${errors.player_id ? "border-red-500" : ""}`}
-                  required
-                >
-                  <option value="">{t("Select Player")}</option>
-                  {players.map((player) => (
-                    <option key={player.id} value={player.id}>
-                      {player.first_name} {player.last_name}
-                    </option>
-                  ))}
-                </select>
-                {errors.player_id && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.player_id}
-                  </p>
+                {!formData.player_id ? (
+                  <div className="relative">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                      <input
+                        type="text"
+                        placeholder={t("Search players by name...")}
+                        value={searchTerm}
+                        onChange={(e) => {
+                          setSearchTerm(e.target.value);
+                          setIsDropdownOpen(true);
+                          if (!e.target.value) fetchPlayers();
+                        }}
+                        onFocus={() => setIsDropdownOpen(true)}
+                        className={`w-full rounded-lg pl-10 pr-4 py-2 outline-none border ${
+                          isDark
+                            ? "bg-[#0b1736] border-[#1e2a5a] text-white focus:border-yellow-400"
+                            : "bg-white border-gray-300 text-black focus:border-yellow-400"
+                        } ${errors.player_id ? "border-red-500" : ""}`}
+                        disabled={!!editingDeal}
+                      />
+                    </div>
+
+                    {isDropdownOpen && (
+                      <div
+                        className={`absolute top-full left-0 right-0 mt-1 rounded-lg shadow-lg overflow-hidden z-50 border max-h-60 overflow-y-auto ${
+                          isDark
+                            ? "bg-[#0b1736] border-[#1e2a5a]"
+                            : "bg-white border-gray-200"
+                        }`}
+                      >
+                        {searchingPlayers ? (
+                          <div className="p-4 text-center text-sm text-gray-500">
+                            <Loader2 size={16} className="animate-spin inline mr-2" />
+                            {t("Searching...")}
+                          </div>
+                        ) : players.length > 0 ? (
+                          players.map((player) => (
+                            <div
+                              key={player.id}
+                              onClick={() => {
+                                setFormData((prev) => ({ ...prev, player_id: player.id }));
+                                setSearchTerm("");
+                                setIsDropdownOpen(false);
+                                setPlayers([player]);
+                                setErrors((prev) => ({ ...prev, player_id: "" }));
+                              }}
+                              className={`p-3 cursor-pointer flex items-center gap-3 transition ${
+                                isDark
+                                  ? "hover:bg-[#1e2a5a] text-white"
+                                  : "hover:bg-gray-50 text-black"
+                              }`}
+                            >
+                              <div className="w-8 h-8 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                                {player.profile_image_url ? (
+                                  <img src={player.profile_image_url} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                  <User size={14} className="text-gray-500" />
+                                )}
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium">
+                                  {player.first_name} {player.last_name}
+                                </p>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="p-4 text-center text-sm text-gray-500">
+                            {t("No players found")}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {errors.player_id && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {errors.player_id}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex justify-between items-center bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400 p-3 rounded-lg">
+                    <span className="text-sm font-medium">✓ {t("Player Selected")}</span>
+                    {!editingDeal && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData((prev) => ({ ...prev, player_id: "" }));
+                          fetchPlayers();
+                        }}
+                        className="text-xs flex items-center gap-1 hover:text-green-700 dark:hover:text-green-300 transition"
+                      >
+                        <X size={14} /> {t("Change")}
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
 

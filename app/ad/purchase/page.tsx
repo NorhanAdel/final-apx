@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { fetchGraphQL } from "@/app/lib/fetchGraphQL";
 import { useTheme } from "@/app/context/ThemeContext";
+import { useAuth } from "@/app/context/auth-context";
 
 import { AdDurationSelector } from "@/app/components/AdDurationSelector";
 import { PaymentForm } from "@/app/components/PaymentForm";
@@ -22,6 +23,10 @@ interface PurchaseResponse {
       success: boolean;
       purchase_id: string;
     };
+    purchaseOrgAdWithDuration?: {
+      success: boolean;
+      purchase_id: string;
+    };
   };
 
   errors?: {
@@ -33,6 +38,7 @@ export default function PurchaseAdPage() {
   const router = useRouter();
 
   const { theme } = useTheme();
+  const { user } = useAuth();
 
   const [selectedDuration, setSelectedDuration] =
     useState<Duration | null>(null);
@@ -54,15 +60,26 @@ export default function PurchaseAdPage() {
     try {
       setIsProcessing(true);
 
-      const result = (await fetchGraphQL(
-        `
+      const isOrg = ["CLUB", "SCOUT", "AGENT"].includes(user?.role || "");
+      
+      const query = isOrg ? `
+        mutation PurchaseOrgAdWithDuration($input: PurchaseOrgAdWithDurationInput!) {
+          purchaseOrgAdWithDuration(input: $input) {
+            success
+            purchase_id
+          }
+        }
+      ` : `
         mutation PurchaseAdWithDuration($input: PurchaseAdWithDurationInput!) {
           purchaseAdWithDuration(input: $input) {
             success
             purchase_id
           }
         }
-        `,
+      `;
+
+      const result = (await fetchGraphQL(
+        query,
         {
           input: {
             ad_duration_pricing_id: selectedDuration.id,
@@ -82,12 +99,16 @@ export default function PurchaseAdPage() {
         return;
       }
 
-      if (result?.data?.purchaseAdWithDuration?.success) {
+      const success = isOrg 
+        ? result?.data?.purchaseOrgAdWithDuration?.success 
+        : result?.data?.purchaseAdWithDuration?.success;
+
+      if (success) {
         toast.success(
           `Ad slot purchased successfully! (${selectedDuration.days} days)`
         );
 
-        router.push(`/profile/share?days=${selectedDuration.days}`);
+        router.push(`/clubprofile/shareAd?days=${selectedDuration.days}`);
       }
     } catch (error) {
       console.error(error);

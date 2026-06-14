@@ -1,6 +1,6 @@
 export const CREATE_USER_PROFILE = `
-  mutation CreateUserProfile($input: CreateUserProfileInput!, $profile_image: Upload) {
-    createUserProfile(input: $input, profile_image: $profile_image) {
+  mutation CreateUserProfile($input: CreateUserProfileInput!) {
+    createUserProfile(input: $input) {
       id
       first_name
       last_name

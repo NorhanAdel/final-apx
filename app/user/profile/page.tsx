@@ -212,7 +212,6 @@ export default function UserPersonalInformation() {
       let result;
 
       if (isEditing && existingProfile) {
-        // تحديث باستخدام uploadGraphQL إذا كانت هناك صورة
         if (hasImageChanges()) {
           const variables: Record<string, unknown> = { input };
           if (imageFile) {
@@ -223,15 +222,18 @@ export default function UserPersonalInformation() {
           result = await fetchGraphQL(UPDATE_USER_PROFILE, { input });
         }
       } else {
-        // إنشاء جديد باستخدام uploadGraphQL إذا كانت هناك صورة
-        if (hasImageChanges()) {
-          const variables: Record<string, unknown> = { input };
-          if (imageFile) {
-            variables.profile_image = imageFile;
+        // Create new profile (image not supported in mutation)
+        result = await fetchGraphQL(CREATE_USER_PROFILE, { input });
+        
+        // If creation succeeded and we have an image, update the profile with it
+        if (!result.errors && (result.data as Record<string, unknown>)?.createUserProfile && hasImageChanges() && imageFile) {
+          const updateVariables: Record<string, unknown> = { input };
+          updateVariables.profile_image = imageFile;
+          
+          const uploadResult = await uploadGraphQL(UPDATE_USER_PROFILE, updateVariables);
+          if (uploadResult.errors) {
+            toast.error(t("Profile created, but failed to upload image"));
           }
-          result = await uploadGraphQL(CREATE_USER_PROFILE, variables);
-        } else {
-          result = await fetchGraphQL(CREATE_USER_PROFILE, { input });
         }
       }
 

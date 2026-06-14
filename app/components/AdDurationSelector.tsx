@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { fetchGraphQL } from "@/app/lib/fetchGraphQL";
-import { GET_AVAILABLE_AD_DURATIONS } from "@/app/graphql/query/ad.queries";
+import { GET_AVAILABLE_AD_DURATIONS, GET_AVAILABLE_AD_DURATIONS_FOR_ORG } from "@/app/graphql/query/ad.queries";
+import { useAuth } from "@/app/context/auth-context";
 
 interface AdDuration {
   id: string;
@@ -18,7 +19,8 @@ interface Props {
 
 interface GraphQLResponse {
   data: {
-    availableAdDurationsForPlayer: AdDuration[];
+    availableAdDurationsForPlayer?: AdDuration[];
+    availableAdDurationsForOrg?: AdDuration[];
   };
   errors?: Array<{ message: string }>;
 }
@@ -28,6 +30,7 @@ export function AdDurationSelector({
   selectedId,
   className = "",
 }: Props) {
+  const { user, isLoading: authLoading } = useAuth();
   const [durations, setDurations] = useState<AdDuration[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,11 +40,17 @@ export function AdDurationSelector({
       setLoading(true);
       setError(null);
 
+      const isOrg = ["CLUB", "SCOUT", "AGENT"].includes(user?.role || "");
+      const query = isOrg ? GET_AVAILABLE_AD_DURATIONS_FOR_ORG : GET_AVAILABLE_AD_DURATIONS;
+
       const result = (await fetchGraphQL(
-        GET_AVAILABLE_AD_DURATIONS,
+        query,
       )) as GraphQLResponse;
 
-      const adDurations = result?.data?.availableAdDurationsForPlayer || [];
+      const adDurations = isOrg
+        ? result?.data?.availableAdDurationsForOrg || []
+        : result?.data?.availableAdDurationsForPlayer || [];
+        
       setDurations(adDurations);
 
       if (adDurations.length > 0 && !selectedId) {
@@ -53,11 +62,13 @@ export function AdDurationSelector({
     } finally {
       setLoading(false);
     }
-  }, [selectedId, onSelect]);
+  }, [selectedId, onSelect, user?.role]);
 
   useEffect(() => {
-    fetchDurations();
-  }, [fetchDurations]);
+    if (!authLoading) {
+      fetchDurations();
+    }
+  }, [fetchDurations, authLoading]);
 
   if (loading) {
     return (

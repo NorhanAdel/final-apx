@@ -9,7 +9,9 @@ export const SEND_REQUEST_MUTATION = `
       sender_role
       senderName
       playerName
-      payload
+      payload {
+        message
+      }
       created_at
       updated_at
     }
@@ -25,8 +27,10 @@ export const RESPOND_TO_REQUEST = `
       sender_role
       senderName
       playerName
-      payload
-      admin_notified
+      payload {
+        message
+      }
+      admin_id
       created_at
       updated_at
     }

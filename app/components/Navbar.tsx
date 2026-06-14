@@ -373,7 +373,8 @@ const requireSubscription = (callback: () => void) => {
   <Link
   href={getProfileLink()}
   onClick={(e) => {
-    if (!activeUser?.has_active_subscription) {
+    const requiresSub = ["PLAYER", "CLUB", "SCOUT", "AGENT"].includes(activeUser?.role || "");
+    if (requiresSub && !activeUser?.has_active_subscription) {
       e.preventDefault();
       router.push(getCheckoutRoute());
       return;

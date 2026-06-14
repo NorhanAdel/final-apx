@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   ImagePlus,
   Video,
@@ -11,20 +12,21 @@ import {
   Play,
 } from "lucide-react";
 import Image from "next/image";
+import { useTheme } from "../../context/ThemeContext";
+import useTranslate from "../../hooks/useTranslate";
+import { fetchGraphQL } from "../../lib/fetchGraphQL";
+import { uploadGraphQL } from "../../lib/uploadGraphQL";
 import {
   CREATE_AD_WITH_IMAGE,
   CREATE_AD_WITH_VIDEO,
   UPDATE_AD,
   DELETE_AD,
 } from "@/app/graphql/mutation/ad.mutations";
-import { GET_MY_ADS } from "@/app/graphql/query/ad.queries";
+import { GET_MY_ADS, GET_MY_ORGANIZATION_LIMITS } from "@/app/graphql/query/ad.queries";
 import { toast } from "sonner";
-import { useTheme } from "@/app/context/ThemeContext";
-import useTranslate from "@/app/hooks/useTranslate";
-import { uploadGraphQL } from "@/app/lib/uploadGraphQL";
-import { fetchGraphQL } from "@/app/lib/fetchGraphQL";
 import BackButton from "@/app/components/BackButton";
-
+import { ShoppingCart } from "lucide-react";
+import { useRouter } from "next/navigation";
 interface Ad {
   id: string;
   title: string;
@@ -45,6 +47,20 @@ interface Ad {
   };
 }
 
+
+interface UploadLimits {
+  max_ads: number;
+  uploaded_ads: number;
+  remaining_ads: number;
+  can_create_ad: boolean;
+}
+
+interface OrgLimits {
+  max_ads: number;
+  ads_used: number;
+  ads_remaining: number;
+  can_create_ad: boolean;
+}
 function getFullUrl(url: string | undefined): string {
   if (!url) return "";
   if (url.startsWith("blob:") || url.startsWith("http")) return url;
@@ -158,15 +174,35 @@ function VideoPreviewModal({
   );
 }
 
-export default function ShareAdPage() {
+function ShareAdPageContent() {
   const { theme } = useTheme();
   const { t } = useTranslate();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
+  const [uploadLimits, setUploadLimits] =
+    useState<UploadLimits | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [targetRole, setTargetRole] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
+  const [autoExpiryDays, setAutoExpiryDays] = useState<number | null>(null);
   const [mediaType, setMediaType] = useState<"image" | "video">("image");
+
+  // Auto-set expiry date from purchased duration
+  useEffect(() => {
+    const daysParam = searchParams.get("days");
+    if (daysParam) {
+      const days = parseInt(daysParam, 10);
+      if (!isNaN(days) && days > 0) {
+        const expiry = new Date();
+        expiry.setDate(expiry.getDate() + days);
+        const formatted = expiry.toISOString().split("T")[0];
+        setExpiresAt(formatted);
+        setAutoExpiryDays(days);
+      }
+    }
+  }, [searchParams]);
 
   const imageFileRef = useRef<HTMLInputElement | null>(null);
   const videoFileRef = useRef<HTMLInputElement | null>(null);
@@ -198,15 +234,35 @@ export default function ShareAdPage() {
       setLoading(false);
     }
   }, [t]);
+const fetchUploadLimits = useCallback(async () => {
+  try {
+    const result = await fetchGraphQL<{
+      myOrganizationLimits: OrgLimits;
+    }>(GET_MY_ORGANIZATION_LIMITS);
 
-  useEffect(() => {
-    fetchMyAds();
-  }, [fetchMyAds]);
+    if (result.data?.myOrganizationLimits) {
+      setUploadLimits({
+        max_ads: result.data.myOrganizationLimits.max_ads,
+        uploaded_ads: result.data.myOrganizationLimits.ads_used,
+        remaining_ads: result.data.myOrganizationLimits.ads_remaining,
+        can_create_ad: result.data.myOrganizationLimits.can_create_ad,
+      });
+    }
+  } catch (error) {
+    console.error("Error fetching upload limits:", error);
+  }
+}, []);
+ useEffect(() => {
+  fetchMyAds();
+  fetchUploadLimits();
+}, [fetchMyAds, fetchUploadLimits]);
 
   const handleImageClick = () => {
     imageFileRef.current?.click();
   };
-
+const handleBuyAd = () => {
+  router.push("/ad/purchase");
+};
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -268,7 +324,6 @@ const handleCreateAd = async () => {
       title: title.trim(),
       description: description.trim() || undefined,
       target_role: targetRole || undefined,
-      expires_at: expiresAt ? new Date(expiresAt).toISOString() : undefined,
     };
 
     let result;
@@ -322,7 +377,6 @@ const handleUpdateAd = async () => {
     };
     if (description.trim()) input.description = description.trim();
     if (targetRole) input.target_role = targetRole;
-    if (expiresAt) input.expires_at = new Date(expiresAt).toISOString();
 
     const result = await fetchGraphQL<{ updateAd: Ad }>(UPDATE_AD, {
       adId: editingAd.id,
@@ -412,12 +466,34 @@ const handleUpdateAd = async () => {
 
   return (
     <div
-      className={`min-h-screen flex py-20 items-center justify-center px-4 sm:px-6 transition
+      className={`min-h-screen flex py-30 items-center justify-center px-4 sm:px-6 transition
       ${isDark ? "bg-[#020617] text-white" : "bg-[#f9fafb] text-black"}`}
     >
       <div className="w-full max-w-3xl py-12">
         <BackButton className="mb-6" />
-        
+<div
+  className={`p-4 rounded-xl mb-6 flex items-center justify-between ${
+    isDark
+      ? "bg-[#0a0f2c] border border-[#1e2a5a]"
+      : "bg-white border border-gray-200 shadow"
+  }`}
+>
+  <div>
+    <p className="text-sm opacity-70">{t("Remaining Ads")}</p>
+    <p className="text-2xl font-bold">
+      {uploadLimits?.remaining_ads || 0} /
+      {uploadLimits?.max_ads || 0}
+    </p>
+  </div>
+
+  <button
+    onClick={handleBuyAd}
+    className="px-4 py-2 rounded-lg bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-bold hover:scale-105 transition flex items-center gap-2"
+  >
+    <ShoppingCart size={18} />
+    {t("Buy Ad Slot")}
+  </button>
+</div>
         <h1
           className={`text-center text-2xl sm:text-3xl font-bold mb-8
           ${isDark ? "text-yellow-400" : "text-[#F0B100]"}`}
@@ -675,14 +751,21 @@ const handleUpdateAd = async () => {
               <input
                 type="date"
                 value={expiresAt}
-                onChange={(e) => setExpiresAt(e.target.value)}
-                className={`w-full rounded-lg px-4 py-3 outline-none border transition
+                readOnly
+                className={`w-full rounded-lg px-4 py-3 outline-none border transition cursor-not-allowed opacity-70
                 ${
                   isDark
-                    ? "bg-[#0a0f2c] border-[#1e2a5a] text-white focus:border-yellow-400"
-                    : "bg-white border-gray-300 text-black shadow-sm focus:border-[#F0B100]"
+                    ? "bg-[#0a0f2c] border-[#1e2a5a] text-white"
+                    : "bg-gray-100 border-gray-300 text-black shadow-sm"
                 }`}
               />
+              {autoExpiryDays && (
+                <p className={`mt-1.5 text-xs ${
+                  isDark ? "text-yellow-400/70" : "text-yellow-600"
+                }`}>
+                  ✓ {t("Auto-set from your")} {autoExpiryDays}-{t("day purchased ad duration")}
+                </p>
+              )}
             </div>
 
             <div className="flex gap-4">
@@ -862,5 +945,13 @@ const handleUpdateAd = async () => {
         isDark={isDark}
       />
     </div>
+  );
+}
+
+export default function ShareAdPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <ShareAdPageContent />
+    </Suspense>
   );
 }
