@@ -159,7 +159,7 @@ export default function Hero() {
                 theme === "dark" ? "text-white" : "text-black"
               }`}
             >
-              Cr Super 7 Bourse
+            Super 7 Bourse
             </motion.h1>
 
             <p
