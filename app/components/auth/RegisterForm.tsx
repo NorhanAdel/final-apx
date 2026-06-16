@@ -175,42 +175,41 @@ export default function RegisterForm({
         )}
       </div>
 
+       
       {/* Role Field */}
-      <div className="mb-5 sm:mb-6">
-        <label className="text-gray-200 font-semibold text-sm block mb-1">
-          Role
-        </label>
-        <div
-          className={`bg-white/30 rounded-xl px-3 sm:px-4 transition-all duration-200 ${
-            errors.role && touchedFields.role
-              ? "border-2 border-red-500 ring-2 ring-red-500/20"
-              : isRoleValid && touchedFields.role
-              ? "border-2 border-green-500"
-              : "border border-transparent"
-          }`}
-        >
-          <select
-            className="w-full py-2 sm:py-3 bg-transparent outline-none text-white text-sm sm:text-base"
-            {...register("role")}
-          >
-            {roleOptions.map((option) => (
-              <option
-                key={option.value}
-                value={option.value}
-                className="text-black"
-              >
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        {errors.role && touchedFields.role && (
-          <p className="text-red-400 text-xs mt-1 flex items-center gap-1">
-            <AlertCircle size={12} />
-            {errors.role.message}
-          </p>
-        )}
-      </div>
+<div className="mb-5 sm:mb-6">
+  <label className="text-gray-200 font-semibold text-sm block mb-3">
+    Select Role
+  </label>
+
+  <div className="grid grid-cols-2 gap-3">
+    {roleOptions.map((role) => (
+      <button
+        key={role.value}
+        type="button"
+        onClick={() =>
+          form.setValue("role", role.value as RegisterFormData["role"], {
+            shouldValidate: true,
+          })
+        }
+        className={`rounded-xl p-3 border transition-all duration-300 ${
+          roleValue === role.value
+            ? "bg-yellow-400 text-black border-yellow-400"
+            : "bg-white/10 text-white border-white/20 hover:bg-white/20"
+        }`}
+      >
+        {role.label}
+      </button>
+    ))}
+  </div>
+
+  {errors.role && touchedFields.role && (
+    <p className="text-red-400 text-xs mt-2 flex items-center gap-1">
+      <AlertCircle size={12} />
+      {errors.role.message}
+    </p>
+  )}
+</div>
 
       {/* Submit Button */}
       <button
