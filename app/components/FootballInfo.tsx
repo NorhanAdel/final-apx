@@ -140,10 +140,7 @@ export default function FootballInfo({ playerId }: FootballInfoProps) {
           <strong>{t("Strengths")}:</strong>{" "}
           {formatStrengths(footballInfo.strengths)}
         </li>
-        <li className={textColor}>
-          <strong>{t("Market Value")}:</strong>{" "}
-          {formatMarketValue(footballInfo.market_value)}
-        </li>
+        
         {footballInfo.description && (
           <li className={textColor}>
             <strong>{t("Description")}:</strong>
