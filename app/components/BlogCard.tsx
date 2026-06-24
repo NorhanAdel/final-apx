@@ -23,41 +23,119 @@ export default function BlogCard({ blog }: { blog: Blog }) {
     return `${process.env.NEXT_PUBLIC_API_URL}${url}`;
   };
 
-return (
-  <div
-    onClick={() => router.push(`/blog/${blog.id}`)}
-    className="cursor-pointer group"
-  >
-    <div className="relative w-full h-[450px] rounded-3xl overflow-hidden shadow-2xl">
-
+  return (
+    <div
+      onClick={() => router.push(`/blog/${blog.id}`)}
+      className="
+        group cursor-pointer
+        relative
+        h-[420px]
+        rounded-3xl overflow-hidden
+        transition-all duration-500
+        hover:-translate-y-2 hover:shadow-2xl
+      "
+    >
+      {/* IMAGE */}
       <Image
         src={getImage(blog.cover_image_url)}
         alt={blog.title}
         fill
-        className="object-cover transition duration-500 group-hover:scale-105"
+        className="
+          object-cover
+          scale-105
+          transition duration-700
+          group-hover:scale-110
+        "
       />
 
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition" />
+      {/* GRADIENT OVERLAY */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
 
-      {/* Content */}
-      <div className="absolute bottom-5 left-0 right-0 text-center text-white px-4">
+      {/* TOP BADGE (DATE + VIEWS) */}
+      <div className="absolute top-4 left-4 right-4 flex justify-between items-center">
 
-        <p className="text-sm opacity-70 mb-2">
-          {new Date(blog.created_at).toLocaleDateString()}
-        </p>
-
-        {/* Views */}
-        <div className="flex items-center justify-center gap-2 text-sm opacity-80 mb-2">
-          👁️ {blog.views_count} views
+        {/* DATE */}
+        <div
+          className="
+            flex items-center gap-2
+            px-3 py-1
+            rounded-full
+            bg-black/40
+            backdrop-blur-md
+            border border-white/10
+          "
+        >
+          <Calendar size={14} className="text-yellow-400" />
+          <span className="text-xs text-white">
+            {new Date(blog.created_at).toLocaleDateString()}
+          </span>
         </div>
 
-        <h3 className="text-xl md:text-2xl font-semibold line-clamp-2">
+        {/* VIEWS */}
+        <div
+          className="
+            flex items-center gap-2
+            px-3 py-1
+            rounded-full
+            bg-black/40
+            backdrop-blur-md
+            border border-white/10
+          "
+        >
+          <Eye size={14} className="text-yellow-400" />
+          <span className="text-xs text-white">
+            {blog.views_count}
+          </span>
+        </div>
+
+      </div>
+
+      {/* TITLE AREA */}
+      <div className="absolute bottom-0 p-6 w-full">
+
+        <h3 className="
+          text-white
+          text-xl md:text-2xl
+          font-extrabold
+          leading-snug
+          line-clamp-2
+        ">
           {blog.title}
         </h3>
 
+        {/* CTA */}
+        <div
+          className="
+            mt-4
+            flex items-center justify-between
+          "
+        >
+          <span className="text-white/60 text-sm">
+            Read article
+          </span>
+
+          <span
+            className="
+              text-yellow-400 text-sm font-bold
+              opacity-0 group-hover:opacity-100
+              transition
+            "
+          >
+            Open →
+          </span>
+        </div>
+
       </div>
+
+      {/* HOVER LIGHT EFFECT */}
+      <div
+        className="
+          absolute inset-0
+          opacity-0 group-hover:opacity-100
+          transition
+          bg-gradient-to-t from-yellow-500/10 to-transparent
+        "
+      />
     </div>
-  </div>
-);
+  );
 }
