@@ -64,27 +64,49 @@ export default function PlayerGallery({ player }: PlayerGalleryProps) {
         />
       </div>
 
-      <div className="flex gap-3 justify-end mt-4">
-        {displayImages.map((img, i) => (
-          <Image
-            key={i}
-            src={img}
-            width={70}
-            height={70}
-            alt="thumb"
-            onClick={() => setActive(img)}
-            className={`cursor-pointer rounded-lg object-cover transition ${
-              active === img
-                ? "ring-2 ring-yellow-400"
-                : "opacity-80 hover:opacity-100"
-            }`}
-            unoptimized
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = "/b2.jpg";
-            }}
-          />
-        ))}
-      </div>
+     <div className="
+mt-5
+flex
+gap-3
+overflow-x-auto
+bg-[#09111f]
+rounded-3xl
+p-3
+custom-scroll
+border border-white/10
+">
+  {displayImages.map((img, i) => (
+    <button
+      key={i}
+      onClick={() => setActive(img)}
+      className={`
+      flex-shrink-0
+      rounded-2xl
+      overflow-hidden
+      transition-all
+      duration-300
+      border-2
+      ${
+        active === img
+          ? "border-yellow-400 scale-105 shadow-lg shadow-yellow-500/30"
+          : "border-transparent opacity-70 hover:opacity-100"
+      }
+    `}
+    >
+      <Image
+        src={img}
+        width={70}
+        height={70}
+        alt="thumb"
+        className="w-[65px] h-[65px] md:w-[75px] md:h-[75px] object-cover"
+        unoptimized
+        onError={(e) => {
+          (e.target as HTMLImageElement).src = "/b2.jpg";
+        }}
+      />
+    </button>
+  ))}
+</div>
     </div>
   );
 }
