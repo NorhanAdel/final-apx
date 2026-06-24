@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Search, ChevronDown } from "lucide-react";
+import { Search } from "lucide-react";
 import TournamentCard from "../components/TournamentCard";
 import { fetchGraphQL } from "../lib/fetchGraphQL";
 import { useTheme } from "../context/ThemeContext";
+
 const CHAMPIONS_QUERY = `
   query {
     champions(skip: 0, take: 50) {
@@ -23,14 +24,12 @@ const CHAMPIONS_QUERY = `
   }
 `;
 
-// =========================
-// TRANSLATION
-// =========================
 const tDict: any = {
   ar: {
     search: "بحث",
     sort: "ترتيب",
     noData: "لا يوجد مسابقات",
+    all: "كل المسابقات",
     newest: "الأحدث",
     oldest: "الأقدم",
     endingSoon: "الأقرب انتهاء",
@@ -38,48 +37,17 @@ const tDict: any = {
     winners: "أكبر عدد فائزين",
     active: "النشطة أولاً",
   },
-  en: {
-    search: "Search",
-    sort: "Sort",
-    noData: "No Champions Found",
-    newest: "Newest",
-    oldest: "Oldest",
-    endingSoon: "Ending Soon",
-    popular: "Most Popular",
-    winners: "Most Winners",
-    active: "Active First",
-  },
-  zh: {
-    search: "搜索",
-    sort: "排序",
-    noData: "没有比赛",
-    newest: "最新",
-    oldest: "最旧",
-    endingSoon: "即将结束",
-    popular: "最受欢迎",
-    winners: "最多获胜者",
-    active: "优先活动",
-  },
-  ru: {
-    search: "Поиск",
-    sort: "Сортировка",
-    noData: "Нет данных",
-    newest: "Новые",
-    oldest: "Старые",
-    endingSoon: "Скоро заканчивается",
-    popular: "Популярные",
-    winners: "Больше победителей",
-    active: "Активные",
-  },
 };
 
 export default function TournamentGallery() {
   const [data, setData] = useState<any[]>([]);
   const [filtered, setFiltered] = useState<any[]>([]);
   const [search, setSearch] = useState("");
-  const [sort, setSort] = useState("newest");
+  const [sort, setSort] = useState("all"); // ✅ default = all
   const [lang, setLang] = useState("ar");
-const { theme } = useTheme();
+
+  const { theme } = useTheme();
+
   const t = tDict[lang] || tDict.ar;
 
   useEffect(() => {
@@ -103,9 +71,6 @@ const { theme } = useTheme();
     fetchData();
   }, [lang]);
 
-  // =========================
-  // SEARCH + SORT
-  // =========================
   useEffect(() => {
     let result = [...data];
 
@@ -116,54 +81,57 @@ const { theme } = useTheme();
       );
     }
 
-    // SORT LOGIC
-    if (sort === "newest") {
-      result.sort(
-        (a, b) =>
-          new Date(b.created_at).getTime() -
-          new Date(a.created_at).getTime()
-      );
-    }
+    // SORT
+    switch (sort) {
+      case "all":
+        // default: no sorting
+        break;
 
-    if (sort === "oldest") {
-      result.sort(
-        (a, b) =>
-          new Date(a.created_at).getTime() -
-          new Date(b.created_at).getTime()
-      );
-    }
+      case "newest":
+        result.sort(
+          (a, b) =>
+            new Date(b.created_at).getTime() -
+            new Date(a.created_at).getTime()
+        );
+        break;
 
-    if (sort === "endingSoon") {
-      result.sort(
-        (a, b) =>
-          new Date(a.expiry_date).getTime() -
-          new Date(b.expiry_date).getTime()
-      );
-    }
+      case "oldest":
+        result.sort(
+          (a, b) =>
+            new Date(a.created_at).getTime() -
+            new Date(b.created_at).getTime()
+        );
+        break;
 
-    if (sort === "popular") {
-      result.sort((a, b) => b.answers_count - a.answers_count);
-    }
+      case "endingSoon":
+        result.sort(
+          (a, b) =>
+            new Date(a.expiry_date).getTime() -
+            new Date(b.expiry_date).getTime()
+        );
+        break;
 
-    if (sort === "winners") {
-      result.sort((a, b) => b.winners_count - a.winners_count);
-    }
+      case "popular":
+        result.sort((a, b) => b.answers_count - a.answers_count);
+        break;
 
-    if (sort === "active") {
-      result.sort((a, b) => {
-        if (a.status === b.status) return 0;
-        if (a.status === "Active") return -1;
-        return 1;
-      });
+      case "winners":
+        result.sort((a, b) => b.winners_count - a.winners_count);
+        break;
+
+      case "active":
+        result.sort((a, b) => {
+          if (a.status === b.status) return 0;
+          return a.status === "Active" ? -1 : 1;
+        });
+        break;
     }
 
     setFiltered(result);
   }, [search, sort, data]);
 
-  // =========================
-  // SORT OPTIONS (NO SELECT)
-  // =========================
   const sortOptions = [
+    { key: "all", label: t.all }, // ✅ NEW
     { key: "newest", label: t.newest },
     { key: "oldest", label: t.oldest },
     { key: "endingSoon", label: t.endingSoon },
@@ -174,88 +142,80 @@ const { theme } = useTheme();
 
   return (
     <main
-  className={`min-h-screen p-6 md:p-12 font-sans transition-colors duration-300 ${
-    theme === "dark"
-      ? "bg-[#020b1c] text-white"
-      : "bg-gray-50 text-gray-900"
-  }`}
->
-      <div className="max-w-7xl mx-auto py-30">
+      className={`min-h-screen transition-all duration-300 ${
+        theme === "dark"
+          ? "bg-[#020817] text-white"
+          : "bg-slate-50 text-gray-900"
+      }`}
+    >
+      <div className="max-w-7xl mx-auto px-5 py-30">
+        {/* Search + Filter */}
+        <div
+          className={`rounded-xl p-6 mb-12 border backdrop-blur-xl ${
+            theme === "dark"
+              ? "bg-white/5 border-white/10"
+              : "bg-white shadow-sm border-gray-200"
+          }`}
+        >
+          <div className="flex flex-col lg:flex-row gap-8 justify-between">
+            {/* Search */}
+            <div className="relative w-full lg:w-[380px]">
+              <Search
+                size={18}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+              />
 
-        {/* SEARCH + SORT */}
-        <div className="flex flex-col lg:flex-row justify-between items-center mb-10 gap-6">
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={t.search}
+                className={`w-full rounded pl-12 pr-4 py-4 outline-none border transition ${
+                  theme === "dark"
+                    ? "bg-[#07111f] border-white/10"
+                    : "bg-white border-gray-200"
+                }`}
+              />
+            </div>
 
-          {/* SEARCH */}
-          <div className="relative w-full lg:w-1/3">
-            <Search
-              className={`absolute left-3 top-1/2 -translate-y-1/2 ${
-  theme === "dark" ? "text-gray-400" : "text-gray-500"
-}`}
-              size={18}
-            />
-
-            <input
-              type="text"
-              placeholder={t.search}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-           className={`w-full rounded-md py-2.5 pl-10 pr-4 text-sm border transition-colors ${
-  theme === "dark"
-    ? "bg-[#0a0a20] border-blue-900/30 text-white"
-    : "bg-white border-gray-300 text-gray-900"
-}`}
-            />
-          </div>
-
-          {/* SORT BUTTONS (NO SELECT) */}
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-gray-400 text-xs uppercase font-bold mr-2">
-              {t.sort}
-            </span>
-
-            {sortOptions.map((opt) => (
-              <button
-                key={opt.key}
-                onClick={() => setSort(opt.key)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-md text-[11px] font-bold uppercase border transition
-                ${
-  sort === opt.key
-    ? theme === "dark"
-      ? "bg-blue-950 border-blue-600 text-white"
-      : "bg-blue-100 border-blue-400 text-blue-900"
-    : theme === "dark"
-      ? "bg-[#0a0a20] border-blue-900/50 text-white hover:bg-blue-950"
-      : "bg-white border-gray-300 text-gray-700 hover:bg-gray-100"
-}
-                `}
-              >
-                {opt.label}
-
-                <ChevronDown size={14} className="text-gray-400" />
-              </button>
-            ))}
+            {/* Filters */}
+            <div className="flex flex-wrap gap-3">
+              {sortOptions.map((opt) => (
+                <button
+                  key={opt.key}
+                  onClick={() => setSort(opt.key)}
+                  className={`px-3 py-1 rounded text-sm font-semibold transition-all duration-300 ${
+                    sort === opt.key
+                      ? "bg-gradient-to-r from-yellow-400 to-orange-500 text-black shadow-lg"
+                      : theme === "dark"
+                      ? "bg-white/5 border border-white/10 hover:bg-white/10"
+                      : "bg-white border border-gray-200 hover:bg-gray-100"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* LIST */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {/* Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-7">
           {filtered.length > 0 ? (
-            filtered.map((tItem) => (
+            filtered.map((item) => (
               <TournamentCard
-                key={tItem.id}
-                id={tItem.id}
-                title={tItem.title}
-                image={tItem.photo_url}
-                date={tItem.status}
+                key={item.id}
+                id={item.id}
+                title={item.title}
+                image={item.photo_url}
+                date={item.status}
               />
             ))
           ) : (
-            <p className="text-white text-center col-span-2">
+            <div className="col-span-full text-center py-20 text-gray-400">
               {t.noData}
-            </p>
+            </div>
           )}
         </div>
-
       </div>
     </main>
   );
