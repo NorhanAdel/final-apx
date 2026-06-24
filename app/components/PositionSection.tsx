@@ -127,49 +127,66 @@ export default function PositionSlider({
         }}
       >
         {positions.map((pos) => (
-          <SwiperSlide key={pos.id}>
-            <Link
-              href={`/players?sport=${sportId}&position=${pos.id}`}
-              className="block"
-            >
-              <div
-                className={`h-[150px] rounded-xl overflow-hidden border flex ${
-                  isDark
-                    ? "bg-[#0b1120] border-[#1e293b]"
-                    : "bg-white border-gray-200"
-                }`}
-              >
-                <div className="relative w-1/2 h-full">
-                  <Image
-                    src={
-                      pos.image_url
-                        ? pos.image_url.startsWith("http")
-                          ? pos.image_url
-                          : `${API_URL}${pos.image_url}`
-                        : "/p1.png"
-                    }
-                    alt={pos.name}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
+<SwiperSlide key={pos.id}>
+  <Link
+    href={`/players?sport=${sportId}&position=${pos.id}`}
+    className="block group"
+  >
+    <div className="relative h-[220px] rounded-[28px] overflow-hidden shadow-xl border border-white/10">
 
-                <div className="w-1/2 p-3 flex flex-col justify-center">
-                  <h3 className="font-bold">{pos.name}</h3>
+      {/* Background Image */}
+      <Image
+        src={
+          pos.image_url
+            ? pos.image_url.startsWith("http")
+              ? pos.image_url
+              : `${API_URL}${pos.image_url}`
+            : "/p1.png"
+        }
+        alt={pos.name}
+        fill
+        className="object-cover transition duration-700 group-hover:scale-110"
+      />
 
-                  {pos.category && (
-                    <p className="text-xs text-gray-400">
-                      {pos.category}
-                    </p>
-                  )}
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/20" />
 
-                  <span className="text-xs text-yellow-500 mt-2">
-                    {pos.sport?.name}
-                  </span>
-                </div>
-              </div>
-            </Link>
-          </SwiperSlide>
+      {/* Content */}
+      <div className="relative z-10 h-full p-6 flex flex-col justify-between">
+
+        <div>
+          {pos.category && (
+            <span className="inline-flex px-3 py-1 rounded-full bg-yellow-400/20 backdrop-blur-md text-yellow-300 text-xs font-semibold border border-yellow-400/20">
+              {pos.category}
+            </span>
+          )}
+        </div>
+
+        <div>
+          <h3 className="text-2xl font-bold text-white mb-2 line-clamp-2">
+            {pos.name}
+          </h3>
+
+          <p className="text-gray-300 text-sm mb-4">
+            {pos.sport?.name}
+          </p>
+
+          <div className="flex items-center gap-2 text-yellow-400 font-medium text-sm">
+            View Players
+            <span className="transition-transform duration-300 group-hover:translate-x-1">
+              →
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Hover Glow */}
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition duration-500">
+        <div className="absolute inset-0 border border-yellow-400/30 rounded-[28px]" />
+      </div>
+    </div>
+  </Link>
+</SwiperSlide>
         ))}
       </Swiper>
     </div>
