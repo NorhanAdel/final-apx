@@ -404,54 +404,98 @@ export default function EventsPage() {
         </p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredEvents.map((event) => (
-            <div
-              key={event.id}
-              onClick={() => router.push(`/events/${event.id}`)}
-              className={`relative h-[400px] overflow-hidden cursor-pointer rounded-xl border transition hover:scale-[1.02] duration-300
-                ${
-                  theme === "dark"
-                    ? "border-[#0f2b70] bg-[#071632]"
-                    : "border-gray-200 bg-white shadow-md"
-                }`}
-            >
-              <Image
-                src={event.image_url!}
-                alt={event.title}
-                width={600}
-                height={400}
-                className="w-full h-[280px] object-cover"
-              />
+{filteredEvents.map((event) => (
+  <div
+    key={event.id}
+    onClick={() => router.push(`/events/${event.id}`)}
+    className={`
+      group relative cursor-pointer
+      h-[420px]
+      rounded-3xl overflow-hidden
+      border transition-all duration-500
+      hover:-translate-y-2 hover:shadow-2xl
+      ${
+        theme === "dark"
+          ? "border-white/10"
+          : "border-gray-200"
+      }
+    `}
+  >
+    {/* BACKGROUND IMAGE */}
+    <Image
+      src={event.image_url!}
+      alt={event.title}
+      fill
+      className="
+        object-cover
+        scale-105
+        transition duration-700
+        group-hover:scale-110
+      "
+    />
 
-              <div className="p-4">
-                <h3 className="text-lg font-bold mb-2 line-clamp-1">
-                  {event.title}
-                </h3>
+    {/* DARK OVERLAY */}
+    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/20" />
 
-                <p className="text-gray-500 text-sm">
-                  {event.location}
-                </p>
+    {/* CONTENT */}
+    <div className="absolute inset-0 p-6 flex flex-col justify-between">
 
-                <div className="flex justify-between mt-2 text-sm">
-                  <span>{event.date_start}</span>
+      {/* TOP BADGE */}
+      <div>
+        <span
+          className={`
+            px-3 py-1 text-xs font-bold rounded-full backdrop-blur-md border
+            ${
+              event.status?.toLowerCase() === "upcoming"
+                ? "bg-green-500/10 text-green-400 border-green-500/30"
+                : event.status?.toLowerCase() === "ongoing"
+                ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/30"
+                : event.status?.toLowerCase() === "completed"
+                ? "bg-blue-500/10 text-blue-400 border-blue-500/30"
+                : "bg-red-500/10 text-red-400 border-red-500/30"
+            }
+          `}
+        >
+          {event.status}
+        </span>
+      </div>
 
-                  <span
-                    className={`font-bold ${
-                      event.status?.toLowerCase() === "upcoming"
-                        ? "text-green-500"
-                        : event.status?.toLowerCase() === "ongoing"
-                        ? "text-yellow-500"
-                        : event.status?.toLowerCase() === "completed"
-                        ? "text-blue-500"
-                        : "text-red-500"
-                    }`}
-                  >
-                    {event.status}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
+      {/* TITLE + INFO */}
+      <div>
+
+        <h3 className="text-white text-2xl font-extrabold leading-snug mb-2 line-clamp-2">
+          {event.title}
+        </h3>
+
+        <p className="text-white/70 text-sm line-clamp-2">
+          📍 {event.location}
+        </p>
+
+        <div className="mt-4 flex items-center justify-between">
+
+          <span className="text-white/60 text-sm">
+            {event.date_start}
+          </span>
+
+          <div
+            className="
+              px-5 py-2 rounded-full
+              text-xs font-bold
+              bg-yellow-500/10 text-yellow-400
+              border border-yellow-500/20
+              opacity-0 group-hover:opacity-100
+              transition
+            "
+          >
+            View Event →
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+))}
         </div>
       )}
     </div>
