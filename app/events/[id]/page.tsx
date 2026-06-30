@@ -21,7 +21,7 @@ interface Event {
   image_url?: string;
 }
 
-export default function EventDetails() {
+export default function EventDetailsVisualSplit() {
   const { theme } = useTheme();
   const { t, lang } = useTranslate();
 
@@ -36,7 +36,6 @@ export default function EventDetails() {
 
   const fetchEvent = useCallback(async () => {
     if (!eventId) return;
-
     setLoading(true);
 
     try {
@@ -51,7 +50,7 @@ export default function EventDetails() {
           ...fetchedEvent,
           image_url: fetchedEvent.image_url || "/b2.jpg",
           date_start: new Date(fetchedEvent.date_start).toLocaleDateString(
-            lang
+            lang === "ar" ? "ar-EG" : "en-US"
           ),
         });
       } else {
@@ -72,133 +71,121 @@ export default function EventDetails() {
     return `${process.env.NEXT_PUBLIC_API_URL}${url}`;
   };
 
+  const bg = isDark ? "bg-[#030308]" : "bg-gray-50";
+  const text = isDark ? "text-white" : "text-gray-900";
+  const cardBg = isDark ? "bg-[#0c0d1e]" : "bg-white";
+  const border = isDark ? "border-white/[0.06]" : "border-[#CE1126]/10";
+  const innerSection = isDark ? "bg-[#11122b]" : "bg-gray-100";
+
   if (loading || !event) {
     return (
-      <div
-        className={`min-h-screen flex items-center justify-center ${
-          isDark ? "bg-black" : "bg-gray-100"
-        }`}
-      >
-        <div className="w-12 h-12 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin" />
+      <div className={`min-h-screen flex items-center justify-center ${bg}`}>
+        <div className="w-10 h-10 border-4 border-[#CE1126] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div
-      className={`min-h-screen px-4 pt-24 pb-16 transition ${
-        isDark
-          ? "bg-gradient-to-b from-black via-[#050505] to-black text-white"
-          : "bg-gray-100 text-black"
-      }`}
-    >
-      <div className="max-w-6xl mx-auto">
-        <BackButton className="mb-6" />
+    <div className={`min-h-screen relative overflow-hidden px-4 sm:px-6 md:px-12 lg:px-20 xl:px-28 py-32 transition-colors duration-300 ${bg} ${text}`}>
+      
+      {!imageError && event.image_url && (
+        <div className="absolute top-0 left-0 right-0 h-[400px] pointer-events-none opacity-15 dark:opacity-20 blur-3xl select-none">
+          <Image
+            src={getImageUrl(event.image_url)}
+            alt=""
+            fill
+            className="object-cover"
+          />
+        </div>
+      )}
 
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="grid md:grid-cols-2 gap-10"
-        >
-          {/* IMAGE */}
-          <div className="relative h-[480px] rounded-3xl overflow-hidden border shadow-2xl group">
+      <div className="max-w-7xl mx-auto relative z-10">
+        
+        <div className="mb-8">
+          <BackButton />
+        </div>
+
+        <div className={`grid grid-cols-1 lg:grid-cols-12 gap-0 rounded-3xl overflow-hidden border ${border} ${cardBg} shadow-2xl items-stretch`}>
+          
+          <div className="lg:col-span-5 relative h-[350px] lg:h-auto min-h-[400px] bg-neutral-900">
             {!imageError && event.image_url ? (
-              <>
-                <Image
-                  src={getImageUrl(event.image_url)}
-                  alt={event.title}
-                  fill
-                  className="object-cover transition duration-700 group-hover:scale-110"
-                  onError={() => setImageError(true)}
-                  priority
-                />
-
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-
-                <div className="absolute bottom-4 left-4 right-4">
-                  <h2 className="text-xl font-bold text-white drop-shadow">
-                    {event.title}
-                  </h2>
-                </div>
-              </>
+              <Image
+                src={getImageUrl(event.image_url)}
+                alt={event.title}
+                fill
+                priority
+                className="object-cover"
+                onError={() => setImageError(true)}
+              />
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-[#111] text-gray-400">
-                No Image
+              <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs font-black uppercase tracking-widest">
+                No Preview Available
               </div>
             )}
+            <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r from-black/80 via-black/10 to-transparent" />
           </div>
 
-          {/* DETAILS */}
-          <div className="flex flex-col gap-6">
-
-            {/* TITLE */}
-            <h1
-              className={`text-4xl font-bold ${
-                isDark ? "text-yellow-400" : "text-yellow-600"
-              }`}
+          <div className="lg:col-span-7 p-6 sm:p-10 md:p-12 flex flex-col justify-between">
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="space-y-6 flex-1 flex flex-col"
             >
-              {event.title}
-            </h1>
-
-            {/* META */}
-            <div
-              className={`flex flex-wrap items-center gap-4 p-4 rounded-xl border text-sm ${
-                isDark
-                  ? "bg-white/5 border-white/10 text-gray-300"
-                  : "bg-white border-gray-300 text-gray-700"
-              }`}
-            >
-              <span className="px-3 py-1 rounded-full bg-yellow-400 text-black text-xs font-semibold">
-                {event.status}
-              </span>
-
-              <span className="flex items-center gap-1">
-                <MapPin size={14} /> {event.location}
-              </span>
-
-              <span className="flex items-center gap-1">
-                <CalendarDays size={14} /> {event.date_start}
-              </span>
-            </div>
-
-            {/* DESCRIPTION (SCROLL) */}
-            <div
-              className={`rounded-2xl p-5 border ${
-                isDark
-                  ? "bg-white/5 border-white/10"
-                  : "bg-white border-gray-300"
-              }`}
-            >
-              <h3
-                className={`text-sm mb-3 ${
-                  isDark ? "text-gray-400" : "text-gray-600"
-                }`}
-              >
-                {t("Description")}
-              </h3>
-
-              <div className="max-h-[260px] overflow-y-auto pr-2 custom-scroll">
-                <p
-                  className={`text-xl leading-relaxed whitespace-pre-line ${
-                    isDark ? "text-gray-300" : "text-gray-700"
-                  }`}
-                >
-                  {event.description || t("noDescription")}
-                </p>
+              <div className="space-y-4">
+                <span className="inline-flex items-center px-3 py-1 text-[10px] font-black tracking-widest uppercase font-mono rounded-full bg-[#CE1126]/10 text-[#CE1126] border border-[#CE1126]/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#CE1126] animate-pulse mr-1.5 ml-1.5" />
+                  {event.status}
+                </span>
+                
+                <div className="relative">
+                  <h1 className="text-2xl sm:text-4xl font-black italic uppercase tracking-tight leading-tight">
+                    {event.title}
+                  </h1>
+                  <div className="w-16 h-[4px] bg-[#CE1126] mt-3 rounded-full" />
+                </div>
               </div>
-            </div>
 
+              <div className="flex flex-wrap gap-3">
+                <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${border} ${innerSection} text-xs font-bold`}>
+                  <CalendarDays size={14} className="text-[#CE1126]" />
+                  <span className="text-gray-400 font-mono">{event.date_start}</span>
+                </div>
+                <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${border} ${innerSection} text-xs font-bold`}>
+                  <MapPin size={14} className="text-[#CE1126]" />
+                  <span className="text-gray-400">{event.location}</span>
+                </div>
+              </div>
+
+              <div className={`flex-1 flex flex-col p-5 rounded-2xl border ${border} ${innerSection} min-h-[250px]`}>
+                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3 block border-b border-white/[0.04] pb-2">
+                  {t("Description") || "EVENT LOG DETAILS"}
+                </span>
+                <div className="max-h-[280px] lg:max-h-[340px] overflow-y-auto pr-2 custom-modern-scroll flex-1">
+                  <p className={`text-sm sm:text-base leading-relaxed whitespace-pre-line font-medium ${isDark ? "text-gray-300" : "text-gray-700"}`}>
+                    {event.description || t("noDescription")}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
           </div>
-        </motion.div>
+
+        </div>
       </div>
 
-      <style jsx>{`
-        .custom-scroll::-webkit-scrollbar {
-          width: 5px;
+      <style jsx global>{`
+        .custom-modern-scroll::-webkit-scrollbar {
+          width: 4px;
         }
-        .custom-scroll::-webkit-scrollbar-thumb {
-          background: #f0b100;
+        .custom-modern-scroll::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-modern-scroll::-webkit-scrollbar-thumb {
+          background: #CE1126;
           border-radius: 10px;
+        }
+        .custom-modern-scroll::-webkit-scrollbar-thumb:hover {
+          background: #A00D1D;
         }
       `}</style>
     </div>
