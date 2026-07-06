@@ -36,8 +36,8 @@ interface PlayerVideo {
 
 interface RatingRater {
   id: string;
-  first_name?: string;
-  last_name?: string;
+username?: string;
+  
 }
 
 interface PlayerRating {
@@ -110,6 +110,8 @@ export default function PlayerProfilePage() {
         GET_PLAYER_PROFILE,
         { id: String(id) },
       );
+      console.log("ID:", id);
+console.log(JSON.stringify(playerResult.errors, null, 2));
       if (playerResult.errors || !playerResult.data?.playerProfile) {
         setPlayer(null);
       } else {
@@ -228,9 +230,9 @@ export default function PlayerProfilePage() {
           <ClubCareer playerId={player.id} />
         </div>
 
-    <ReelsPlayer videos={player.videos || []} />
+    <ReelsPlayer videos={player.videos || []} /> 
 
-        <Ratings
+         <Ratings
           key={refreshRatings}
           ratings={player.ratings || []}
           playerId={player.id}
