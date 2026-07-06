@@ -37,18 +37,57 @@ const tDict: any = {
     winners: "أكبر عدد فائزين",
     active: "النشطة أولاً",
   },
+
+  en: {
+    search: "Search",
+    sort: "Sort",
+    noData: "No tournaments found",
+    all: "All Tournaments",
+    newest: "Newest",
+    oldest: "Oldest",
+    endingSoon: "Ending Soon",
+    popular: "Most Popular",
+    winners: "Most Winners",
+    active: "Active First",
+  },
+
+  ru: {
+    search: "Поиск",
+    sort: "Сортировка",
+    noData: "Нет турниров",
+    all: "Все турниры",
+    newest: "Сначала новые",
+    oldest: "Сначала старые",
+    endingSoon: "Скоро заканчиваются",
+    popular: "Самые популярные",
+    winners: "Больше всего победителей",
+    active: "Сначала активные",
+  },
+
+  zh: {
+    search: "搜索",
+    sort: "排序",
+    noData: "暂无比赛",
+    all: "全部比赛",
+    newest: "最新",
+    oldest: "最早",
+    endingSoon: "即将结束",
+    popular: "最受欢迎",
+    winners: "获奖人数最多",
+    active: "优先显示进行中",
+  },
 };
 
 export default function TournamentGallery() {
   const [data, setData] = useState<any[]>([]);
   const [filtered, setFiltered] = useState<any[]>([]);
   const [search, setSearch] = useState("");
-  const [sort, setSort] = useState("all"); // ✅ default = all
+  const [sort, setSort] = useState("all");
   const [lang, setLang] = useState("ar");
 
   const { theme } = useTheme();
 
-  const t = tDict[lang] || tDict.ar;
+  const t = tDict[lang] || tDict.en;
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -58,7 +97,9 @@ export default function TournamentGallery() {
 
   const fetchData = async () => {
     const res: any = await fetchGraphQL(CHAMPIONS_QUERY, {
-      headers: { Accept: lang },
+      headers: {
+        Accept: lang,
+      },
     });
 
     const champions = res?.data?.champions?.champions || [];
@@ -74,17 +115,16 @@ export default function TournamentGallery() {
   useEffect(() => {
     let result = [...data];
 
-    // SEARCH
+    // Search
     if (search.trim()) {
       result = result.filter((item) =>
         item.title.toLowerCase().includes(search.toLowerCase())
       );
     }
 
-    // SORT
+    // Sort
     switch (sort) {
       case "all":
-        // default: no sorting
         break;
 
       case "newest":
@@ -131,7 +171,7 @@ export default function TournamentGallery() {
   }, [search, sort, data]);
 
   const sortOptions = [
-    { key: "all", label: t.all }, // ✅ NEW
+    { key: "all", label: t.all },
     { key: "newest", label: t.newest },
     { key: "oldest", label: t.oldest },
     { key: "endingSoon", label: t.endingSoon },
