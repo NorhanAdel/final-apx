@@ -31,6 +31,7 @@ import {
 } from "@/app/graphql/mutation/deal.mutations";
 import { toast } from "sonner";
 import BackButton from "@/app/components/BackButton";
+import Image from "next/image";
 
 interface Deal {
   id: string;
@@ -584,12 +585,14 @@ export default function ClubDealsPage() {
                                   : "hover:bg-gray-50 text-black"
                               }`}
                             >
-                              <div className="w-8 h-8 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                              <div className="w-8 h-8 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center overflow-hidden relative">
                                 {player.profile_image_url ? (
-                                  <img
+                                  <Image
                                     src={player.profile_image_url}
                                     alt=""
-                                    className="w-full h-full object-cover"
+                                    fill
+                                    className="object-cover"
+                                    sizes="32px"
                                   />
                                 ) : (
                                   <User size={14} className="text-gray-500" />
