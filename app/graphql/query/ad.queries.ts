@@ -29,8 +29,7 @@ export const GET_MY_ADS = `
       user {
         id
         email
-        first_name
-        last_name
+        username
       }
     }
   }
@@ -52,8 +51,7 @@ export const GET_AD_BY_ID = `
       user {
         id
         email
-        first_name
-        last_name
+        username
         role
       }
     }
@@ -73,8 +71,7 @@ export const GET_AD_WITH_USER = `
       created_at
       user {
         id
-        first_name
-        last_name
+        username
         role
       }
     }

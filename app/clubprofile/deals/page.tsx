@@ -150,24 +150,31 @@ export default function ClubDealsPage() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const fetchDeals = useCallback(async () => {
-    setLoading(true);
-    try {
-      const result = await fetchGraphQL<{ dealsByStatus: Deal[] }>(
-        GET_DEALS_BY_STATUS,
-        { status: "PENDING", limit: 50 },
-      );
-      if (result.data?.dealsByStatus) {
-        setDeals(result.data.dealsByStatus);
-        setFilteredDeals(result.data.dealsByStatus);
+  // ✅ fetchDeals now takes the status and sends it to the server
+  const fetchDeals = useCallback(
+    async (status: string) => {
+      setLoading(true);
+      try {
+        const result = await fetchGraphQL<{ dealsByStatus: Deal[] }>(
+          GET_DEALS_BY_STATUS,
+          {
+            status: status === "ALL" ? undefined : status,
+            limit: 50,
+          },
+        );
+        if (result.data?.dealsByStatus) {
+          setDeals(result.data.dealsByStatus);
+          setFilteredDeals(result.data.dealsByStatus);
+        }
+      } catch (error) {
+        console.error("Error fetching deals:", error);
+        toast.error(t("Failed to load deals"));
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Error fetching deals:", error);
-      toast.error(t("Failed to load deals"));
-    } finally {
-      setLoading(false);
-    }
-  }, [t]);
+    },
+    [t],
+  );
 
   const fetchPlayers = useCallback(async () => {
     try {
@@ -182,18 +189,18 @@ export default function ClubDealsPage() {
     }
   }, []);
 
+  // ✅ load players once
   useEffect(() => {
-    fetchDeals();
     fetchPlayers();
-  }, [fetchDeals, fetchPlayers]);
+  }, [fetchPlayers]);
 
+  // ✅ re-fetch deals from the server whenever the status filter changes
   useEffect(() => {
-    if (statusFilter === "ALL") setFilteredDeals(deals);
-    else
-      setFilteredDeals(
-        deals.filter((deal) => deal.status.toUpperCase() === statusFilter),
-      );
-  }, [statusFilter, deals]);
+    fetchDeals(statusFilter);
+  }, [statusFilter, fetchDeals]);
+
+  // ❌ removed: local re-filtering of an already status-limited list
+  // (was causing "no results" for any status other than PENDING)
 
   useEffect(() => {
     if (!searchTerm || !isDropdownOpen) return;
@@ -201,10 +208,9 @@ export default function ClubDealsPage() {
     const delayDebounceFn = setTimeout(async () => {
       setSearchingPlayers(true);
       try {
-        const result = await fetchGraphQL<{ searchPlayers: { data: Player[] } }>(
-          SEARCH_PLAYERS,
-          { query: searchTerm, skip: 0, take: 50 },
-        );
+        const result = await fetchGraphQL<{
+          searchPlayers: { data: Player[] };
+        }>(SEARCH_PLAYERS, { query: searchTerm, skip: 0, take: 50 });
         if (result.data?.searchPlayers?.data) {
           setPlayers(result.data.searchPlayers.data);
         }
@@ -283,7 +289,7 @@ export default function ClubDealsPage() {
       else if (result.data?.createDeal) {
         toast.success(t("Deal created successfully!"));
         resetForm();
-        fetchDeals();
+        fetchDeals(statusFilter);
         setActiveTab("sent");
       }
     } catch (error) {
@@ -332,7 +338,7 @@ export default function ClubDealsPage() {
       else if (result.data?.updateDeal) {
         toast.success(t("Deal updated successfully!"));
         resetForm();
-        fetchDeals();
+        fetchDeals(statusFilter);
         setActiveTab("sent");
       }
     } catch (error) {
@@ -356,7 +362,7 @@ export default function ClubDealsPage() {
       });
       if (result.data?.deleteDeal) {
         toast.success(t("Deal deleted successfully"));
-        fetchDeals();
+        fetchDeals(statusFilter);
       } else if (result.errors) toast.error(result.errors[0].message);
     } catch (error) {
       console.error("Error deleting deal:", error);
@@ -413,6 +419,11 @@ export default function ClubDealsPage() {
     return "📄";
   };
   const selectedPlayer = players.find((p) => p.id === formData.player_id);
+
+  // ✅ getStatusCount now reflects counts from the currently loaded `deals`
+  // (which itself is now server-filtered). If you want accurate counts for
+  // ALL statuses regardless of the active filter, consider fetching
+  // `dealStats` separately instead of deriving counts from `deals`.
   const getStatusCount = (status: string) => {
     if (status === "ALL") return deals.length;
     return deals.filter((deal) => deal.status.toUpperCase() === status).length;
@@ -442,7 +453,7 @@ export default function ClubDealsPage() {
     >
       <div className="max-w-6xl mx-auto">
         <BackButton className="mb-6" />
-        
+
         <h1 className="text-4xl font-black italic tracking-tighter text-yellow-400 uppercase text-center mb-10">
           {t("Deals")}
         </h1>
@@ -511,7 +522,10 @@ export default function ClubDealsPage() {
                 {!formData.player_id ? (
                   <div className="relative">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                      <Search
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                        size={18}
+                      />
                       <input
                         type="text"
                         placeholder={t("Search players by name...")}
@@ -541,7 +555,10 @@ export default function ClubDealsPage() {
                       >
                         {searchingPlayers ? (
                           <div className="p-4 text-center text-sm text-gray-500">
-                            <Loader2 size={16} className="animate-spin inline mr-2" />
+                            <Loader2
+                              size={16}
+                              className="animate-spin inline mr-2"
+                            />
                             {t("Searching...")}
                           </div>
                         ) : players.length > 0 ? (
@@ -549,11 +566,17 @@ export default function ClubDealsPage() {
                             <div
                               key={player.id}
                               onClick={() => {
-                                setFormData((prev) => ({ ...prev, player_id: player.id }));
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  player_id: player.id,
+                                }));
                                 setSearchTerm("");
                                 setIsDropdownOpen(false);
                                 setPlayers([player]);
-                                setErrors((prev) => ({ ...prev, player_id: "" }));
+                                setErrors((prev) => ({
+                                  ...prev,
+                                  player_id: "",
+                                }));
                               }}
                               className={`p-3 cursor-pointer flex items-center gap-3 transition ${
                                 isDark
@@ -563,7 +586,11 @@ export default function ClubDealsPage() {
                             >
                               <div className="w-8 h-8 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center overflow-hidden">
                                 {player.profile_image_url ? (
-                                  <img src={player.profile_image_url} alt="" className="w-full h-full object-cover" />
+                                  <img
+                                    src={player.profile_image_url}
+                                    alt=""
+                                    className="w-full h-full object-cover"
+                                  />
                                 ) : (
                                   <User size={14} className="text-gray-500" />
                                 )}
@@ -590,7 +617,9 @@ export default function ClubDealsPage() {
                   </div>
                 ) : (
                   <div className="flex justify-between items-center bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400 p-3 rounded-lg">
-                    <span className="text-sm font-medium">✓ {t("Player Selected")}</span>
+                    <span className="text-sm font-medium">
+                      ✓ {t("Player Selected")}
+                    </span>
                     {!editingDeal && (
                       <button
                         type="button"

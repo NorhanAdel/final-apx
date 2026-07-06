@@ -141,8 +141,6 @@ export default function CristianoChampionship() {
 
       user {
         id
-        first_name
-        last_name
         username
         email
       }
