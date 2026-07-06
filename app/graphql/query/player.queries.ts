@@ -80,7 +80,7 @@ export const GET_PLAYER_PROFILE = `
   query GetPlayerProfile($id: String!) {
     playerProfile(id: $id) {
       id
-      user_id
+    
       first_name
       last_name
       bio
@@ -133,8 +133,7 @@ export const GET_PLAYER_PROFILE = `
         created_at
         rater {
           id
-          first_name
-          last_name
+         username
         }
       }
     }
@@ -195,7 +194,6 @@ export const GET_MY_FOOTBALL_INFO = `
       position {
         id
         name
-        sport_id
       }
       preferred_foot
       jersey_number
