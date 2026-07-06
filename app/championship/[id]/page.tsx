@@ -74,7 +74,7 @@ export default function CristianoChampionship() {
   const params = useParams();
   const id = params.id as string;
 
-  const { theme } = useTheme(); // ✅ added
+  const { theme } = useTheme(); 
   const isDark = theme === "dark";
 
   const [openPrizes, setOpenPrizes] = useState(false);
@@ -141,6 +141,7 @@ export default function CristianoChampionship() {
 
       user {
         id
+         
         username
         email
       }
