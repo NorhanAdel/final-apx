@@ -19,7 +19,7 @@ import {
   Trophy,
   Volleyball,
   CircleDot,
-  User,
+  User as UserIcon,
   Shield,
   Building2,
   UserCircle,
@@ -73,7 +73,6 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
   const { user, isLoading: loading, logout } = useAuth();
   const [mounted, setMounted] = useState(false);
 
-  // ✅ Refs for click outside detection
   const langRef = useRef<HTMLDivElement>(null);
   const sportsRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -94,10 +93,8 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
   const { theme, toggleTheme } = useTheme();
   const { changeLang, lang: currentLang } = useTranslate();
 
-  // استخدم اللغة من props أو من useTranslate
   const activeLang = lang || currentLang || "en";
 
-  // ✅ Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
@@ -124,7 +121,6 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
     };
   }, [langOpen, sportsOpen, profileOpen]);
 
-  // ✅ Close mobile dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutsideMobile = (event: MouseEvent) => {
       const target = event.target as Node;
@@ -335,7 +331,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
 
     switch (activeUser.role) {
       case "PLAYER":
-        return <User size={20} />;
+        return <UserIcon size={20} />;
       case "CLUB":
         return <Building2 size={20} />;
       case "SCOUT":

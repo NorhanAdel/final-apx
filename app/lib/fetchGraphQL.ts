@@ -7,10 +7,13 @@ export const fetchGraphQL = async <T = unknown>(
   query: unknown,
   variables?: Record<string, unknown>,
 ): Promise<FetchGraphQLResponse<T>> => {
-  const language =
+  const rawLanguage =
     typeof window !== "undefined" ? localStorage.getItem("lang") || "en" : "en";
-  const token =
+  const language = rawLanguage.replace(/[^\x00-\x7F]/g, "") || "en";
+
+  const rawToken =
     typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const token = rawToken ? rawToken.replace(/[^\x00-\x7F]/g, "") : null;
 
   console.log("🌐 Sending request with language:", language);
   console.log("🔑 Token exists:", !!token);
@@ -25,8 +28,6 @@ export const fetchGraphQL = async <T = unknown>(
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  // Ensure query is a string. If the caller passed a DocumentNode (from `gql`),
-  // try to read the original source from `loc.source.body` which graphql-tag preserves.
   let queryString: string;
   if (typeof query === "string") {
     queryString = query;
@@ -37,8 +38,6 @@ export const fetchGraphQL = async <T = unknown>(
   ) {
     queryString = (query as any).loc.source.body;
   } else {
-    // Fallback: try to JSON.stringify (will likely fail on server)
-    // but this avoids sending an AST object directly which GraphQL servers reject.
     try {
       queryString = JSON.stringify(query as Record<string, unknown>);
     } catch {
