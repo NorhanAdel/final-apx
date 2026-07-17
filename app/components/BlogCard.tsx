@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Eye, Calendar } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
+import useTranslate from "../hooks/useTranslate";
 
 interface Blog {
   id: string;
@@ -16,6 +17,7 @@ interface Blog {
 export default function BlogCard({ blog }: { blog: Blog }) {
   const router = useRouter();
   const { theme } = useTheme();
+  const { t } = useTranslate();
 
   const getImage = (url?: string) => {
     if (!url) return "/b3.jpg";
@@ -111,7 +113,7 @@ export default function BlogCard({ blog }: { blog: Blog }) {
           "
         >
           <span className="text-white/60 text-sm">
-            Read article
+            {t("Read article")}
           </span>
 
           <span
@@ -121,7 +123,7 @@ export default function BlogCard({ blog }: { blog: Blog }) {
               transition
             "
           >
-            Open →
+            {t("Open →")}
           </span>
         </div>
 

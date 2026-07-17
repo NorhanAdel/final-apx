@@ -132,9 +132,7 @@ export default function BlogPage() {
   return (
     <div
       className={`min-h-screen px-4 sm:px-6 md:px-12 lg:px-60 py-40 transition${
-        theme === "dark"
-          ? "bg-[#020b1c] text-white"
-          : "bg-gray-100 text-black"
+        theme === "dark" ? "bg-[#020b1c] text-white" : "bg-gray-100 text-black"
       }`}
     >
       {/* SEARCH */}
@@ -174,7 +172,6 @@ export default function BlogPage() {
           }`}
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
             {/* CATEGORY DROPDOWN */}
             <div>
               <label className="text-sm mb-2 block">
@@ -183,9 +180,7 @@ export default function BlogPage() {
 
               <div className="relative">
                 <button
-                  onClick={() =>
-                    setIsCategoryOpen(!isCategoryOpen)
-                  }
+                  onClick={() => setIsCategoryOpen(!isCategoryOpen)}
                   className={`w-full flex justify-between px-4 py-2 border rounded-md ${
                     theme === "dark"
                       ? "bg-[#0a0f2c] border-blue-900 text-white"
@@ -236,9 +231,7 @@ export default function BlogPage() {
 
             {/* SORT DROPDOWN */}
             <div>
-              <label className="text-sm mb-2 block">
-                {t("sortBy")}
-              </label>
+              <label className="text-sm mb-2 block">{t("sortBy")}</label>
 
               <div className="relative">
                 <button
@@ -249,7 +242,7 @@ export default function BlogPage() {
                       : "bg-white border-gray-300 text-black"
                   }`}
                 >
-                  {sort}
+                  {sort === "Newest" ? t("Newest") : t("Oldest")}
                   <ChevronDown size={16} />
                 </button>
 
@@ -270,7 +263,7 @@ export default function BlogPage() {
                         }}
                         className="w-full text-left px-4 py-2 hover:bg-gray-100 hover:text-black"
                       >
-                        {item}
+                        {item === "Newest" ? t("Newest") : t("Oldest")}
                       </button>
                     ))}
                   </div>
@@ -289,7 +282,7 @@ export default function BlogPage() {
               }}
               className="mt-4 text-red-500"
             >
-              Clear Filters
+              {t("Clear Filters")}
             </button>
           )}
         </div>
@@ -297,7 +290,7 @@ export default function BlogPage() {
 
       {/* BLOGS */}
       {filteredBlogs.length === 0 ? (
-        <p className="text-center text-gray-400">No blogs found</p>
+        <p className="text-center text-gray-400">{t("No blogs found")}</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 mt-10 lg:grid-cols-3 gap-6">
           {filteredBlogs.map((blog) => (

@@ -94,6 +94,12 @@ export default function Hero() {
     if (playingIndex === index) setPlayingIndex(null);
   };
 
+  // 🔥 دالة لجلب الترجمة حسب الترتيب
+  const getHeroTitle = (index: number): string => {
+    const titles = ["HERO 1", "HERO 2", "HERO 3"];
+    return t(titles[index] || `HERO ${index + 1}`);
+  };
+
   const VideoCard = (video: Video, index: number) => (
     <div
       onClick={() => handlePlayVideo(index)}
@@ -124,11 +130,11 @@ export default function Hero() {
         onClick={(e) => toggleMute(e, index)}
         className="absolute bottom-3 right-3 bg-black/60 p-2 rounded-full"
       >
-        {isMuted ? <VolumeX /> : <Volume2 />}
+        {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
       </button>
 
-      <div className="absolute bottom-3 left-3 text-white text-sm">
-        {video.title}
+      <div className="absolute bottom-3 left-3 text-white text-sm font-bold">
+        {getHeroTitle(index)}
       </div>
     </div>
   );
@@ -159,7 +165,7 @@ export default function Hero() {
                 theme === "dark" ? "text-white" : "text-black"
               }`}
             >
-            Super 7 Bourse
+              Super 7 Bourse
             </motion.h1>
 
             <p

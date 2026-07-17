@@ -172,7 +172,7 @@ export default function PositionSlider({
           </p>
 
           <div className="flex items-center gap-2 text-yellow-400 font-medium text-sm">
-            View Players
+            {t("View Players")}
             <span className="transition-transform duration-300 group-hover:translate-x-1">
               →
             </span>

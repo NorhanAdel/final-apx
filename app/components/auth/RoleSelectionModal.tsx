@@ -2,6 +2,7 @@
 
 import { X, CheckCircle } from "lucide-react";
 import { useState } from "react";
+import useTranslate from "@/app/hooks/useTranslate";
 
 export type RoleType = "PLAYER" | "SCOUT" | "AGENT" | "CLUB" | "USER";
 
@@ -72,6 +73,7 @@ export default function RoleSelectionModal({
   title = "Choose Your Account Type",
   subtitle = "Select the role that best describes you",
 }: RoleSelectionModalProps) {
+  const { t } = useTranslate();
   const [selectedRole, setSelectedRole] = useState<RoleType>("USER");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -87,6 +89,13 @@ export default function RoleSelectionModal({
   };
 
   const isPending = isLoading || isSubmitting;
+
+  // Translated role options
+  const translatedRoleOptions = roleOptions.map((role) => ({
+    ...role,
+    label: t(role.label),
+    description: t(role.description),
+  }));
 
   return (
     <>
@@ -119,9 +128,9 @@ export default function RoleSelectionModal({
               </div>
             </div>
             <h3 className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-yellow-600 bg-clip-text text-transparent">
-              {title}
+              {t(title)}
             </h3>
-            <p className="text-gray-300 text-sm mt-2">{subtitle}</p>
+            <p className="text-gray-300 text-sm mt-2">{t(subtitle)}</p>
           </div>
 
           {/* Body */}
@@ -130,7 +139,7 @@ export default function RoleSelectionModal({
             <div className="bg-white/10 rounded-lg p-3 mb-4 backdrop-blur-sm">
               <div className="flex items-center gap-2 text-gray-300 text-xs mb-1">
                 <span>📧</span>
-                <span>Email:</span>
+                <span>{t("Email")}:</span>
               </div>
               <p className="text-white font-medium text-sm break-all">
                 {userEmail}
@@ -138,7 +147,7 @@ export default function RoleSelectionModal({
 
               <div className="flex items-center gap-2 text-gray-300 text-xs mt-2 mb-1">
                 <span>👤</span>
-                <span>Username:</span>
+                <span>{t("Username")}:</span>
               </div>
               <p className="text-white font-medium text-sm">{username}</p>
             </div>
@@ -146,11 +155,11 @@ export default function RoleSelectionModal({
             {/* Role Selection Cards */}
             <div>
               <label className="block text-gray-300 text-sm font-medium mb-3">
-                Select your role <span className="text-red-400">*</span>
+                {t("Select your role")} <span className="text-red-400">*</span>
               </label>
 
               <div className="grid gap-3">
-                {roleOptions.map((role) => (
+                {translatedRoleOptions.map((role) => (
                   <RoleCard
                     key={role.value}
                     role={role}
@@ -170,7 +179,7 @@ export default function RoleSelectionModal({
               disabled={isPending}
               className="flex-1 py-2.5 rounded-xl border border-white/30 text-white font-semibold hover:bg-white/10 transition-all duration-200 disabled:opacity-50"
             >
-              Cancel
+              {t("Cancel")}
             </button>
             <button
               onClick={handleSubmit}
@@ -180,10 +189,10 @@ export default function RoleSelectionModal({
               {isPending ? (
                 <span className="flex items-center justify-center gap-2">
                   <div className="w-4 h-4 border-2 border-[#0a0e2e] border-t-transparent rounded-full animate-spin" />
-                  Creating Account...
+                  {t("Creating Account...")}
                 </span>
               ) : (
-                "Continue"
+                t("Continue")
               )}
             </button>
           </div>
@@ -195,7 +204,7 @@ export default function RoleSelectionModal({
 
 // Sub-component for Role Card
 interface RoleCardProps {
-  role: RoleOption;
+  role: RoleOption & { label: string; description: string };
   isSelected: boolean;
   onSelect: () => void;
   disabled?: boolean;

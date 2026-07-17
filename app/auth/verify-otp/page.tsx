@@ -370,7 +370,7 @@ export default function VerifyOtpPage() {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center px-5 overflow-hidden">
+    <div className="relative min-h-screen flex items-center justify-center pt-20 px-5 overflow-hidden">
       <Image src="/b3.jpg" alt="bg" fill priority className="object-cover" />
       <div className="absolute inset-0 bg-black/40"></div>
 

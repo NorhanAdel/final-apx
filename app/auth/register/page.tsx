@@ -39,7 +39,7 @@ export default function RegisterPage() {
     closeModal,
   } = useGoogleRegister();
 
-  // Zod Schema
+  // Zod Schema - Password قوي
   const registerSchema = useMemo(() => {
     return z.object({
       username: z
@@ -55,8 +55,11 @@ export default function RegisterPage() {
       password: z
         .string()
         .min(1, t("Password is required"))
-        .min(6, t("Password must be at least 6 characters"))
-        .max(20, t("Password cannot exceed 20 characters")),
+        .min(8, t("Password must be at least 8 characters"))
+        .regex(/[a-z]/, t("Password must contain at least one lowercase letter"))
+        .regex(/[A-Z]/, t("Password must contain at least one uppercase letter"))
+        .regex(/[0-9]/, t("Password must contain at least one number"))
+        .regex(/[^a-zA-Z0-9]/, t("Password must contain at least one special character")),
       role: z.enum(["PLAYER", "SCOUT", "AGENT", "CLUB", "USER"]),
     });
   }, [t]);

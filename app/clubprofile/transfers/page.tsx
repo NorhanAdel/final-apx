@@ -496,11 +496,11 @@ export default function ClubTransfersPage() {
                 <p className={isDark ? "text-gray-400" : "text-gray-500"}>
                   {statusFilter === "ALL"
                     ? t("No transfers found")
-                    : t(
-                        `No ${getStatusLabel(
-                          statusFilter,
-                        ).toLowerCase()} transfers found`,
-                      )}
+                    : statusFilter === "COMPLETED"
+                    ? t("No completed transfers found")
+                    : statusFilter === "PENDING"
+                    ? t("No pending transfers found")
+                    : t("No cancelled transfers found")}
                 </p>
                 {statusFilter !== "ALL" && (
                   <button

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { UseFormReturn } from "react-hook-form";
+import useTranslate from "@/app/hooks/useTranslate";
 
 interface RegisterFormData {
   username: string;
@@ -32,6 +33,7 @@ export default function RegisterForm({
   isLoading = false,
   error = "",
 }: RegisterFormProps) {
+  const { t } = useTranslate();
   const [showPassword, setShowPassword] = useState(false);
 
   const {
@@ -52,11 +54,11 @@ export default function RegisterForm({
   const isRoleValid = roleValue && !errors.role;
 
   const roleOptions = [
-    { value: "USER", label: "User" },
-    { value: "PLAYER", label: "Player" },
-    { value: "SCOUT", label: "Scout" },
-    { value: "AGENT", label: "Agent" },
-    { value: "CLUB", label: "Club" },
+    { value: "USER", label: t("User") },
+    { value: "PLAYER", label: t("Player") },
+    { value: "SCOUT", label: t("Scout") },
+    { value: "AGENT", label: t("Agent") },
+    { value: "CLUB", label: t("Club") },
   ];
 
   return (
@@ -71,7 +73,7 @@ export default function RegisterForm({
       {/* Username Field */}
       <div className="mb-5 sm:mb-6">
         <label className="text-gray-200 font-semibold text-sm block mb-1">
-          Username
+          {t("Username")}
         </label>
         <div
           className={`flex items-center bg-white/30 rounded-xl px-3 sm:px-4 transition-all duration-200 ${
@@ -85,7 +87,7 @@ export default function RegisterForm({
           <User size={18} className="text-blue-900 mr-2 sm:mr-3" />
           <input
             type="text"
-            placeholder="Choose a username"
+            placeholder={t("Choose a username")}
             className="w-full py-2 sm:py-3 bg-transparent outline-none text-white text-sm sm:text-base placeholder:text-gray-400"
             {...register("username")}
           />
@@ -104,7 +106,7 @@ export default function RegisterForm({
       {/* Email Field */}
       <div className="mb-5 sm:mb-6">
         <label className="text-gray-200 font-semibold text-sm block mb-1">
-          Email
+          {t("Email")}
         </label>
         <div
           className={`flex items-center bg-white/30 rounded-xl px-3 sm:px-4 transition-all duration-200 ${
@@ -119,7 +121,7 @@ export default function RegisterForm({
           <input
             type="text"
             inputMode="email"
-            placeholder="Enter your email address"
+            placeholder={t("Enter your email address")}
             className="w-full py-2 sm:py-3 bg-transparent outline-none text-white text-sm sm:text-base placeholder:text-gray-400"
             {...register("email")}
           />
@@ -138,7 +140,7 @@ export default function RegisterForm({
       {/* Password Field */}
       <div className="mb-5 sm:mb-6">
         <label className="text-gray-200 font-semibold text-sm block mb-1">
-          Password
+          {t("Password")}
         </label>
         <div
           className={`flex items-center bg-white/30 rounded-xl px-3 sm:px-4 transition-all duration-200 ${
@@ -152,7 +154,7 @@ export default function RegisterForm({
           <Lock size={18} className="text-blue-900 mr-2 sm:mr-3" />
           <input
             type={showPassword ? "text" : "password"}
-            placeholder="Create a password"
+            placeholder={t("Create a password")}
             className="w-full py-2 sm:py-3 bg-transparent outline-none text-white text-sm sm:text-base placeholder:text-gray-400"
             {...register("password")}
           />
@@ -175,41 +177,40 @@ export default function RegisterForm({
         )}
       </div>
 
-       
       {/* Role Field */}
-<div className="mb-5 sm:mb-6">
-  <label className="text-gray-200 font-semibold text-sm block mb-3">
-    Select Role
-  </label>
+      <div className="mb-5 sm:mb-6">
+        <label className="text-gray-200 font-semibold text-sm block mb-3">
+          {t("Select Role")}
+        </label>
 
-  <div className="grid grid-cols-2 gap-3">
-    {roleOptions.map((role) => (
-      <button
-        key={role.value}
-        type="button"
-        onClick={() =>
-          form.setValue("role", role.value as RegisterFormData["role"], {
-            shouldValidate: true,
-          })
-        }
-        className={`rounded-xl p-3 border transition-all duration-300 ${
-          roleValue === role.value
-            ? "bg-yellow-400 text-black border-yellow-400"
-            : "bg-white/10 text-white border-white/20 hover:bg-white/20"
-        }`}
-      >
-        {role.label}
-      </button>
-    ))}
-  </div>
+        <div className="grid grid-cols-2 gap-3">
+          {roleOptions.map((role) => (
+            <button
+              key={role.value}
+              type="button"
+              onClick={() =>
+                form.setValue("role", role.value as RegisterFormData["role"], {
+                  shouldValidate: true,
+                })
+              }
+              className={`rounded-xl p-3 border transition-all duration-300 ${
+                roleValue === role.value
+                  ? "bg-yellow-400 text-black border-yellow-400"
+                  : "bg-white/10 text-white border-white/20 hover:bg-white/20"
+              }`}
+            >
+              {role.label}
+            </button>
+          ))}
+        </div>
 
-  {errors.role && touchedFields.role && (
-    <p className="text-red-400 text-xs mt-2 flex items-center gap-1">
-      <AlertCircle size={12} />
-      {errors.role.message}
-    </p>
-  )}
-</div>
+        {errors.role && touchedFields.role && (
+          <p className="text-red-400 text-xs mt-2 flex items-center gap-1">
+            <AlertCircle size={12} />
+            {errors.role.message}
+          </p>
+        )}
+      </div>
 
       {/* Submit Button */}
       <button
@@ -224,10 +225,10 @@ export default function RegisterForm({
         {isLoading ? (
           <span className="flex items-center justify-center gap-2">
             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            Registering...
+            {t("Registering...")}
           </span>
         ) : (
-          "Register"
+          t("Register")
         )}
       </button>
     </form>

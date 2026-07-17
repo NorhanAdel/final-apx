@@ -249,7 +249,7 @@ export default function ClubRequests() {
   >("player");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-const [openTargets, setOpenTargets] = useState(false);
+  const [openTargets, setOpenTargets] = useState(false);
   const fetchPlayers = useCallback(async () => {
     try {
       const result = await fetchGraphQL<GetAllPlayersResponse>(
@@ -364,103 +364,100 @@ const [openTargets, setOpenTargets] = useState(false);
     }
   }, [statusFilter, sentRequests, sentScoutRequests]);
 
- const handleSendRequest = async (e: React.FormEvent) => {
-  e.preventDefault();
+  const handleSendRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  if (!selectedTargetId) {
-    toast.error(t("Please select a target"));
-    return;
-  }
-
-  setLoading(true);
-
-  try {
-     
-    if (requestType === "player") {
-      const contactCheck = await fetchGraphQL<CanContactPlayerResponse>(
-        CAN_CONTACT_PLAYER,
-        {
-          playerId: selectedTargetId,
-        },
-      );
-
-      if (contactCheck.errors) {
-        toast.error(contactCheck.errors[0].message);
-        return;
-      }
-
-      const canContact = contactCheck.data?.canContactPlayer;
-
-    
-      if (!canContact) {
-        toast.error(t("Unable to verify player contact"));
-        return;
-      }
-
-      
-      if (!canContact.can_contact) {
-        toast.error(canContact.reason);
-        return;
-      }
+    if (!selectedTargetId) {
+      toast.error(t("Please select a target"));
+      return;
     }
 
-    // =========================
-    // SEND TO PLAYER
-    // =========================
-    if (requestType === "player") {
-      const result = await fetchGraphQL<SendRequestResponse>(
-        SEND_REQUEST_MUTATION,
-        {
-          input: {
-            player_id: selectedTargetId,
-            type: "CLUB_OFFER",
-            message: details,
+    setLoading(true);
+
+    try {
+      if (requestType === "player") {
+        const contactCheck = await fetchGraphQL<CanContactPlayerResponse>(
+          CAN_CONTACT_PLAYER,
+          {
+            playerId: selectedTargetId,
           },
-        },
-      );
+        );
 
-      if (result.errors) {
-        toast.error(result.errors[0].message);
-      } else if (result.data?.sendRequest) {
-        setSelectedTargetId("");
-        setDetails("");
+        if (contactCheck.errors) {
+          toast.error(contactCheck.errors[0].message);
+          return;
+        }
 
-        await fetchAllData();
+        const canContact = contactCheck.data?.canContactPlayer;
 
-        toast.success(t("Request sent successfully!"));
+        if (!canContact) {
+          toast.error(t("Unable to verify player contact"));
+          return;
+        }
+
+        if (!canContact.can_contact) {
+          toast.error(canContact.reason);
+          return;
+        }
       }
-    }
 
-    // =========================
-    // SEND TO SCOUT
-    // =========================
-    else {
-      const result = await fetchGraphQL<SendScoutRequestResponse>(
-        SEND_SCOUT_REQUEST_MUTATION,
-        {
-          scoutProfileId: selectedTargetId,
-          message: scoutMessage || null,
-        },
-      );
+      // =========================
+      // SEND TO PLAYER
+      // =========================
+      if (requestType === "player") {
+        const result = await fetchGraphQL<SendRequestResponse>(
+          SEND_REQUEST_MUTATION,
+          {
+            input: {
+              player_id: selectedTargetId,
+              type: "CLUB_OFFER",
+              message: details,
+            },
+          },
+        );
 
-      if (result.errors) {
-        toast.error(result.errors[0].message);
-      } else if (result.data?.sendScoutRequest) {
-        setSelectedTargetId("");
-        setScoutMessage("");
+        if (result.errors) {
+          toast.error(result.errors[0].message);
+        } else if (result.data?.sendRequest) {
+          setSelectedTargetId("");
+          setDetails("");
 
-        await fetchAllData();
+          await fetchAllData();
 
-        toast.success(t("Request sent successfully!"));
+          toast.success(t("Request sent successfully!"));
+        }
       }
+
+      // =========================
+      // SEND TO SCOUT
+      // =========================
+      else {
+        const result = await fetchGraphQL<SendScoutRequestResponse>(
+          SEND_SCOUT_REQUEST_MUTATION,
+          {
+            scoutProfileId: selectedTargetId,
+            message: scoutMessage || null,
+          },
+        );
+
+        if (result.errors) {
+          toast.error(result.errors[0].message);
+        } else if (result.data?.sendScoutRequest) {
+          setSelectedTargetId("");
+          setScoutMessage("");
+
+          await fetchAllData();
+
+          toast.success(t("Request sent successfully!"));
+        }
+      }
+    } catch (error) {
+      console.error("Error sending request:", error);
+      toast.error(t("Failed to send request"));
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error("Error sending request:", error);
-    toast.error(t("Failed to send request"));
-  } finally {
-    setLoading(false);
-  }
-};
+  };
   const handleCancelClick = (requestId: string, type: "player" | "scout") => {
     setSelectedRequestId(requestId);
     setSelectedRequestTypeVal(type);
@@ -722,76 +719,78 @@ const [openTargets, setOpenTargets] = useState(false);
               >
                 {requestType === "player" ? t("Player") : t("Scout")}
               </label>
-           <div className="relative">
-  <button
-    type="button"
-    onClick={() => setOpenTargets(!openTargets)}
-    className={`w-full rounded-xl py-4 px-4 flex items-center justify-between transition ${
-      isDark
-        ? "bg-[#0A1A44]/40 border border-blue-900/50 text-white"
-        : "bg-white border border-gray-300 text-black"
-    }`}
-  >
-    <div className="flex items-center gap-3">
-      <Star
-        size={18}
-        className="text-[#FFD700]"
-        fill="currentColor"
-      />
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setOpenTargets(!openTargets)}
+                  className={`w-full rounded-xl py-4 px-4 flex items-center justify-between transition ${
+                    isDark
+                      ? "bg-[#0A1A44]/40 border border-blue-900/50 text-white"
+                      : "bg-white border border-gray-300 text-black"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Star
+                      size={18}
+                      className="text-[#FFD700]"
+                      fill="currentColor"
+                    />
 
-      <span>
-        {requestType === "player"
-          ? selectedPlayer
-            ? `${selectedPlayer.first_name} ${selectedPlayer.last_name}`
-            : t("Select Player")
-          : selectedScout
-          ? `${selectedScout.first_name} ${selectedScout.last_name}`
-          : t("Select Scout")}
-      </span>
-    </div>
+                    <span>
+                      {requestType === "player"
+                        ? selectedPlayer
+                          ? `${selectedPlayer.first_name} ${selectedPlayer.last_name}`
+                          : t("Select Player")
+                        : selectedScout
+                        ? `${selectedScout.first_name} ${selectedScout.last_name}`
+                        : t("Select Scout")}
+                    </span>
+                  </div>
 
-    <ChevronDown
-      size={18}
-      className={`transition-transform ${
-        openTargets ? "rotate-180" : ""
-      }`}
-    />
-  </button>
+                  <ChevronDown
+                    size={18}
+                    className={`transition-transform ${
+                      openTargets ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
 
-  {openTargets && (
-    <div
-      className={`absolute top-full left-0 mt-2 w-full rounded-xl overflow-hidden z-50 max-h-72 overflow-y-auto shadow-xl ${
-        isDark
-          ? "bg-[#0A1A44] border border-blue-900/50"
-          : "bg-white border border-gray-300"
-      }`}
-    >
-      {(requestType === "player" ? players : scouts).map((item) => (
-        <button
-          key={item.id}
-          type="button"
-          onClick={() => {
-            setSelectedTargetId(item.id);
-            setOpenTargets(false);
-          }}
-          className={`w-full p-3 text-left flex items-center gap-3 transition ${
-            selectedTargetId === item.id
-              ? "bg-yellow-500/20 text-yellow-400"
-              : "hover:bg-yellow-500/10"
-          }`}
-        >
-          <User size={16} />
+                {openTargets && (
+                  <div
+                    className={`absolute top-full left-0 mt-2 w-full rounded-xl overflow-hidden z-50 max-h-72 overflow-y-auto shadow-xl ${
+                      isDark
+                        ? "bg-[#0A1A44] border border-blue-900/50"
+                        : "bg-white border border-gray-300"
+                    }`}
+                  >
+                    {(requestType === "player" ? players : scouts).map(
+                      (item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedTargetId(item.id);
+                            setOpenTargets(false);
+                          }}
+                          className={`w-full p-3 text-left flex items-center gap-3 transition ${
+                            selectedTargetId === item.id
+                              ? "bg-yellow-500/20 text-yellow-400"
+                              : "hover:bg-yellow-500/10"
+                          }`}
+                        >
+                          <User size={16} />
 
-          <span>
-            {"first_name" in item
-              ? `${item.first_name} ${item.last_name}`
-              : ""}
-          </span>
-        </button>
-      ))}
-    </div>
-  )}
-</div>
+                          <span>
+                            {"first_name" in item
+                              ? `${item.first_name} ${item.last_name}`
+                              : ""}
+                          </span>
+                        </button>
+                      ),
+                    )}
+                  </div>
+                )}
+              </div>
 
               {selectedPlayer && requestType === "player" && (
                 <div
@@ -1046,11 +1045,13 @@ const [openTargets, setOpenTargets] = useState(false);
                 <p className={isDark ? "text-gray-400" : "text-gray-500"}>
                   {statusFilter === "ALL"
                     ? t("No sent requests")
-                    : t(
-                        `No ${getStatusLabel(
-                          statusFilter,
-                        ).toLowerCase()} requests found`,
-                      )}
+                    : statusFilter === "PENDING"
+                    ? t("No pending requests found")
+                    : statusFilter === "ACCEPTED"
+                    ? t("No accepted requests found")
+                    : statusFilter === "REJECTED"
+                    ? t("No rejected requests found")
+                    : t("No cancelled requests found")}
                 </p>
               </div>
             ) : (

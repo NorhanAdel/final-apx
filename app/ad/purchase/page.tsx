@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { fetchGraphQL } from "@/app/lib/fetchGraphQL";
 import { useTheme } from "@/app/context/ThemeContext";
 import { useAuth } from "@/app/context/auth-context";
+import useTranslate from "@/app/hooks/useTranslate";
 
 import { AdDurationSelector } from "@/app/components/AdDurationSelector";
 import { PaymentForm } from "@/app/components/PaymentForm";
@@ -36,12 +37,14 @@ interface PurchaseResponse {
 
 export default function PurchaseAdPage() {
   const router = useRouter();
+  const { t } = useTranslate();
 
   const { theme } = useTheme();
   const { user } = useAuth();
 
-  const [selectedDuration, setSelectedDuration] =
-    useState<Duration | null>(null);
+  const [selectedDuration, setSelectedDuration] = useState<Duration | null>(
+    null,
+  );
 
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -53,7 +56,7 @@ export default function PurchaseAdPage() {
     cvv: string;
   }) => {
     if (!selectedDuration) {
-      toast.error("Please select duration");
+      toast.error(t("Please select duration"));
       return;
     }
 
@@ -61,15 +64,17 @@ export default function PurchaseAdPage() {
       setIsProcessing(true);
 
       const isOrg = ["CLUB", "SCOUT", "AGENT"].includes(user?.role || "");
-      
-      const query = isOrg ? `
+
+      const query = isOrg
+        ? `
         mutation PurchaseOrgAdWithDuration($input: PurchaseOrgAdWithDurationInput!) {
           purchaseOrgAdWithDuration(input: $input) {
             success
             purchase_id
           }
         }
-      ` : `
+      `
+        : `
         mutation PurchaseAdWithDuration($input: PurchaseAdWithDurationInput!) {
           purchaseAdWithDuration(input: $input) {
             success
@@ -78,41 +83,40 @@ export default function PurchaseAdPage() {
         }
       `;
 
-      const result = (await fetchGraphQL(
-        query,
-        {
-          input: {
-            ad_duration_pricing_id: selectedDuration.id,
-            card: {
-              cardholder_name: cardData.cardholder_name,
-              card_number: cardData.card_number,
-              expiry_month: cardData.expiry_month,
-              expiry_year: cardData.expiry_year,
-              cvv: cardData.cvv,
-            },
+      const result = (await fetchGraphQL(query, {
+        input: {
+          ad_duration_pricing_id: selectedDuration.id,
+          card: {
+            cardholder_name: cardData.cardholder_name,
+            card_number: cardData.card_number,
+            expiry_month: cardData.expiry_month,
+            expiry_year: cardData.expiry_year,
+            cvv: cardData.cvv,
           },
-        }
-      )) as PurchaseResponse;
+        },
+      })) as PurchaseResponse;
 
       if (result?.errors) {
         toast.error(result.errors[0].message);
         return;
       }
 
-      const success = isOrg 
-        ? result?.data?.purchaseOrgAdWithDuration?.success 
+      const success = isOrg
+        ? result?.data?.purchaseOrgAdWithDuration?.success
         : result?.data?.purchaseAdWithDuration?.success;
 
       if (success) {
         toast.success(
-          `Ad slot purchased successfully! (${selectedDuration.days} days)`
+          `${t("Ad slot purchased successfully!")} (${
+            selectedDuration.days
+          } ${t("days")})`,
         );
 
         router.push(`/clubprofile/shareAd?days=${selectedDuration.days}`);
       }
     } catch (error) {
       console.error(error);
-      toast.error("Purchase failed");
+      toast.error(t("Purchase failed"));
     } finally {
       setIsProcessing(false);
     }
@@ -121,9 +125,7 @@ export default function PurchaseAdPage() {
   return (
     <div
       className={`min-h-screen py-32 px-6 transition-colors duration-300 ${
-        theme === "dark"
-          ? "bg-[#020617] text-white"
-          : "bg-white text-black"
+        theme === "dark" ? "bg-[#020617] text-white" : "bg-white text-black"
       }`}
     >
       <div className="max-w-2xl mx-auto">
@@ -132,7 +134,7 @@ export default function PurchaseAdPage() {
             theme === "dark" ? "text-white" : "text-gray-900"
           }`}
         >
-          Purchase Ad Slot
+          {t("Purchase Ad Slot")}
         </h1>
 
         <div
@@ -147,7 +149,7 @@ export default function PurchaseAdPage() {
               theme === "dark" ? "text-white" : "text-gray-900"
             }`}
           >
-            Select Duration
+            {t("Select Duration")}
           </h2>
 
           <AdDurationSelector
@@ -169,9 +171,12 @@ export default function PurchaseAdPage() {
                     theme === "dark" ? "text-gray-200" : "text-gray-800"
                   }`}
                 >
-                  You are about to purchase a{" "}
-                  <strong>{selectedDuration.days}-day</strong> ad slot for{" "}
-                  <strong>${selectedDuration.price}</strong>
+                  {t("You are about to purchase a")}{" "}
+                  <strong>
+                    {selectedDuration.days}
+                    {t("days")}
+                  </strong>{" "}
+                  {t("ad slot for")} <strong>${selectedDuration.price}</strong>
                 </p>
               </div>
 

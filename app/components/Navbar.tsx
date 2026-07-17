@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect, Dispatch, SetStateAction } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Menu,
   X,
@@ -33,35 +33,13 @@ import { useAuth } from "../context/auth-context";
 import { GET_ALL_SPORTS } from "../graphql/query/sports.queries";
 import { GET_ACTIVE_LANGUAGES } from "../graphql/query/languages.queries";
 import { fetchGraphQL } from "../lib/fetchGraphQL";
-
-type NavbarProps = {
-  lang: string;
-  setLang: Dispatch<SetStateAction<string>>;
-};
-
-interface User {
-  id: string;
-  email: string;
-  username: string;
-  role: "PLAYER" | "CLUB" | "ADMIN" | "SCOUT" | "AGENT" | "USER";
-    has_active_subscription?: boolean;
-  playerProfile?: { id: string; full_name: string };
-  clubProfile?: { id: string; club_name: string };
-  scoutProfile?: { id: string; full_name: string };
-  agentProfile?: { id: string; full_name: string };
-}
-
-interface Language {
-  id: string;
-  code: string;
-  name: string;
-}
-
-interface Sport {
-  id: string;
-  name: string;
-  image_url?: string;
-}
+import type {
+  User,
+  Language,
+  Sport,
+  NavbarProps,
+} from "../interfaces/navbar.interface";
+import { translate, translateRole } from "../locales";
 
 const navLinks = [
   { key: "Home", href: "/" },
@@ -93,7 +71,13 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isLoading: loading, logout } = useAuth();
-  const [mounted, setMounted] = useState(false);  
+  const [mounted, setMounted] = useState(false);
+
+  // ✅ Refs for click outside detection
+  const langRef = useRef<HTMLDivElement>(null);
+  const sportsRef = useRef<HTMLDivElement>(null);
+  const profileRef = useRef<HTMLDivElement>(null);
+
   const [open, setOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const [sportsOpen, setSportsOpen] = useState(false);
@@ -108,9 +92,64 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
   const [localUser, setLocalUser] = useState<User | null>(null);
 
   const { theme, toggleTheme } = useTheme();
-  const { t, changeLang, lang: currentLang } = useTranslate();
+  const { changeLang, lang: currentLang } = useTranslate();
 
- 
+  // استخدم اللغة من props أو من useTranslate
+  const activeLang = lang || currentLang || "en";
+
+  // ✅ Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+
+      if (langRef.current && !langRef.current.contains(target)) {
+        setLangOpen(false);
+      }
+
+      if (sportsRef.current && !sportsRef.current.contains(target)) {
+        setSportsOpen(false);
+      }
+
+      if (profileRef.current && !profileRef.current.contains(target)) {
+        setProfileOpen(false);
+      }
+    };
+
+    if (langOpen || sportsOpen || profileOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [langOpen, sportsOpen, profileOpen]);
+
+  // ✅ Close mobile dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutsideMobile = (event: MouseEvent) => {
+      const target = event.target as Node;
+      const mobileSheet = document.getElementById("mobile-sheet");
+
+      if (mobileSheet && !mobileSheet.contains(target)) {
+        const menuButton = document.getElementById("mobile-menu-button");
+        if (menuButton && menuButton.contains(target)) {
+          return;
+        }
+        setOpen(false);
+        setMobileSportsOpen(false);
+        setMobileLangOpen(false);
+      }
+    };
+
+    if (open) {
+      document.addEventListener("mousedown", handleClickOutsideMobile);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutsideMobile);
+    };
+  }, [open]);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -121,14 +160,14 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
       try {
         const result = await fetchGraphQL<{ sports: Sport[] }>(GET_ALL_SPORTS);
         if (result.data?.sports) {
-  const sorted = [...result.data.sports].sort((a, b) => {
-    if (a.name.toLowerCase() === "football") return -1;
-    if (b.name.toLowerCase() === "football") return 1;
-    return 0;
-  });
+          const sorted = [...result.data.sports].sort((a, b) => {
+            if (a.name.toLowerCase() === "football") return -1;
+            if (b.name.toLowerCase() === "football") return 1;
+            return 0;
+          });
 
-  setSports(sorted);
-}
+          setSports(sorted);
+        }
       } catch (error) {
         console.error("Failed to fetch sports:", error);
       } finally {
@@ -213,38 +252,28 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
     return sportIcons[sportName] || Trophy;
   };
 
-  const currentSport = sports.find((s: Sport) =>
-    pathname.startsWith(`/${s.name.toLowerCase()}`),
+  const currentSport = sports.find((sport: Sport) =>
+    pathname.startsWith(`/${sport.name.toLowerCase()}`),
   );
 
   const activeUser = localUser || user;
- 
 
-const getCheckoutRoute = () => {
-  if (!activeUser) return "/auth/login";
+  const getCheckoutRoute = (): string => {
+    if (!activeUser) return "/auth/login";
 
-  switch (activeUser.role) {
-    case "PLAYER":
-      return "/profile/participationprime";
-    case "CLUB":
-      return "/clubprofile/participationprime";
-    case "SCOUT":
-      return "/scout/profile/participationprime";
-    case "AGENT":
-      return "/agent/participationprime";
-    default:
-      return "/";
-  }
-};
-const requireSubscription = (callback: () => void) => {
-  if (!activeUser?.has_active_subscription) {
-    router.push(getCheckoutRoute());
-    return;
-  }
-
-  callback();
-};
-
+    switch (activeUser.role) {
+      case "PLAYER":
+        return "/profile/participationprime";
+      case "CLUB":
+        return "/clubprofile/participationprime";
+      case "SCOUT":
+        return "/scout/profile/participationprime";
+      case "AGENT":
+        return "/agent/participationprime";
+      default:
+        return "/";
+    }
+  };
 
   const getProfileLink = (): string => {
     if (!activeUser) return "/auth/login";
@@ -265,33 +294,37 @@ const requireSubscription = (callback: () => void) => {
     }
   };
 
-
-
-
-
   const getProfileName = (): string => {
     if (!activeUser) return "";
     switch (activeUser.role) {
       case "PLAYER":
         return (
-          activeUser.playerProfile?.full_name || activeUser.username || "Player"
+          activeUser.playerProfile?.full_name ||
+          activeUser.username ||
+          translate("PLAYER", activeLang)
         );
       case "CLUB":
         return (
-          activeUser.clubProfile?.club_name || activeUser.username || "Club"
+          activeUser.clubProfile?.club_name ||
+          activeUser.username ||
+          translate("CLUB", activeLang)
         );
       case "SCOUT":
         return (
-          activeUser.scoutProfile?.full_name || activeUser.username || "Scout"
+          activeUser.scoutProfile?.full_name ||
+          activeUser.username ||
+          translate("SCOUT", activeLang)
         );
       case "AGENT":
         return (
-          activeUser.agentProfile?.full_name || activeUser.username || "Agent"
+          activeUser.agentProfile?.full_name ||
+          activeUser.username ||
+          translate("AGENT", activeLang)
         );
       case "USER":
-        return activeUser.username || "User";
+        return activeUser.username || translate("USER", activeLang);
       case "ADMIN":
-        return activeUser.username || "Admin";
+        return activeUser.username || translate("ADMIN", activeLang);
       default:
         return activeUser.username || "Profile";
     }
@@ -343,15 +376,17 @@ const requireSubscription = (callback: () => void) => {
     }
 
     if (activeUser) {
+      const userName = getProfileName();
+
       return (
-        <div className="relative">
+        <div ref={profileRef} className="relative">
           <button
             onClick={() => setProfileOpen(!profileOpen)}
             className="flex items-center gap-2 px-4 py-2 bg-[#001a4d] border border-[#F0B100] rounded-lg text-[#F0B100] hover:bg-[#002060] transition-colors"
           >
             {getProfileIcon()}
             <span className="hidden sm:inline max-w-[100px] truncate">
-              {getProfileName()}
+              {userName}
             </span>
             <ChevronDown size={14} />
           </button>
@@ -366,34 +401,39 @@ const requireSubscription = (callback: () => void) => {
               >
                 <div className="px-4 py-2 border-b border-white/10 bg-white/5">
                   <span className="text-xs text-yellow-400">
-                    {activeUser.role}
+                    {translateRole(activeUser.role, activeLang)}
                   </span>
                 </div>
 
-  <Link
-  href={getProfileLink()}
-  onClick={(e) => {
-    const requiresSub = ["PLAYER", "CLUB", "SCOUT", "AGENT"].includes(activeUser?.role || "");
-    if (requiresSub && !activeUser?.has_active_subscription) {
-      e.preventDefault();
-      router.push(getCheckoutRoute());
-      return;
-    }
+                <Link
+                  href={getProfileLink()}
+                  onClick={(e) => {
+                    const requiresSub = [
+                      "PLAYER",
+                      "CLUB",
+                      "SCOUT",
+                      "AGENT",
+                    ].includes(activeUser?.role || "");
+                    if (requiresSub && !activeUser?.has_active_subscription) {
+                      e.preventDefault();
+                      router.push(getCheckoutRoute());
+                      return;
+                    }
 
-    setProfileOpen(false);
-  }}
-  className="flex items-center gap-3 px-4 py-3 hover:bg-[#F0B100] hover:text-black transition-colors"
->
-  {getProfileIcon()}
-  <span>{t("My Profile")}</span>
-</Link>
+                    setProfileOpen(false);
+                  }}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-[#F0B100] hover:text-black transition-colors"
+                >
+                  {getProfileIcon()}
+                  <span>{translate("My Profile", activeLang)}</span>
+                </Link>
 
                 <button
                   onClick={handleLogout}
                   className="flex items-center gap-3 w-full text-left px-4 py-3 border-t border-white/10 text-red-400 hover:bg-red-500 hover:text-white transition-colors"
                 >
                   <LogOut size={18} />
-                  <span>{t("Logout")}</span>
+                  <span>{translate("Logout", activeLang)}</span>
                 </button>
               </motion.div>
             )}
@@ -405,7 +445,7 @@ const requireSubscription = (callback: () => void) => {
     return (
       <Link href="/auth/login">
         <button className="px-5 py-2 bg-[#001a4d] border border-[#F0B100] text-[#F0B100] rounded-lg flex items-center gap-2 hover:bg-[#002060] transition-colors">
-          <LogIn size={16} /> {t("Login")}
+          <LogIn size={16} /> {translate("Login", activeLang)}
         </button>
       </Link>
     );
@@ -422,189 +462,191 @@ const requireSubscription = (callback: () => void) => {
           : "bg-transparent"
       }`}
     >
-<div className="max-w-7xl mx-auto px-6 py-2 flex justify-between items-center">
-  <Link href="/">
-    <Image src="/logo.png" width={90} height={70} alt="logo" />
-  </Link>
+      <div className="max-w-7xl mx-auto px-6 py-2 flex justify-between items-center">
+        <Link href="/">
+          <Image src="/logo.png" width={90} height={70} alt="logo" />
+        </Link>
 
-  <div className="hidden md:flex items-center gap-6">
-    {navLinks.map((link) => (
-      <Link
-        key={link.href}
-        href={link.href}
-        className={`transition-colors font-semibold ${
-          theme === "dark"
-            ? "text-yellow-400 hover:text-yellow-300"
-            : "text-gray-800 hover:text-yellow-600"
-        }`}
-      >
-        {t(link.key)}
-      </Link>
-    ))}
+        <div className="hidden md:flex items-center gap-6">
+          {navLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`transition-colors font-semibold ${
+                theme === "dark"
+                  ? "text-yellow-400 hover:text-yellow-300"
+                  : "text-gray-800 hover:text-yellow-600"
+              }`}
+            >
+              {translate(link.key, activeLang)}
+            </Link>
+          ))}
 
-    {/* SPORTS DROPDOWN */}
-    <div className="relative">
-      <button
-        onClick={() => setSportsOpen(!sportsOpen)}
-        className={`flex items-center gap-1 transition-colors font-medium ${
-          theme === "dark"
-            ? "text-white hover:text-yellow-400"
-            : "text-gray-800 hover:text-yellow-600"
-        }`}
-      >
-        {currentSport?.name || t("Sports")}
-        <ChevronDown size={16} />
-      </button>
+          <div ref={sportsRef} className="relative">
+            <button
+              onClick={() => setSportsOpen(!sportsOpen)}
+              className={`flex items-center gap-1 transition-colors font-medium ${
+                theme === "dark"
+                  ? "text-white hover:text-yellow-400"
+                  : "text-gray-800 hover:text-yellow-600"
+              }`}
+            >
+              {currentSport?.name || translate("Sports", activeLang)}
+              <ChevronDown size={16} />
+            </button>
 
-      <AnimatePresence>
-        {sportsOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className={`absolute left-0 mt-3 w-52 border rounded-xl z-50 overflow-hidden ${
-              theme === "dark"
-                ? "bg-[#14141c] border-white/10 text-white"
-                : "bg-white border-gray-200 text-gray-800 shadow-lg"
-            }`}
-          >
-            {sportsLoading ? (
-              <div className="px-4 py-2 text-center">Loading...</div>
-            ) : (
-              sports.map((sport: Sport) => {
-                const Icon = getSportIcon(sport.name);
-
-                return (
-                  <Link
-                    key={sport.id}
-                    href={`/sports/${sport.id}`}
-                    className={`flex items-center gap-2 px-4 py-2 transition-colors ${
-                      theme === "dark"
-                        ? "hover:bg-[#F0B100] hover:text-black"
-                        : "hover:bg-yellow-100 hover:text-black"
-                    }`}
-                    onClick={() => setSportsOpen(false)}
-                  >
-                    <Icon size={18} />
-                    {sport.name}
-                  </Link>
-                );
-              })
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-
-    {renderAuthButton()}
-
-    {/* THEME TOGGLE */}
-    <button
-      onClick={toggleTheme}
-      className={`p-2 rounded-lg transition-colors ${
-        theme === "dark" ? "hover:bg-white/10" : "hover:bg-gray-200"
-      }`}
-    >
-      {mounted ? (
-        theme === "dark" ? (
-          <Moon size={18} />
-        ) : (
-          <Sun size={18} />
-        )
-      ) : (
-        <div className="w-5 h-5" />
-      )}
-    </button>
-
-    {/* LANGUAGE */}
-    <div className="relative">
-      <button
-        onClick={() => setLangOpen(!langOpen)}
-        className={`flex items-center gap-1 transition-colors ${
-          theme === "dark"
-            ? "text-white hover:text-yellow-400"
-            : "text-yellow-600"
-        }`}
-      >
-        <Globe size={14} />
-        {lang.toUpperCase()}
-        <ChevronDown size={12} />
-      </button>
-
-      <AnimatePresence>
-        {langOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className={`absolute right-0 mt-3 w-40 border rounded-xl z-50 overflow-hidden ${
-              theme === "dark"
-                ? "bg-[#14141c] border-white/10 text-white"
-                : "bg-white border-gray-200 text-gray-800 shadow-lg"
-            }`}
-          >
-            {languagesLoading ? (
-              <div className="px-4 py-2 text-center">Loading...</div>
-            ) : (
-              languages.map((l) => (
-                <button
-                  key={l.code}
-                  onClick={() => handleLanguageChange(l.code)}
-                  className={`block w-full text-left px-4 py-2 transition-colors ${
+            <AnimatePresence>
+              {sportsOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className={`absolute left-0 mt-3 w-52 border rounded-xl z-50 overflow-hidden ${
                     theme === "dark"
-                      ? "hover:bg-[#F0B100] hover:text-black"
-                      : "hover:bg-yellow-100 hover:text-black"
+                      ? "bg-[#14141c] border-white/10 text-white"
+                      : "bg-white border-gray-200 text-gray-800 shadow-lg"
                   }`}
                 >
-                  {l.name}
-                </button>
-              ))
+                  {sportsLoading ? (
+                    <div className="px-4 py-2 text-center">Loading...</div>
+                  ) : (
+                    sports.map((sport: Sport) => {
+                      const Icon = getSportIcon(sport.name);
+
+                      return (
+                        <Link
+                          key={sport.id}
+                          href={`/sports/${sport.id}`}
+                          className={`flex items-center gap-2 px-4 py-2 transition-colors ${
+                            theme === "dark"
+                              ? "hover:bg-[#F0B100] hover:text-black"
+                              : "hover:bg-yellow-100 hover:text-black"
+                          }`}
+                          onClick={() => setSportsOpen(false)}
+                        >
+                          <Icon size={18} />
+                          {sport.name}
+                        </Link>
+                      );
+                    })
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {renderAuthButton()}
+
+          <button
+            onClick={toggleTheme}
+            className={`p-2 rounded-lg transition-colors ${
+              theme === "dark" ? "hover:bg-white/10" : "hover:bg-gray-200"
+            }`}
+          >
+            {mounted ? (
+              theme === "dark" ? (
+                <Moon size={18} />
+              ) : (
+                <Sun size={18} />
+              )
+            ) : (
+              <div className="w-5 h-5" />
             )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  </div>
+          </button>
 
-  {/* MOBILE */}
-  <div className="md:hidden flex items-center gap-3">
-    <button onClick={toggleTheme} className=" text-yellow-600">
-      {mounted ? (
-        theme === "dark" ? (
-          <Moon size={20} />
-        ) : (
-          <Sun size={20} />
-        )
-      ) : (
-        <div className="w-5 h-5" />
-      )}
-    </button>
+          <div ref={langRef} className="relative">
+            <button
+              onClick={() => setLangOpen(!langOpen)}
+              className={`flex items-center gap-1 transition-colors ${
+                theme === "dark"
+                  ? "text-white hover:text-yellow-400"
+                  : "text-yellow-600"
+              }`}
+            >
+              <Globe size={14} />
+              {translate(activeLang.toUpperCase(), activeLang)}
+              <ChevronDown size={12} />
+            </button>
 
-    {!activeUser ? (
-      <Link href="/auth/login" className=" text-yellow-600">
-        <LogIn size={22} />
-      </Link>
-    ) : (
-      <button onClick={handleLogout} className=" text-yellow-600">
-        <LogOut size={22} />
-      </button>
-    )}
+            <AnimatePresence>
+              {langOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className={`absolute right-0 mt-3 w-40 border rounded-xl z-50 overflow-hidden ${
+                    theme === "dark"
+                      ? "bg-[#14141c] border-white/10 text-white"
+                      : "bg-white border-gray-200 text-gray-800 shadow-lg"
+                  }`}
+                >
+                  {languagesLoading ? (
+                    <div className="px-4 py-2 text-center">Loading...</div>
+                  ) : (
+                    languages.map((language: Language) => (
+                      <button
+                        key={language.code}
+                        onClick={() => handleLanguageChange(language.code)}
+                        className={`block w-full text-left px-4 py-2 transition-colors ${
+                          theme === "dark"
+                            ? "hover:bg-[#F0B100] hover:text-black"
+                            : "hover:bg-yellow-100 hover:text-black"
+                        }`}
+                      >
+                        {translate(language.name, activeLang)}
+                      </button>
+                    ))
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
 
-    <button onClick={() => setOpen(!open)}className=" text-yellow-600">
-      {open ? <X /> : <Menu />}
-    </button>
-  </div>
-</div>
+        <div className="md:hidden flex items-center gap-3">
+          <button onClick={toggleTheme} className=" text-yellow-600">
+            {mounted ? (
+              theme === "dark" ? (
+                <Moon size={20} />
+              ) : (
+                <Sun size={20} />
+              )
+            ) : (
+              <div className="w-5 h-5" />
+            )}
+          </button>
+
+          {!activeUser ? (
+            <Link href="/auth/login" className=" text-yellow-600">
+              <LogIn size={22} />
+            </Link>
+          ) : (
+            <button onClick={handleLogout} className=" text-yellow-600">
+              <LogOut size={22} />
+            </button>
+          )}
+
+          <button
+            id="mobile-menu-button"
+            onClick={() => setOpen(!open)}
+            className=" text-yellow-600"
+          >
+            {open ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
+      </div>
+
       <AnimatePresence>
         {open && (
           <motion.div
+            id="mobile-sheet"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             className={`md:hidden overflow-hidden border-t ${
               theme === "dark"
-                ? "bg-[#020617]  text-yellow-600 border-white/10"
-                : "bg-white  text-yellow-600 border-black/10"
+                ? "bg-[#020617] text-yellow-600 border-white/10"
+                : "bg-white text-yellow-600 border-black/10"
             }`}
           >
             <div className="flex flex-col py-4">
@@ -613,9 +655,9 @@ const requireSubscription = (callback: () => void) => {
                   key={link.href}
                   href={link.href}
                   onClick={() => setOpen(false)}
-                  className="px-6 py-3  text-yellow-600 hover:bg-white/5"
+                  className="px-6 py-3 text-yellow-600 hover:bg-white/5"
                 >
-                  {t(link.key)}
+                  {translate(link.key, activeLang)}
                 </Link>
               ))}
 
@@ -623,7 +665,7 @@ const requireSubscription = (callback: () => void) => {
                 onClick={() => setMobileSportsOpen(!mobileSportsOpen)}
                 className="flex justify-between items-center w-full px-6 py-3 hover:bg-white/5"
               >
-                <span>{t("Sports")}</span>
+                <span>{translate("Sports", activeLang)}</span>
                 <ChevronDown
                   size={16}
                   className={`transition-transform ${
@@ -636,7 +678,6 @@ const requireSubscription = (callback: () => void) => {
                 <div className="max-h-60 overflow-y-auto pl-6">
                   {sports.map((sport: Sport) => {
                     const Icon = getSportIcon(sport.name);
-                    const slug = sport.name.toLowerCase();
                     return (
                       <Link
                         key={sport.id}
@@ -658,7 +699,7 @@ const requireSubscription = (callback: () => void) => {
               >
                 <span className="flex items-center gap-2">
                   <Globe size={14} />
-                  {t("Language")}
+                  {translate("Language", activeLang)}
                 </span>
                 <ChevronDown
                   size={16}
@@ -670,13 +711,13 @@ const requireSubscription = (callback: () => void) => {
 
               {mobileLangOpen && (
                 <div className="pl-6">
-                  {languages.map((l) => (
+                  {languages.map((language: Language) => (
                     <button
-                      key={l.code}
-                      onClick={() => handleLanguageChange(l.code)}
+                      key={language.code}
+                      onClick={() => handleLanguageChange(language.code)}
                       className="block w-full text-left px-6 py-2 hover:bg-white/5"
                     >
-                      {l.name}
+                      {translate(language.name, activeLang)}
                     </button>
                   ))}
                 </div>
@@ -688,12 +729,15 @@ const requireSubscription = (callback: () => void) => {
                     {getProfileIcon()}
                     <span className="font-semibold">{getProfileName()}</span>
                   </div>
+                  <div className="text-xs text-yellow-400 mb-2">
+                    {translateRole(activeUser.role, activeLang)}
+                  </div>
                   <Link
                     href={getProfileLink()}
                     onClick={() => setOpen(false)}
                     className="block w-full text-center px-4 py-2 bg-[#001a4d] border border-[#F0B100] rounded-lg text-[#F0B100] hover:bg-[#002060] transition-colors"
                   >
-                    {t("View Profile")}
+                    {translate("View Profile", activeLang)}
                   </Link>
                 </div>
               )}

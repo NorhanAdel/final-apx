@@ -45,10 +45,8 @@ export default function ComingSoonSection() {
 
       {/* CONTENT */}
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 grid grid-cols-1 md:grid-cols-2 gap-10 items-center min-h-screen">
-
         {/* LEFT SIDE */}
         <div className="max-w-xl text-center md:text-start">
-
           {/* TITLE */}
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold mb-6 leading-tight">
             <span className="relative">
@@ -109,7 +107,7 @@ export default function ComingSoonSection() {
                 whileTap={{ scale: 0.95 }}
                 className="px-6 py-3 bg-[#F0B100] text-black font-semibold rounded-md text-sm sm:text-base"
               >
-                OK
+                {t("ok")}
               </motion.button>
             </div>
           </motion.div>
@@ -132,10 +130,8 @@ export default function ComingSoonSection() {
               </motion.a>
             ))}
           </div>
-
         </div>
 
-       
         <div />
       </div>
     </section>

@@ -2,8 +2,12 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { fetchGraphQL } from "@/app/lib/fetchGraphQL";
-import { GET_AVAILABLE_AD_DURATIONS, GET_AVAILABLE_AD_DURATIONS_FOR_ORG } from "@/app/graphql/query/ad.queries";
+import {
+  GET_AVAILABLE_AD_DURATIONS,
+  GET_AVAILABLE_AD_DURATIONS_FOR_ORG,
+} from "@/app/graphql/query/ad.queries";
 import { useAuth } from "@/app/context/auth-context";
+import useTranslate from "@/app/hooks/useTranslate";
 
 interface AdDuration {
   id: string;
@@ -31,6 +35,7 @@ export function AdDurationSelector({
   className = "",
 }: Props) {
   const { user, isLoading: authLoading } = useAuth();
+  const { t } = useTranslate();
   const [durations, setDurations] = useState<AdDuration[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,16 +46,16 @@ export function AdDurationSelector({
       setError(null);
 
       const isOrg = ["CLUB", "SCOUT", "AGENT"].includes(user?.role || "");
-      const query = isOrg ? GET_AVAILABLE_AD_DURATIONS_FOR_ORG : GET_AVAILABLE_AD_DURATIONS;
+      const query = isOrg
+        ? GET_AVAILABLE_AD_DURATIONS_FOR_ORG
+        : GET_AVAILABLE_AD_DURATIONS;
 
-      const result = (await fetchGraphQL(
-        query,
-      )) as GraphQLResponse;
+      const result = (await fetchGraphQL(query)) as GraphQLResponse;
 
       const adDurations = isOrg
         ? result?.data?.availableAdDurationsForOrg || []
         : result?.data?.availableAdDurationsForPlayer || [];
-        
+
       setDurations(adDurations);
 
       if (adDurations.length > 0 && !selectedId) {
@@ -58,11 +63,11 @@ export function AdDurationSelector({
       }
     } catch (err) {
       console.error("Error fetching ad durations:", err);
-      setError("Failed to load ad durations");
+      setError(t("Failed to load ad durations"));
     } finally {
       setLoading(false);
     }
-  }, [selectedId, onSelect, user?.role]);
+  }, [selectedId, onSelect, user?.role, t]);
 
   useEffect(() => {
     if (!authLoading) {
@@ -86,7 +91,7 @@ export function AdDurationSelector({
           onClick={fetchDurations}
           className="mt-2 px-4 py-2 bg-yellow-400 text-black rounded-lg"
         >
-          Try Again
+          {t("Try Again")}
         </button>
       </div>
     );
@@ -95,7 +100,7 @@ export function AdDurationSelector({
   if (durations.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500">
-        <p>No ad durations available</p>
+        <p>{t("No ad durations available")}</p>
       </div>
     );
   }
@@ -121,7 +126,7 @@ export function AdDurationSelector({
             <div className="text-3xl font-bold text-yellow-400">
               {duration.days}
             </div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">days</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">{t("days")}</div>
             <div className="text-xl font-bold mt-2">${duration.price}</div>
           </div>
         </button>

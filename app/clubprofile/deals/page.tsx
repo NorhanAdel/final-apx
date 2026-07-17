@@ -938,15 +938,17 @@ export default function ClubDealsPage() {
                 }`}
               >
                 <Send size={48} className="mx-auto mb-4 text-gray-500" />
-                <p className={isDark ? "text-gray-400" : "text-gray-500"}>
-                  {statusFilter === "ALL"
-                    ? t("No deals sent yet")
-                    : t(
-                        `No ${getStatusLabel(
-                          statusFilter,
-                        ).toLowerCase()} deals found`,
-                      )}
-                </p>
+<p className={isDark ? "text-gray-400" : "text-gray-500"}>
+  {statusFilter === "ALL" 
+    ? t("No deals sent yet")
+    : statusFilter === "PENDING" 
+    ? t("No pending deals found")
+    : statusFilter === "ACCEPTED" 
+    ? t("No accepted deals found")
+    : statusFilter === "REJECTED" 
+    ? t("No rejected deals found")
+    : t("No expired deals found")}
+</p>
                 {statusFilter !== "ALL" && (
                   <button
                     onClick={() => setStatusFilter("ALL")}

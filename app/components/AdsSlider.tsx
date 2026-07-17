@@ -60,19 +60,19 @@ export default function AdsCarousel() {
         : `${API_URL}${ad.image_url}`,
     }));
 
- setAds(formatted);
-setActive(0);
+    setAds(formatted);
+    setActive(0);
   };
 
   const incrementAdViews = async (adId: string) => {
-  const mutation = `
-  mutation IncrementAdViews($adId: ID!) {
-    incrementAdViews(adId: $adId) {
-      id
-      views_count
-    }
-  }
-`;
+    const mutation = `
+      mutation IncrementAdViews($adId: ID!) {
+        incrementAdViews(adId: $adId) {
+          id
+          views_count
+        }
+      }
+    `;
 
     try {
       await fetchGraphQL(mutation, { adId });
@@ -84,8 +84,8 @@ setActive(0);
                 ...ad,
                 views_count: (ad.views_count || 0) + 1,
               }
-            : ad
-        )
+            : ad,
+        ),
       );
     } catch (error) {
       console.error("Error incrementing ad views:", error);
@@ -112,20 +112,16 @@ setActive(0);
   const handleScroll = () => {
     if (!scrollRef.current) return;
 
-    const children = Array.from(
-      scrollRef.current.children
-    ) as HTMLElement[];
+    const children = Array.from(scrollRef.current.children) as HTMLElement[];
 
     const center =
-      scrollRef.current.scrollLeft +
-      scrollRef.current.offsetWidth / 2;
+      scrollRef.current.scrollLeft + scrollRef.current.offsetWidth / 2;
 
     let closest = 0;
     let dist = Infinity;
 
     children.forEach((child, i) => {
-      const childCenter =
-        child.offsetLeft + child.offsetWidth / 2;
+      const childCenter = child.offsetLeft + child.offsetWidth / 2;
 
       const d = Math.abs(center - childCenter);
 
@@ -165,7 +161,7 @@ setActive(0);
               isDark ? "text-gray-400" : "text-gray-500"
             }`}
           >
-            Featured sponsored campaigns
+            {t("Featured sponsored campaigns")}
           </p>
         </div>
 
@@ -198,7 +194,7 @@ setActive(0);
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-       className="flex gap-8 overflow-x-auto scroll-smooth snap-x snap-mandatory px-2"
+        className="flex gap-8 overflow-x-auto scroll-smooth snap-x snap-mandatory px-2"
         style={{
           scrollbarWidth: "none",
           msOverflowStyle: "none",
@@ -230,7 +226,7 @@ setActive(0);
               {isActive && (
                 <div className="absolute top-6 right-6 z-20">
                   <span className="bg-[#F0B100] text-white px-4 py-1 rounded-full text-xs border border-white/20">
-                    Active
+                    {t("Active")}
                   </span>
                 </div>
               )}
@@ -255,9 +251,7 @@ setActive(0);
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-5 text-sm text-gray-300">
-                      <span>
-                        👁 {ad.views_count?.toLocaleString() || 0}
-                      </span>
+                      <span>👁 {ad.views_count?.toLocaleString() || 0}</span>
 
                       {ad.created_at && (
                         <span>
@@ -273,7 +267,7 @@ setActive(0);
                       }}
                       className="bg-[#F0B100] text-white px-6 py-3 rounded-full text-sm font-semibold hover:scale-105 transition-transform"
                     >
-                      View Details
+                      {t("View Details")}
                     </button>
                   </div>
                 </motion.div>

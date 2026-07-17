@@ -65,3 +65,39 @@ body {
   scrollbar-width: thin;
   scrollbar-color: rgba(250, 204, 21, 0.4) transparent;
 }
+
+/* =========================
+   FIX AUTO-FILL BACKGROUND (GOOGLE CHROME)
+   ========================= */
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: white !important;
+  transition: background-color 5000s ease-in-out 0s !important;
+  box-shadow: inset 0 0 0px 1000px rgba(255, 255, 255, 0.15) !important;
+  background-color: transparent !important;
+}
+
+input:-moz-autofill {
+  background-color: transparent !important;
+  color: white !important;
+}
+
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus,
+.dark input:-webkit-autofill:active {
+  box-shadow: inset 0 0 0px 1000px rgba(255, 255, 255, 0.08) !important;
+  -webkit-text-fill-color: white !important;
+}
+
+html:not(.dark) input:-webkit-autofill,
+html:not(.dark) input:-webkit-autofill:hover,
+html:not(.dark) input:-webkit-autofill:focus,
+html:not(.dark) input:-webkit-autofill:active {
+  box-shadow: inset 0 0 0px 1000px rgba(0, 0, 0, 0.05) !important;
+  -webkit-text-fill-color: black !important;
+}

@@ -1,9 +1,8 @@
-// app/components/PaymentForm.tsx
-
 "use client";
 
 import { useState } from "react";
 import { CreditCard, Lock } from "lucide-react";
+import useTranslate from "@/app/hooks/useTranslate";
 
 interface CardData {
   cardholder_name: string;
@@ -20,6 +19,8 @@ interface Props {
 }
 
 export function PaymentForm({ onSubmit, isLoading, amount }: Props) {
+  const { t } = useTranslate();
+
   const [cardData, setCardData] = useState<CardData>({
     cardholder_name: "",
     card_number: "",
@@ -36,12 +37,12 @@ export function PaymentForm({ onSubmit, isLoading, amount }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <h3 className="text-xl font-bold flex items-center gap-2">
-        <CreditCard /> Payment Details
+        <CreditCard /> {t("Payment Details")}
         {amount && <span className="text-yellow-500">(${amount})</span>}
       </h3>
 
       <div>
-        <label className="block text-sm mb-1">Cardholder Name</label>
+        <label className="block text-sm mb-1">{t("Cardholder Name")}</label>
         <input
           type="text"
           required
@@ -50,12 +51,12 @@ export function PaymentForm({ onSubmit, isLoading, amount }: Props) {
             setCardData({ ...cardData, cardholder_name: e.target.value })
           }
           className="w-full p-3 rounded-xl border dark:bg-gray-700"
-          placeholder="John Doe"
+          placeholder={t("John Doe")}
         />
       </div>
 
       <div>
-        <label className="block text-sm mb-1">Card Number</label>
+        <label className="block text-sm mb-1">{t("Card Number")}</label>
         <input
           type="text"
           required
@@ -71,7 +72,7 @@ export function PaymentForm({ onSubmit, isLoading, amount }: Props) {
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm mb-1">Expiry Month</label>
+          <label className="block text-sm mb-1">{t("Expiry Month")}</label>
           <select
             required
             value={cardData.expiry_month}
@@ -92,7 +93,7 @@ export function PaymentForm({ onSubmit, isLoading, amount }: Props) {
         </div>
 
         <div>
-          <label className="block text-sm mb-1">Expiry Year</label>
+          <label className="block text-sm mb-1">{t("Expiry Year")}</label>
           <select
             required
             value={cardData.expiry_year}
@@ -117,7 +118,7 @@ export function PaymentForm({ onSubmit, isLoading, amount }: Props) {
       </div>
 
       <div>
-        <label className="block text-sm mb-1">CVV</label>
+        <label className="block text-sm mb-1">{t("CVV")}</label>
         <input
           type="text"
           required
@@ -139,7 +140,7 @@ export function PaymentForm({ onSubmit, isLoading, amount }: Props) {
         ) : (
           <>
             <Lock size={18} />
-            Pay Now
+            {t("Pay Now")}
           </>
         )}
       </button>

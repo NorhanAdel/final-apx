@@ -152,7 +152,7 @@ const getFullImageUrl = (url?: string | null): string => {
 export default function ReelsPage() {
   const { theme } = useTheme();
   const { user } = useAuth();
-  const { lang } = useTranslate();
+  const { t, lang } = useTranslate();
   const isDark = theme === "dark";
 
   const [reels, setReels] = useState<Reel[]>([]);
@@ -170,10 +170,10 @@ export default function ReelsPage() {
   const [replyToCommentId, setReplyToCommentId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
   const [openComments, setOpenComments] = useState<string | null>(null);
-const [isPaused, setIsPaused] = useState<Record<string, boolean>>({});
+  const [isPaused, setIsPaused] = useState<Record<string, boolean>>({});
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const viewsIncremented = useRef<Set<string>>(new Set());
-const [muted, setMuted] = useState(false);
+  const [muted, setMuted] = useState(false);
 
   const gqlFetch = async (
     query: string,
@@ -183,7 +183,6 @@ const [muted, setMuted] = useState(false);
     const token = localStorage.getItem("token");
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
-      "accept-language": lang || "en",
     };
     if (withAuth && token) {
       headers["Authorization"] = `Bearer ${token}`;
@@ -199,12 +198,12 @@ const [muted, setMuted] = useState(false);
   useEffect(() => {
     fetchReels();
   }, []);
- 
+
   const fetchReels = async () => {
     const json = await gqlFetch(GET_RECENT_REELS);
     const reelsData = json?.data?.recentReels || [];
     setReels(reelsData);
- 
+
     for (const reel of reelsData) {
       fetchCommentsCount(reel.id);
     }
@@ -250,24 +249,24 @@ const [muted, setMuted] = useState(false);
     }
   }, [currentIndex, reels]);
 
-const toggleSound = () => {
-  const newMuted = !muted;
+  const toggleSound = () => {
+    const newMuted = !muted;
 
-  setMuted(newMuted);
+    setMuted(newMuted);
 
-  videoRefs.current.forEach((video) => {
-    if (video) {
-      video.muted = newMuted;
-      video.volume = newMuted ? 0 : 1;
-    }
-  });
-};
+    videoRefs.current.forEach((video) => {
+      if (video) {
+        video.muted = newMuted;
+        video.volume = newMuted ? 0 : 1;
+      }
+    });
+  };
   const toggleLike = async (id: string) => {
     const token = localStorage.getItem("token");
-   if (!token) {
-  toast.error("Login required 🔒");
-  return;
-}
+    if (!token) {
+      toast.error(t("Login required") || "Login required 🔒");
+      return;
+    }
 
     const isLiked = liked[id];
     setLiked((prev) => ({ ...prev, [id]: !isLiked }));
@@ -382,18 +381,18 @@ const toggleSound = () => {
     ).catch(console.error);
   };
 
-const togglePlay = (reelId: string, index: number) => {
-  const video = videoRefs.current[index];
-  if (!video) return;
+  const togglePlay = (reelId: string, index: number) => {
+    const video = videoRefs.current[index];
+    if (!video) return;
 
-  if (video.paused) {
-    video.play();
-    setIsPaused((prev) => ({ ...prev, [reelId]: false }));
-  } else {
-    video.pause();
-    setIsPaused((prev) => ({ ...prev, [reelId]: true }));
-  }
-};
+    if (video.paused) {
+      video.play();
+      setIsPaused((prev) => ({ ...prev, [reelId]: false }));
+    } else {
+      video.pause();
+      setIsPaused((prev) => ({ ...prev, [reelId]: true }));
+    }
+  };
 
   const canEditDelete = (commentUserId: string) => user?.id === commentUserId;
 
@@ -439,39 +438,38 @@ const togglePlay = (reelId: string, index: number) => {
       {reels.map((reel, index) => {
         const videoSrc = getFullImageUrl(reel.clip_url);
         const isLiked = liked[reel.id] || false;
- 
 
         return (
           <div
             key={reel.id}
             className="relative h-screen w-full  max-w-[420px] my-0 mx-auto snap-start"
           >
-<video
-  ref={(el) => {
-    videoRefs.current[index] = el;
-  }}
-  src={videoSrc}
-  className="w-full h-full object-cover bg-black"
-  loop
-  playsInline
-  autoPlay
-muted={muted}
-  onClick={() => togglePlay(reel.id, index)}
-/>
-{isPaused[reel.id] && (
-  <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
-    <div className="bg-black/40 rounded-full p-5 backdrop-blur-sm">
-      ▶
-    </div>
-  </div>
-)}
-         <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/80 pointer-events-none" />
-<button
-  onClick={toggleSound}
-  className="absolute top-28 right-4 z-[999] text-white"
->
-  {muted ? <VolumeX /> : <Volume2 />}
-</button>
+            <video
+              ref={(el) => {
+                videoRefs.current[index] = el;
+              }}
+              src={videoSrc}
+              className="w-full h-full object-cover bg-black"
+              loop
+              playsInline
+              autoPlay
+              muted={muted}
+              onClick={() => togglePlay(reel.id, index)}
+            />
+            {isPaused[reel.id] && (
+              <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+                <div className="bg-black/40 rounded-full p-5 backdrop-blur-sm">
+                  ▶
+                </div>
+              </div>
+            )}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/80 pointer-events-none" />
+            <button
+              onClick={toggleSound}
+              className="absolute top-28 right-4 z-[999] text-white"
+            >
+              {muted ? <VolumeX /> : <Volume2 />}
+            </button>
 
             <div className="absolute right-4 bottom-24 flex flex-col gap-6 z-10 text-white">
               <button
@@ -505,7 +503,9 @@ muted={muted}
               <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center">
                 <div className="w-full max-w-md mx-4 bg-[#0a0a0f] rounded-2xl overflow-hidden shadow-2xl max-h-[80vh] flex flex-col">
                   <div className="flex justify-between items-center p-4 border-b border-gray-800">
-                    <h3 className="text-white font-semibold">Comments</h3>
+                    <h3 className="text-white font-semibold">
+                      {t("comments")}
+                    </h3>
                     <button
                       onClick={() => {
                         setOpenComments(null);
@@ -547,7 +547,7 @@ muted={muted}
                               }
                               className="bg-green-500 text-white px-3 py-2 rounded-lg text-xs font-medium"
                             >
-                              Save
+                              {t("save")}
                             </button>
                             <button
                               onClick={() => {
@@ -556,7 +556,7 @@ muted={muted}
                               }}
                               className="bg-gray-600 text-white px-3 py-2 rounded-lg text-xs font-medium"
                             >
-                              Cancel
+                              {t("cancel")}
                             </button>
                           </div>
                         ) : (
@@ -649,7 +649,7 @@ muted={muted}
                               }
                               className="text-yellow-400 text-xs mt-2 flex items-center gap-1"
                             >
-                              <Reply size={12} /> Reply
+                              <Reply size={12} /> {t("reply")}
                             </button>
 
                             {replyToCommentId === comment.id && (
@@ -658,7 +658,7 @@ muted={muted}
                                   type="text"
                                   value={replyText}
                                   onChange={(e) => setReplyText(e.target.value)}
-                                  placeholder="Write a reply..."
+                                  placeholder={t("write_reply")}
                                   className="flex-1 bg-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
                                   autoFocus
                                 />
@@ -668,7 +668,7 @@ muted={muted}
                                   }
                                   className="bg-yellow-400 text-black px-3 py-2 rounded-lg text-xs font-medium"
                                 >
-                                  Reply
+                                  {t("reply")}
                                 </button>
                               </div>
                             )}
@@ -702,7 +702,7 @@ muted={muted}
                                           }
                                           className="bg-green-500 text-white px-3 py-2 rounded-lg text-xs font-medium"
                                         >
-                                          Save
+                                          {t("save")}
                                         </button>
                                         <button
                                           onClick={() => {
@@ -711,7 +711,7 @@ muted={muted}
                                           }}
                                           className="bg-gray-600 text-white px-3 py-2 rounded-lg text-xs font-medium"
                                         >
-                                          Cancel
+                                          {t("cancel")}
                                         </button>
                                       </div>
                                     ) : (
@@ -810,7 +810,7 @@ muted={muted}
                     ))}
                     {comments[reel.id]?.length === 0 && (
                       <p className="text-gray-400 text-center py-8">
-                        No comments yet
+                        {t("no_comments")}
                       </p>
                     )}
                   </div>
@@ -820,7 +820,7 @@ muted={muted}
                       type="text"
                       value={commentText}
                       onChange={(e) => setCommentText(e.target.value)}
-                      placeholder="Add a comment..."
+                      placeholder={t("add_comment")}
                       className="flex-1 bg-gray-800 rounded-xl px-4 py-2 text-white placeholder-gray-500 text-sm outline-none focus:ring-1 focus:ring-yellow-400"
                     />
                     <button

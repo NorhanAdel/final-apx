@@ -37,7 +37,7 @@ export default function AdDetailsPage() {
   const params = useParams();
   const adId = params.id as string;
 
-  const { lang } = useTranslate();
+  const { t, lang } = useTranslate();
   const { theme } = useTheme();
 
   const isDark = theme === "dark";
@@ -58,8 +58,8 @@ export default function AdDetailsPage() {
       const result = await fetchGraphQL<{ ad: Ad }>(GET_AD_BY_ID, {
         id: adId,
       });
-console.log("RESULT =>", result);
- 
+      console.log("RESULT =>", result);
+
       setAd(result.data?.ad || null);
     } catch (error) {
       console.error("Error fetching ad:", error);
@@ -79,9 +79,7 @@ console.log("RESULT =>", result);
   };
 
   const formatDate = (date: string) =>
-    new Date(date).toLocaleDateString(
-      lang === "ar" ? "ar-EG" : "en-US"
-    );
+    new Date(date).toLocaleDateString(lang === "ar" ? "ar-EG" : "en-US");
 
   const formatViews = (v: number) =>
     v >= 1000 ? (v / 1000).toFixed(1) + "K" : v.toString();
@@ -108,7 +106,7 @@ console.log("RESULT =>", result);
           : "bg-gray-100 text-black"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 pt-24">
+      <div className="max-w-7xl mx-auto px-4 pt-30">
         <BackButton className="mb-6" />
 
         <motion.div
@@ -138,7 +136,7 @@ console.log("RESULT =>", result);
                   isDark ? "text-gray-400" : "text-gray-500"
                 }`}
               >
-                No Image
+                {t("No Image") || "No Image"}
               </div>
             )}
           </div>
@@ -164,11 +162,11 @@ console.log("RESULT =>", result);
             >
               <div className="flex items-center gap-4">
                 <span className="flex items-center gap-1">
-                  <Eye size={14} /> {formatViews(ad.views_count)}
+                  <Eye size={14} className="text-yellow-400" /> {formatViews(ad.views_count)}
                 </span>
 
                 <span className="flex items-center gap-1">
-                  <Calendar size={14} />{" "}
+                  <Calendar size={14} className="text-yellow-400" />{" "}
                   {formatDate(ad.created_at)}
                 </span>
               </div>
@@ -180,7 +178,7 @@ console.log("RESULT =>", result);
                     : "bg-green-500/20 text-green-400"
                 }`}
               >
-                {ad.status}
+                {ad.status === "ACTIVE" ? t("Active") || "Active" : ad.status}
               </span>
             </div>
 
@@ -200,7 +198,7 @@ console.log("RESULT =>", result);
               </div>
 
               <span className="text-sm text-gray-400 capitalize">
-                {ad.user.role}
+                {t(ad.user.role) || ad.user.role}
               </span>
             </div>
 
@@ -217,7 +215,7 @@ console.log("RESULT =>", result);
                   isDark ? "text-gray-400" : "text-gray-600"
                 }`}
               >
-                Description
+                {t("Description") || "Description"}
               </h3>
 
               <div className="max-h-[220px] overflow-y-auto pr-2 custom-scroll">

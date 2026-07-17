@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { CheckCircle } from "lucide-react";
+import useTranslate from "@/app/hooks/useTranslate";
 
 interface GoogleRegisterButtonProps {
   onClick: () => void;
@@ -18,6 +19,8 @@ export default function GoogleRegisterButton({
   label = "Register With Google",
   className = "",
 }: GoogleRegisterButtonProps) {
+  const { t } = useTranslate();
+
   return (
     <button
       onClick={onClick}
@@ -34,15 +37,15 @@ export default function GoogleRegisterButton({
       {isLoading ? (
         <span className="flex items-center gap-2">
           <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          Processing...
+          {t("Processing...")}
         </span>
       ) : isSuccess ? (
         <span className="flex items-center gap-2">
           <CheckCircle size={16} />
-          OTP Sent! Redirecting...
+          {t("OTP Sent! Redirecting...")}
         </span>
       ) : (
-        label
+        t(label)
       )}
     </button>
   );

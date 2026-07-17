@@ -232,21 +232,21 @@ const fetchPlayers = async () => {
     {/* Bottom */}
     <div className="flex items-center justify-between mt-5">
 
-      <div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/10">
-        <div className="text-xs text-gray-300">
-          Age
-        </div>
+<div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/10">
+  <div className="text-xs text-gray-300">
+    {t("Age")}
+  </div>
+  <div className="flex items-center gap-2 text-white font-bold">
+    <User size={14} className="text-yellow-400" />
+    {player.age || 0}{t("Y")}
+  </div>
+</div>
 
-        <div className="flex items-center gap-2 text-white font-bold">
-          <User size={14} className="text-yellow-400" />
-          {player.age || 0}Y
-        </div>
-      </div>
-
-      <div className="px-4 py-2 rounded-2xl bg-yellow-500/15 border border-yellow-500/30">
-        <div className="text-xs text-yellow-300">
-          Level
-        </div>
+{/* Level */}
+<div className="px-4 py-2 rounded-2xl bg-yellow-500/15 border border-yellow-500/30">
+  <div className="text-xs text-yellow-300">
+    {t("Level")}
+  </div>
 
         <div className="text-white font-bold">
           {player.super7_level || "-"}

@@ -207,7 +207,7 @@ export default function ClubProfile() {
           isDark ? "bg-[#020617]" : "bg-gray-100"
         }`}
       >
-        <div className="text-yellow-400 animate-pulse">Loading...</div>
+        <div className="text-yellow-400 animate-pulse">{t("Loading...")}</div>
       </div>
     );
   }
