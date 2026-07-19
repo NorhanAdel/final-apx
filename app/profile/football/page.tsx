@@ -1,4 +1,3 @@
-// app/profile/football/page.tsx
 "use client";
 
 import {
@@ -105,7 +104,6 @@ export default function FootballInformation() {
     market_value: "",
   });
 
-  // Track if we are restoring existing data (to avoid resetting position on sport change)
   const [isRestoringExisting, setIsRestoringExisting] = useState(false);
 
   const fetchSports = useCallback(async () => {
@@ -128,7 +126,6 @@ export default function FootballInformation() {
         const info = result.data.myFootballInfo;
         setExistingInfo(info);
 
-        // Determine sport ID from position data
         const existingSportId =
           info.position?.sport_id || info.position?.sport?.id || "";
 
@@ -151,14 +148,12 @@ export default function FootballInformation() {
     }
   }, []);
 
-  // Initial data load
   useEffect(() => {
     Promise.all([fetchSports(), fetchFootballInfo()]).finally(() => {
       setPageLoading(false);
     });
   }, [fetchSports, fetchFootballInfo, lang]);
 
-  // Fetch positions when selected sport changes
   useEffect(() => {
     if (!formData.selectedSportId) {
       setPositions([]);
@@ -197,7 +192,6 @@ export default function FootballInformation() {
         setPositions([]);
       } finally {
         setPositionsLoading(false);
-        // After positions load during restore, clear the restoring flag
         if (isRestoringExisting) {
           setIsRestoringExisting(false);
         }
@@ -213,7 +207,6 @@ export default function FootballInformation() {
     const { name, value } = e.target;
 
     if (name === "selectedSportId" && value !== formData.selectedSportId) {
-      // When sport changes, reset position
       setFormData((prev) => ({
         ...prev,
         selectedSportId: value,
@@ -291,17 +284,16 @@ export default function FootballInformation() {
       if (result.errors) {
         toast.error(result.errors[0].message);
       } else {
-        toast.success(t("Saving..."));
+        toast.success(t("Football info saved successfully!"));
         router.push("/profile/clubcareer");
       }
     } catch {
-      toast.error("Error saving data");
+      toast.error(t("Error saving data"));
     } finally {
       setLoading(false);
     }
   };
 
-  // Get the selected sport name for the page title
   const selectedSport = sports.find((s) => s.id === formData.selectedSportId);
   const pageTitle = selectedSport
     ? `${selectedSport.name} ${t("Information")}`
@@ -319,7 +311,7 @@ export default function FootballInformation() {
 
   return (
     <div
-      className={`min-h-screen py-30 flex items-center justify-center transition
+      className={`min-h-screen py-40 flex items-center justify-center transition
       ${isDark ? "bg-[#020617] text-white" : "bg-gray-50 text-black"}`}
     >
       <div className="w-full max-w-6xl px-6">
@@ -349,6 +341,10 @@ export default function FootballInformation() {
             icon={<Trophy size={18} />}
             isDark={isDark}
             options={sports.map((s) => ({ label: s.name, value: s.id }))}
+            placeholder={t("Select a sport")}
+            searchPlaceholder={t("Search sports...")}
+            noOptionsText={t("No sports found")}
+            t={t}
           />
 
           <Select
@@ -366,8 +362,11 @@ export default function FootballInformation() {
                 ? t("Loading positions...")
                 : !formData.selectedSportId
                 ? t("Select a sport first")
-                : undefined
+                : t("Select a position")
             }
+            searchPlaceholder={t("Search positions...")}
+            noOptionsText={t("No positions found")}
+            t={t}
           />
 
           <Select
@@ -382,6 +381,10 @@ export default function FootballInformation() {
               { label: t("Left"), value: "LEFT" },
               { label: t("Both"), value: "BOTH" },
             ]}
+            placeholder={t("Select preferred foot")}
+            searchPlaceholder={t("Search foot...")}
+            noOptionsText={t("No options found")}
+            t={t}
           />
 
           <Input
@@ -392,6 +395,7 @@ export default function FootballInformation() {
             onChange={handleChange}
             icon={<Hash size={18} />}
             isDark={isDark}
+            placeholder={t("Enter jersey number")}
           />
 
           <Input
@@ -401,6 +405,7 @@ export default function FootballInformation() {
             onChange={handleChange}
             icon={<Swords size={18} />}
             isDark={isDark}
+            placeholder={t("Enter playing style")}
           />
 
           <Input
@@ -410,6 +415,7 @@ export default function FootballInformation() {
             onChange={handleChange}
             icon={<Zap size={18} />}
             isDark={isDark}
+            placeholder={t("Enter your strengths")}
           />
 
           <Input
@@ -420,6 +426,7 @@ export default function FootballInformation() {
             onChange={handleChange}
             icon={<DollarSign size={18} />}
             isDark={isDark}
+            placeholder={t("Enter market value")}
           />
 
           <div className="md:col-span-2 flex justify-between mt-10">
@@ -488,6 +495,7 @@ function Input({
   value,
   onChange,
   isDark,
+  placeholder,
 }: {
   label: string;
   icon: React.ReactNode;
@@ -496,6 +504,7 @@ function Input({
   value: string;
   onChange: (e: ChangeEvent<HTMLInputElement>) => void;
   isDark: boolean;
+  placeholder?: string;
 }) {
   const [isFocused, setIsFocused] = useState(false);
 
@@ -545,7 +554,7 @@ function Input({
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           type={type}
-          placeholder={label}
+          placeholder={placeholder || label}
           className={`bg-transparent outline-none w-full text-sm font-medium ${
             isDark
               ? "text-white placeholder-gray-500/70"
@@ -568,6 +577,9 @@ function Select({
   disabled,
   placeholder,
   isLoading,
+  searchPlaceholder = "Search...",
+  noOptionsText = "No options found",
+  t,
 }: {
   label: string;
   icon: React.ReactNode;
@@ -579,13 +591,15 @@ function Select({
   disabled?: boolean;
   placeholder?: string;
   isLoading?: boolean;
+  searchPlaceholder?: string;
+  noOptionsText?: string;
+  t: (key: string) => string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
-  // Close on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -600,7 +614,6 @@ function Select({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Focus search when dropdown opens
   useEffect(() => {
     if (isOpen && searchRef.current) {
       searchRef.current.focus();
@@ -637,7 +650,6 @@ function Select({
         {label}
       </label>
 
-      {/* Trigger button */}
       <button
         type="button"
         disabled={disabled}
@@ -698,7 +710,6 @@ function Select({
         />
       </button>
 
-      {/* Dropdown */}
       {isOpen && !disabled && (
         <div
           className={`absolute z-50 w-full mt-2 rounded-xl border overflow-hidden transition-all duration-200 ${
@@ -708,7 +719,6 @@ function Select({
           }`}
           style={{ animation: "dropdownFadeIn 0.2s ease-out" }}
         >
-          {/* Search */}
           {showSearch && (
             <div
               className={`flex items-center gap-2 px-4 py-3 border-b ${
@@ -724,7 +734,7 @@ function Select({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={`Search ${label.toLowerCase()}...`}
+                placeholder={searchPlaceholder}
                 className={`bg-transparent outline-none w-full text-sm ${
                   isDark
                     ? "text-white placeholder-gray-500"
@@ -734,7 +744,6 @@ function Select({
             </div>
           )}
 
-          {/* Options */}
           <div className="max-h-52 overflow-y-auto custom-scrollbar py-1">
             {filteredOptions.length === 0 ? (
               <div
@@ -742,7 +751,7 @@ function Select({
                   isDark ? "text-gray-500" : "text-gray-400"
                 }`}
               >
-                No options found
+                {noOptionsText}
               </div>
             ) : (
               filteredOptions.map((opt) => {
@@ -777,7 +786,6 @@ function Select({
         </div>
       )}
 
-      {/* Hidden native select for form compatibility */}
       <select
         name={name}
         value={value}
@@ -822,4 +830,3 @@ function Select({
     </div>
   );
 }
-

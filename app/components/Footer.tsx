@@ -12,12 +12,39 @@ import {
   Mail,
   Building2,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 import useTranslate from "../hooks/useTranslate";
+import { fetchGraphQL } from "../lib/fetchGraphQL";
+import { GET_ALL_SPORTS } from "../graphql/query/sports.queries";
+
+interface Sport {
+  id: string;
+  name: string;
+}
 
 export default function Footer({ lang }: { lang: string }) {
   const { t } = useTranslate(lang);
+  const [sports, setSports] = useState<Sport[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const isRTL = lang === "ar";
+
+  useEffect(() => {
+    const fetchSports = async () => {
+      try {
+        const result = await fetchGraphQL<{ sports: Sport[] }>(GET_ALL_SPORTS);
+        if (result.data?.sports) {
+          setSports(result.data.sports);
+        }
+      } catch (error) {
+        console.error("Failed to fetch sports:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSports();
+  }, []);
 
   return (
     <footer
@@ -59,26 +86,28 @@ export default function Footer({ lang }: { lang: string }) {
             </ul>
           </div>
 
-          {/* Sports */}
+          {/* Sports - Dynamic */}
           <div>
             <h4 className="font-semibold mb-6 text-lg">{t("sports_title")}</h4>
-            <ul className="space-y-3 text-sm text-gray-300">
-              <li className="cursor-pointer hover:text-[#F0B100] transition">
-                {t("football")}
-              </li>
-              <li className="cursor-pointer hover:text-[#F0B100] transition">
-                {t("basketball")}
-              </li>
-              <li className="cursor-pointer hover:text-[#F0B100] transition">
-                {t("volleyball")}
-              </li>
-              <li className="cursor-pointer hover:text-[#F0B100] transition">
-                {t("swimming")}
-              </li>
-              <li className="cursor-pointer hover:text-[#F0B100] transition">
-                {t("tennis")}
-              </li>
-            </ul>
+            {loading ? (
+              <div className="text-gray-400 text-sm">{t("Loading...")}</div>
+            ) : (
+              <ul className="space-y-3 text-sm text-gray-300">
+                {sports.slice(0, 5).map((sport) => (
+                  <li
+                    key={sport.id}
+                    className="cursor-pointer hover:text-[#F0B100] transition"
+                  >
+                    {sport.name}
+                  </li>
+                ))}
+                {sports.length > 5 && (
+                  <li className="text-gray-500 text-xs">
+                    +{sports.length - 5} {t("more")}
+                  </li>
+                )}
+              </ul>
+            )}
           </div>
 
           {/* Contact Info */}

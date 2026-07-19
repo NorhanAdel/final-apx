@@ -90,7 +90,6 @@ export default function RoleSelectionModal({
 
   const isPending = isLoading || isSubmitting;
 
-  // Translated role options
   const translatedRoleOptions = roleOptions.map((role) => ({
     ...role,
     label: t(role.label),
@@ -99,19 +98,16 @@ export default function RoleSelectionModal({
 
   return (
     <>
-      {/* Backdrop */}
       <div
         className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
         onClick={onClose}
       />
 
-      {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
           className="relative w-full max-w-md max-h-[90vh] overflow-y-auto bg-gradient-to-br from-[#0a0e2e] to-[#12163e] rounded-2xl shadow-2xl border border-white/20 animate-in zoom-in-95 duration-300"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Close Button */}
           <button
             onClick={onClose}
             disabled={isPending}
@@ -120,7 +116,6 @@ export default function RoleSelectionModal({
             <X size={24} />
           </button>
 
-          {/* Header with Logo */}
           <div className="p-6 border-b border-white/10 text-center">
             <div className="flex justify-center mb-3">
               <div className="w-16 h-16 rounded-full bg-yellow-400/20 flex items-center justify-center">
@@ -133,9 +128,7 @@ export default function RoleSelectionModal({
             <p className="text-gray-300 text-sm mt-2">{t(subtitle)}</p>
           </div>
 
-          {/* Body */}
           <div className="p-6 space-y-4">
-            {/* User Info Preview */}
             <div className="bg-white/10 rounded-lg p-3 mb-4 backdrop-blur-sm">
               <div className="flex items-center gap-2 text-gray-300 text-xs mb-1">
                 <span>📧</span>
@@ -152,10 +145,10 @@ export default function RoleSelectionModal({
               <p className="text-white font-medium text-sm">{username}</p>
             </div>
 
-            {/* Role Selection Cards */}
             <div>
               <label className="block text-gray-300 text-sm font-medium mb-3">
-                {t("Select your role")} <span className="text-red-400">*</span>
+                {t("Select your role")}{" "}
+                <span className="text-red-400">*</span>
               </label>
 
               <div className="grid gap-3">
@@ -172,7 +165,6 @@ export default function RoleSelectionModal({
             </div>
           </div>
 
-          {/* Footer */}
           <div className="p-6 border-t border-white/10 flex gap-3 bg-black/20">
             <button
               onClick={onClose}
@@ -202,7 +194,6 @@ export default function RoleSelectionModal({
   );
 }
 
-// Sub-component for Role Card
 interface RoleCardProps {
   role: RoleOption & { label: string; description: string };
   isSelected: boolean;

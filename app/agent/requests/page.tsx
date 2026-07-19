@@ -163,7 +163,7 @@ const CancelConfirmModal = ({
 export default function AgentRequests() {
   const router = useRouter();
   const { theme } = useTheme();
-  const { t } = useTranslate();
+  const { t, lang } = useTranslate();
   const isDark = theme === "dark";
 
   const [activeTab, setActiveTab] = useState<"send" | "sent">("send");
@@ -182,6 +182,23 @@ export default function AgentRequests() {
   const [openPlayers, setOpenPlayers] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  // =========================
+  // ✅ STATUS HELPERS - يدعم كل اللغات
+  // =========================
+  const normalizeStatus = (status: string): string => {
+    const lower = status.toLowerCase();
+    if (lower.includes("pending") || lower.includes("قيد الانتظار") || lower.includes("pendente") || lower.includes("待处理")) return "PENDING";
+    if (lower.includes("accepted") || lower.includes("مقبول") || lower.includes("aceito") || lower.includes("已接受")) return "ACCEPTED";
+    if (lower.includes("rejected") || lower.includes("مرفوض") || lower.includes("rejeitado") || lower.includes("已拒绝")) return "REJECTED";
+    if (lower.includes("cancelled") || lower.includes("ملغي") || lower.includes("cancelado") || lower.includes("已取消")) return "CANCELLED";
+    return status.toUpperCase();
+  };
+
+  const matchesStatus = (status: string, target: string): boolean => {
+    if (target === "ALL") return true;
+    return normalizeStatus(status) === target;
+  };
 
   const fetchPlayers = useCallback(async () => {
     try {
@@ -229,7 +246,7 @@ export default function AgentRequests() {
 
     if (statusFilter !== "ALL") {
       requests = requests.filter(
-        (r) => r.status?.toUpperCase() === statusFilter,
+        (r) => matchesStatus(r.status, statusFilter)
       );
     }
 
@@ -248,66 +265,65 @@ export default function AgentRequests() {
     return t("No message");
   };
 
- const handleSendRequest = async (e: React.FormEvent) => {
-  e.preventDefault();
+  const handleSendRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  if (!selectedTargetId) {
-    toast.error(t("Please select a player"));
-    return;
-  }
-
-  setLoading(true);
-
-  try {
-    // check permission first
-    const permissionResult =
-      await fetchGraphQL<CanContactPlayerResponse>(
-        CAN_CONTACT_PLAYER,
-        {
-          playerId: selectedTargetId,
-        },
-      );
-
-    const permission = permissionResult.data?.canContactPlayer;
-
-    if (!permission?.can_contact) {
-      toast.error(
-        permission?.reason ||
-          t("Your package does not allow contacting this player"),
-      );
-
-      setLoading(false);
+    if (!selectedTargetId) {
+      toast.error(t("Please select a player"));
       return;
     }
 
-    // send request
-    const result = await fetchGraphQL<SendRequestResponse>(
-      SEND_REQUEST_MUTATION,
-      {
-        input: {
-          player_id: selectedTargetId,
-          type: "AGENT_REQUEST",
-          message: details || null,
+    setLoading(true);
+
+    try {
+      const permissionResult =
+        await fetchGraphQL<CanContactPlayerResponse>(
+          CAN_CONTACT_PLAYER,
+          {
+            playerId: selectedTargetId,
+          },
+        );
+
+      const permission = permissionResult.data?.canContactPlayer;
+
+      if (!permission?.can_contact) {
+        toast.error(
+          permission?.reason ||
+            t("Your package does not allow contacting this player"),
+        );
+
+        setLoading(false);
+        return;
+      }
+
+      const result = await fetchGraphQL<SendRequestResponse>(
+        SEND_REQUEST_MUTATION,
+        {
+          input: {
+            player_id: selectedTargetId,
+            type: "AGENT_REQUEST",
+            message: details || null,
+          },
         },
-      },
-    );
+      );
 
-    if (result.errors) {
-      toast.error(result.errors[0].message);
-    } else if (result.data?.sendRequest) {
-      setSelectedTargetId("");
-      setDetails("");
-      await fetchAllData();
+      if (result.errors) {
+        toast.error(result.errors[0].message);
+      } else if (result.data?.sendRequest) {
+        setSelectedTargetId("");
+        setDetails("");
+        await fetchAllData();
 
-      toast.success(t("Request sent successfully!"));
+        toast.success(t("Request sent successfully!"));
+      }
+    } catch (error) {
+      console.error("Error sending request:", error);
+      toast.error(t("Failed to send request"));
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error("Error sending request:", error);
-    toast.error(t("Failed to send request"));
-  } finally {
-    setLoading(false);
-  }
-};
+  };
+
   const handleCancelClick = (requestId: string) => {
     setSelectedRequestId(requestId);
     setCancelModalOpen(true);
@@ -339,8 +355,12 @@ export default function AgentRequests() {
     }
   };
 
+  // =========================
+  // ✅ STATUS HELPERS WITH TRANSLATION
+  // =========================
   const getStatusColor = (status: string) => {
-    switch (status?.toUpperCase()) {
+    const normalized = normalizeStatus(status);
+    switch (normalized) {
       case "PENDING":
         return "text-yellow-500 bg-yellow-500/10";
       case "ACCEPTED":
@@ -355,9 +375,8 @@ export default function AgentRequests() {
   };
 
   const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "ALL":
-        return t("All Statuses");
+    const normalized = normalizeStatus(status);
+    switch (normalized) {
       case "PENDING":
         return t("Pending");
       case "ACCEPTED":
@@ -373,8 +392,7 @@ export default function AgentRequests() {
 
   const getStatusCount = (status: string) => {
     if (status === "ALL") return sentRequests.length;
-    return sentRequests.filter((r) => r.status?.toUpperCase() === status)
-      .length;
+    return sentRequests.filter((r) => matchesStatus(r.status, status)).length;
   };
 
   const formatDate = (dateString: string) => {
@@ -397,6 +415,15 @@ export default function AgentRequests() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     router.push("/login");
+  };
+
+  const getNoRequestsMessage = (status: string) => {
+    if (status === "ALL") return t("No sent requests");
+    if (status === "PENDING") return t("No pending requests found");
+    if (status === "ACCEPTED") return t("No accepted requests found");
+    if (status === "REJECTED") return t("No rejected requests found");
+    if (status === "CANCELLED") return t("No cancelled requests found");
+    return t("No sent requests");
   };
 
   return (
@@ -515,70 +542,65 @@ export default function AgentRequests() {
                 {t("Select Player")} *
               </label>
             
-                 
- <div className="relative">
-  
-  <button
-    type="button"
-    onClick={() => setOpenPlayers(!openPlayers)}
-    className={`w-full rounded-xl py-4 px-4 flex items-center justify-between transition ${
-      isDark
-        ? "bg-[#0A1A44]/40 border border-blue-900/50 text-white"
-        : "bg-white border border-gray-300 text-black"
-    }`}
-  >
-    <div className="flex items-center gap-3">
-      <Star size={18} className="text-[#FFD700]" fill="currentColor" />
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setOpenPlayers(!openPlayers)}
+                  className={`w-full rounded-xl py-4 px-4 flex items-center justify-between transition ${
+                    isDark
+                      ? "bg-[#0A1A44]/40 border border-blue-900/50 text-white"
+                      : "bg-white border border-gray-300 text-black"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Star size={18} className="text-[#FFD700]" fill="currentColor" />
+                    <span>
+                      {selectedPlayer
+                        ? `${selectedPlayer.first_name} ${selectedPlayer.last_name}`
+                        : t("Select Player")}
+                    </span>
+                  </div>
+                  <ChevronDown
+                    size={18}
+                    className={`transition-transform ${
+                      openPlayers ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
 
-      <span>
-        {selectedPlayer
-          ? `${selectedPlayer.first_name} ${selectedPlayer.last_name}`
-          : t("Select Player")}
-      </span>
-    </div>
+                {openPlayers && (
+                  <div
+                    className={`absolute top-full left-0 mt-2 w-full rounded-xl overflow-hidden z-50 max-h-72 overflow-y-auto shadow-xl ${
+                      isDark
+                        ? "bg-[#0A1A44] border border-blue-900/50"
+                        : "bg-white border border-gray-300"
+                    }`}
+                  >
+                    {players.map((player) => (
+                      <button
+                        key={player.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedTargetId(player.id);
+                          setOpenPlayers(false);
+                        }}
+                        className={`w-full p-3 text-left flex items-center gap-3 transition ${
+                          selectedTargetId === player.id
+                            ? "bg-yellow-500/20 text-yellow-400"
+                            : "hover:bg-yellow-500/10"
+                        }`}
+                      >
+                        <User size={16} />
+                        <span>
+                          {player.first_name} {player.last_name}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
 
-    <ChevronDown
-      size={18}
-      className={`transition-transform ${
-        openPlayers ? "rotate-180" : ""
-      }`}
-    />
-  </button>
-
-  {openPlayers && (
-    <div
-      className={`absolute top-full left-0 mt-2 w-full rounded-xl overflow-hidden z-50 max-h-72 overflow-y-auto shadow-xl ${
-        isDark
-          ? "bg-[#0A1A44] border border-blue-900/50"
-          : "bg-white border border-gray-300"
-      }`}
-    >
-      {players.map((player) => (
-        <button
-          key={player.id}
-          type="button"
-          onClick={() => {
-            setSelectedTargetId(player.id);
-            setOpenPlayers(false);
-          }}
-          className={`w-full p-3 text-left flex items-center gap-3 transition ${
-            selectedTargetId === player.id
-              ? "bg-yellow-500/20 text-yellow-400"
-              : "hover:bg-yellow-500/10"
-          }`}
-        >
-          <User size={16} />
-
-          <span>
-            {player.first_name} {player.last_name}
-          </span>
-        </button>
-      ))}
-    </div>
-  )}
-</div>
-          
-</div>
             <textarea
               rows={6}
               value={details}
@@ -704,13 +726,7 @@ export default function AgentRequests() {
               >
                 <SendIcon size={48} className="mx-auto mb-4 text-gray-500" />
                 <p className={isDark ? "text-gray-400" : "text-gray-500"}>
-                  {statusFilter === "ALL"
-                    ? t("No sent requests")
-                    : t(
-                        `No ${getStatusLabel(
-                          statusFilter,
-                        ).toLowerCase()} requests found`,
-                      )}
+                  {getNoRequestsMessage(statusFilter)}
                 </p>
               </div>
             ) : (
@@ -731,7 +747,7 @@ export default function AgentRequests() {
                             request.status,
                           )}`}
                         >
-                          {request.status}
+                          {getStatusLabel(request.status)}
                         </span>
                       </div>
                       <h3 className="font-bold text-lg">

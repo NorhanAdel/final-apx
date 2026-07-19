@@ -460,7 +460,7 @@ export default function MyContractPage() {
             {(!currentContract ||
               currentContract.status?.toLowerCase() !== "approved") && (
               <button
-                onClick={() => router.push("/profile/uploadcontract")}
+                onClick={() => router.push("/profile/contract")}
                 className={`w-full mt-8 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition
                 ${
                   theme === "dark"

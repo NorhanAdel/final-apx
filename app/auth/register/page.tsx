@@ -29,7 +29,6 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Google Register Hook
   const {
     isLoading: isGoogleLoading,
     showRoleModal,
@@ -39,7 +38,6 @@ export default function RegisterPage() {
     closeModal,
   } = useGoogleRegister();
 
-  // Zod Schema - Password قوي
   const registerSchema = useMemo(() => {
     return z.object({
       username: z
@@ -47,11 +45,17 @@ export default function RegisterPage() {
         .min(1, t("Username is required"))
         .min(3, t("Username must be at least 3 characters"))
         .max(30, t("Username cannot exceed 30 characters"))
-        .regex(/^[a-zA-Z0-9_]+$/, t("Username can only contain letters, numbers and underscore")),
+        .regex(
+          /^[a-zA-Z0-9_]+$/,
+          t("Username can only contain letters, numbers and underscore"),
+        ),
       email: z
         .string()
         .min(1, t("Email is required"))
-        .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, t("Please enter a valid email address")),
+        .regex(
+          /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+          t("Please enter a valid email address"),
+        ),
       password: z
         .string()
         .min(1, t("Password is required"))
@@ -59,7 +63,10 @@ export default function RegisterPage() {
         .regex(/[a-z]/, t("Password must contain at least one lowercase letter"))
         .regex(/[A-Z]/, t("Password must contain at least one uppercase letter"))
         .regex(/[0-9]/, t("Password must contain at least one number"))
-        .regex(/[^a-zA-Z0-9]/, t("Password must contain at least one special character")),
+        .regex(
+          /[^a-zA-Z0-9]/,
+          t("Password must contain at least one special character"),
+        ),
       role: z.enum(["PLAYER", "SCOUT", "AGENT", "CLUB", "USER"]),
     });
   }, [t]);
@@ -84,7 +91,9 @@ export default function RegisterPage() {
 
       if (result.data?.register) {
         localStorage.setItem("pending_email", data.email);
-        toast.success(t("Registration successful! OTP has been sent to your email."));
+        toast.success(
+          t("Registration successful! OTP has been sent to your email."),
+        );
         router.push("/auth/verify-otp");
       } else if (result.errors) {
         const errorMsg = result.errors[0].message;
@@ -110,10 +119,13 @@ export default function RegisterPage() {
             {t("Register")}
           </h2>
 
-          {/* Normal Register Form */}
-          <RegisterForm form={form} onSubmit={onSubmit} isLoading={loading} error={error} />
+          <RegisterForm
+            form={form}
+            onSubmit={onSubmit}
+            isLoading={loading}
+            error={error}
+          />
 
-          {/* Divider */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-white/20"></div>
@@ -123,10 +135,11 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* Google Register Button */}
-          <GoogleRegisterButton onClick={initiateGoogleLogin} isLoading={isGoogleLoading} />
+          <GoogleRegisterButton
+            onClick={initiateGoogleLogin}
+            isLoading={isGoogleLoading}
+          />
 
-          {/* Login Link */}
           <p className="text-center text-xs sm:text-sm mt-6 text-gray-300">
             {t("Already have an account?")}{" "}
             <Link
@@ -139,7 +152,6 @@ export default function RegisterPage() {
         </div>
       </div>
 
-      {/* Role Selection Modal */}
       {showRoleModal && googleUserData && (
         <RoleSelectionModal
           isOpen={showRoleModal}

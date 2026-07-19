@@ -494,8 +494,8 @@ export default function ProfilePage() {
 
       toast.success(
         isUpdate
-          ? "Profile Updated Successfully!"
-          : "Profile Created Successfully!",
+          ? t("Profile Updated Successfully!")
+          : t("Profile Created Successfully!"),
       );
 
       await fetchPlayerProfile();
@@ -821,7 +821,7 @@ export default function ProfilePage() {
                   {verificationFile
                     ? verificationFile.name
                     : existingDocUrl
-                    ? "Document already uploaded"
+                    ? t("Document already uploaded")
                     : t("Upload verification doc (optional)")}
                 </span>
                 {!verificationFile && existingDocUrl && (

@@ -39,6 +39,22 @@ interface Deal {
   senderName: string;
 }
 
+/**
+ * The backend returns `status` already translated into the current UI
+ * language (e.g. "Pending", "قيد الانتظار", "Pendente", "待处理"). To
+ * normalize reliably regardless of the active language, we match against
+ * every known translation for each raw status value instead of relying
+ * on a single hardcoded language pair.
+ */
+type StatusKey = "PENDING" | "ACCEPTED" | "REJECTED" | "EXPIRED";
+
+const STATUS_TRANSLATIONS: Record<StatusKey, string[]> = {
+  PENDING: ["pending", "قيد الانتظار", "pendente", "待处理", "待定"],
+  ACCEPTED: ["accepted", "مقبول", "aceito", "aceite", "已接受", "已同意"],
+  REJECTED: ["rejected", "مرفوض", "rejeitado", "已拒绝"],
+  EXPIRED: ["expired", "منتهي", "منتهية", "expirado", "已过期"],
+};
+
 export default function DealsPage() {
   const { theme } = useTheme();
   const { t } = useTranslate();
@@ -48,6 +64,20 @@ export default function DealsPage() {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  // ✅ توحيد الحالات (بيدعم الأربع لغات)
+  const normalizeStatus = (status: string): string => {
+    const lower = status.trim().toLowerCase();
+
+    for (const key of Object.keys(STATUS_TRANSLATIONS) as StatusKey[]) {
+      const variants = STATUS_TRANSLATIONS[key];
+      if (variants.some((variant) => lower.includes(variant.toLowerCase()))) {
+        return key;
+      }
+    }
+
+    return status.toUpperCase();
+  };
 
   const fetchDeals = useCallback(async () => {
     setLoading(true);
@@ -73,15 +103,14 @@ export default function DealsPage() {
     fetchDeals();
   }, [fetchDeals]);
 
-  // Apply filter when statusFilter changes
+  // ✅ تصفية الصفقات حسب الحالة
   useEffect(() => {
     if (statusFilter === "ALL") {
       setFilteredDeals(deals);
     } else {
       const filtered = deals.filter((deal) => {
-        const lowerStatus = deal.status.toLowerCase();
-        const filterLower = statusFilter.toLowerCase();
-        return lowerStatus.includes(filterLower);
+        const normalized = normalizeStatus(deal.status);
+        return normalized === statusFilter;
       });
       setFilteredDeals(filtered);
     }
@@ -152,76 +181,33 @@ export default function DealsPage() {
   };
 
   const isPending = (status: string) => {
-    const lowerStatus = status.toLowerCase();
-    return (
-      lowerStatus.includes("pending") || lowerStatus.includes("قيد الانتظار")
-    );
+    const normalized = normalizeStatus(status);
+    return normalized === "PENDING";
   };
 
   const getStatusColor = (status: string) => {
-    const lowerStatus = status.toLowerCase();
-    if (
-      lowerStatus.includes("pending") ||
-      lowerStatus.includes("قيد الانتظار")
-    ) {
-      return "text-yellow-500";
-    }
-    if (lowerStatus.includes("accepted") || lowerStatus.includes("مقبول")) {
-      return "text-green-500";
-    }
-    if (lowerStatus.includes("rejected") || lowerStatus.includes("مرفوض")) {
-      return "text-red-500";
-    }
-    if (lowerStatus.includes("expired") || lowerStatus.includes("منتهي")) {
-      return "text-gray-500";
-    }
+    const normalized = normalizeStatus(status);
+    if (normalized === "PENDING") return "text-yellow-500";
+    if (normalized === "ACCEPTED") return "text-green-500";
+    if (normalized === "REJECTED") return "text-red-500";
+    if (normalized === "EXPIRED") return "text-gray-500";
     return "text-gray-400";
   };
 
   const getStatusLabel = (status: string) => {
-    const lowerStatus = status.toLowerCase();
-    if (
-      lowerStatus.includes("pending") ||
-      lowerStatus.includes("قيد الانتظار")
-    ) {
-      return t("Pending");
-    }
-    if (lowerStatus.includes("accepted") || lowerStatus.includes("مقبول")) {
-      return t("Accepted");
-    }
-    if (lowerStatus.includes("rejected") || lowerStatus.includes("مرفوض")) {
-      return t("Rejected");
-    }
-    if (lowerStatus.includes("expired") || lowerStatus.includes("منتهي")) {
-      return t("Expired");
-    }
+    const normalized = normalizeStatus(status);
+    if (normalized === "PENDING") return t("Pending");
+    if (normalized === "ACCEPTED") return t("Accepted");
+    if (normalized === "REJECTED") return t("Rejected");
+    if (normalized === "EXPIRED") return t("Expired");
     return status;
   };
 
   const getStatusCount = (statusType: string) => {
     if (statusType === "ALL") return deals.length;
     return deals.filter((deal) => {
-      const lowerStatus = deal.status.toLowerCase();
-      if (statusType === "PENDING") {
-        return (
-          lowerStatus.includes("pending") ||
-          lowerStatus.includes("قيد الانتظار")
-        );
-      }
-      if (statusType === "ACCEPTED") {
-        return (
-          lowerStatus.includes("accepted") || lowerStatus.includes("مقبول")
-        );
-      }
-      if (statusType === "REJECTED") {
-        return (
-          lowerStatus.includes("rejected") || lowerStatus.includes("مرفوض")
-        );
-      }
-      if (statusType === "EXPIRED") {
-        return lowerStatus.includes("expired") || lowerStatus.includes("منتهي");
-      }
-      return false;
+      const normalized = normalizeStatus(deal.status);
+      return normalized === statusType;
     }).length;
   };
 
@@ -231,6 +217,15 @@ export default function DealsPage() {
     if (lowerType.includes("loan")) return "📋";
     if (lowerType.includes("trial")) return "⚽";
     return "📄";
+  };
+
+  const getNoDealsMessage = (status: string) => {
+    if (status === "ALL") return t("No deals found");
+    if (status === "PENDING") return t("No pending deals found");
+    if (status === "ACCEPTED") return t("No accepted deals found");
+    if (status === "REJECTED") return t("No rejected deals found");
+    if (status === "EXPIRED") return t("No expired deals found");
+    return t("No deals found");
   };
 
   if (loading) {
@@ -257,7 +252,7 @@ export default function DealsPage() {
     >
       <div className="w-full max-w-4xl p-4 sm:p-10">
         <BackButton className="mb-6" />
-        
+
         <h1
           className={`text-center text-3xl font-bold mb-6
           ${theme === "dark" ? "text-yellow-400" : "text-[#F0B100]"}`}
@@ -280,15 +275,7 @@ export default function DealsPage() {
               <span className="text-sm font-medium">
                 {statusFilter === "ALL"
                   ? t("All Statuses")
-                  : getStatusLabel(
-                      statusFilter === "PENDING"
-                        ? "Pending"
-                        : statusFilter === "ACCEPTED"
-                        ? "Accepted"
-                        : statusFilter === "REJECTED"
-                        ? "Rejected"
-                        : "Expired",
-                    )}
+                  : getStatusLabel(statusFilter)}
               </span>
               <ChevronDown
                 size={16}
@@ -369,19 +356,7 @@ export default function DealsPage() {
             className={`text-center py-10 rounded-md
             ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}
           >
-            {statusFilter === "ALL"
-              ? t("No deals found")
-              : t(
-                  `No ${getStatusLabel(
-                    statusFilter === "PENDING"
-                      ? "Pending"
-                      : statusFilter === "ACCEPTED"
-                      ? "Accepted"
-                      : statusFilter === "REJECTED"
-                      ? "Rejected"
-                      : "Expired",
-                  ).toLowerCase()} deals found`,
-                )}
+            {getNoDealsMessage(statusFilter)}
           </div>
         ) : (
           <div className="flex flex-col gap-6">
@@ -423,7 +398,7 @@ export default function DealsPage() {
                       )}`}
                     >
                       <Clock size={14} className="inline mr-1" />
-                      {deal.status}
+                      {getStatusLabel(deal.status)}
                     </div>
                   </div>
 
@@ -514,7 +489,8 @@ export default function DealsPage() {
                         deal.status,
                       )} mt-2`}
                     >
-                      {deal.status} - {formatDate(deal.updated_at)}
+                      {getStatusLabel(deal.status)} -{" "}
+                      {formatDate(deal.updated_at)}
                     </div>
                   )}
                 </div>

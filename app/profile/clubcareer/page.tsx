@@ -148,7 +148,7 @@ export default function ClubCareer() {
 
   return (
     <div
-      className={`min-h-screen py-38 transition ${
+      className={`min-h-screen py-30 transition ${
         isDark ? "bg-[#020617] text-white" : "bg-gray-50 text-black"
       }`}
     >

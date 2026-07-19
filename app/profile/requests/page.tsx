@@ -40,6 +40,40 @@ interface Request {
   };
 }
 
+/**
+ * The backend returns `status` already translated into the current UI
+ * language (e.g. "Pending", "قيد الانتظار", "Pendente", "待处理").
+ * To filter/match reliably regardless of the active language, we match
+ * against every known translation for each raw status value instead of
+ * relying on a single hardcoded string.
+ */
+const STATUS_TRANSLATIONS: Record<"PENDING" | "ACCEPTED" | "REJECTED" | "CANCELLED", string[]> = {
+  PENDING: ["pending", "قيد الانتظار", "pendente", "待处理", "待定"],
+  ACCEPTED: ["accepted", "مقبول", "aceito", "aceite", "已接受", "已同意"],
+  REJECTED: ["rejected", "مرفوض", "rejeitado", "已拒绝"],
+  CANCELLED: ["cancelled", "canceled", "ملغي", "ملغى", "cancelado", "已取消"],
+};
+
+const matchesStatus = (
+  rawStatusFromServer: string,
+  target: "PENDING" | "ACCEPTED" | "REJECTED" | "CANCELLED",
+): boolean => {
+  const normalized = rawStatusFromServer.trim().toLowerCase();
+  return STATUS_TRANSLATIONS[target].some((variant) =>
+    normalized.includes(variant.toLowerCase()),
+  );
+};
+
+const getStatusKey = (
+  status: string,
+): "PENDING" | "ACCEPTED" | "REJECTED" | "CANCELLED" | null => {
+  if (matchesStatus(status, "PENDING")) return "PENDING";
+  if (matchesStatus(status, "ACCEPTED")) return "ACCEPTED";
+  if (matchesStatus(status, "REJECTED")) return "REJECTED";
+  if (matchesStatus(status, "CANCELLED")) return "CANCELLED";
+  return null;
+};
+
 export default function RequestsPage() {
   const { theme } = useTheme();
   const { t } = useTranslate();
@@ -77,11 +111,12 @@ export default function RequestsPage() {
     if (statusFilter === "ALL") {
       setFilteredRequests(requests);
     } else {
-      const filtered = requests.filter((req) => {
-        const lowerStatus = req.status.toLowerCase();
-        const filterLower = statusFilter.toLowerCase();
-        return lowerStatus.includes(filterLower);
-      });
+      const filtered = requests.filter((req) =>
+        matchesStatus(
+          req.status,
+          statusFilter as "PENDING" | "ACCEPTED" | "REJECTED" | "CANCELLED",
+        ),
+      );
       setFilteredRequests(filtered);
     }
   }, [statusFilter, requests]);
@@ -96,7 +131,6 @@ export default function RequestsPage() {
       }>(RESPOND_TO_REQUEST, { input: { request_id: requestId, accept } });
 
       if (result.data?.respondToRequest) {
-        // تحديث حالة الطلب محلياً بدلاً من إعادة الجلب
         const updatedRequest = result.data.respondToRequest;
 
         setRequests((prevRequests) =>
@@ -141,73 +175,44 @@ export default function RequestsPage() {
     }
   };
 
-  const isPending = (status: string) => {
-    const lowerStatus = status.toLowerCase();
-    return (
-      lowerStatus.includes("pending") || lowerStatus.includes("قيد الانتظار")
-    );
-  };
+  const isPending = (status: string) => matchesStatus(status, "PENDING");
 
   const getStatusColor = (status: string) => {
-    const lowerStatus = status.toLowerCase();
-    if (
-      lowerStatus.includes("pending") ||
-      lowerStatus.includes("قيد الانتظار")
-    ) {
-      return "text-yellow-500";
-    }
-    if (lowerStatus.includes("accepted") || lowerStatus.includes("مقبول")) {
-      return "text-green-500";
-    }
-    if (lowerStatus.includes("rejected") || lowerStatus.includes("مرفوض")) {
-      return "text-red-500";
-    }
+    const key = getStatusKey(status);
+    if (key === "PENDING") return "text-yellow-500";
+    if (key === "ACCEPTED") return "text-green-500";
+    if (key === "REJECTED") return "text-red-500";
     return "text-gray-400";
   };
 
   const getStatusLabel = (status: string) => {
-    const lowerStatus = status.toLowerCase();
-    if (
-      lowerStatus.includes("pending") ||
-      lowerStatus.includes("قيد الانتظار")
-    ) {
-      return t("Pending");
-    }
-    if (lowerStatus.includes("accepted") || lowerStatus.includes("مقبول")) {
-      return t("Accepted");
-    }
-    if (lowerStatus.includes("rejected") || lowerStatus.includes("مرفوض")) {
-      return t("Rejected");
-    }
+    const key = getStatusKey(status);
+    if (key === "PENDING") return t("Pending");
+    if (key === "ACCEPTED") return t("Accepted");
+    if (key === "REJECTED") return t("Rejected");
+    if (key === "CANCELLED") return t("Cancelled");
     return status;
   };
 
   const getStatusCount = (statusType: string) => {
     if (statusType === "ALL") return requests.length;
-    return requests.filter((req) => {
-      const lowerStatus = req.status.toLowerCase();
-      if (statusType === "PENDING") {
-        return (
-          lowerStatus.includes("pending") ||
-          lowerStatus.includes("قيد الانتظار")
-        );
-      }
-      if (statusType === "ACCEPTED") {
-        return (
-          lowerStatus.includes("accepted") || lowerStatus.includes("مقبول")
-        );
-      }
-      if (statusType === "REJECTED") {
-        return (
-          lowerStatus.includes("rejected") || lowerStatus.includes("مرفوض")
-        );
-      }
-      return false;
-    }).length;
+    return requests.filter((req) =>
+      matchesStatus(
+        req.status,
+        statusType as "PENDING" | "ACCEPTED" | "REJECTED" | "CANCELLED",
+      ),
+    ).length;
   };
 
   const getTypeDisplay = (type: string) => {
     return type;
+  };
+
+  const getNoRequestsMessage = (status: string) => {
+    if (status === "PENDING") return t("No pending requests found");
+    if (status === "ACCEPTED") return t("No accepted requests found");
+    if (status === "REJECTED") return t("No rejected requests found");
+    return t("No requests found");
   };
 
   if (loading && requests.length === 0) {
@@ -257,13 +262,11 @@ export default function RequestsPage() {
               <span className="text-sm font-medium">
                 {statusFilter === "ALL"
                   ? t("All Statuses")
-                  : getStatusLabel(
-                      statusFilter === "PENDING"
-                        ? "Pending"
-                        : statusFilter === "ACCEPTED"
-                        ? "Accepted"
-                        : "Rejected",
-                    )}
+                  : statusFilter === "PENDING"
+                  ? t("Pending")
+                  : statusFilter === "ACCEPTED"
+                  ? t("Accepted")
+                  : t("Rejected")}
               </span>
               <ChevronDown
                 size={16}
@@ -338,17 +341,7 @@ export default function RequestsPage() {
             className={`text-center py-10 rounded-md
             ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}
           >
-            {statusFilter === "ALL"
-              ? t("No requests found")
-              : t(
-                  `No ${getStatusLabel(
-                    statusFilter === "PENDING"
-                      ? "Pending"
-                      : statusFilter === "ACCEPTED"
-                      ? "Accepted"
-                      : "Rejected",
-                  ).toLowerCase()} requests found`,
-                )}
+            {getNoRequestsMessage(statusFilter)}
           </div>
         ) : (
           <div className="flex flex-col gap-6">
@@ -386,7 +379,7 @@ export default function RequestsPage() {
 
                   <div className={`text-sm ${getStatusColor(req.status)}`}>
                     <Clock size={14} className="inline mr-1" />
-                    {req.status}
+                    {getStatusLabel(req.status)}
                   </div>
 
                   {req.payload?.message && (
@@ -452,7 +445,7 @@ export default function RequestsPage() {
                         req.status,
                       )}`}
                     >
-                      {req.status} - {formatDate(req.updated_at)}
+                      {getStatusLabel(req.status)} - {formatDate(req.updated_at)}
                     </div>
                   )}
                 </div>

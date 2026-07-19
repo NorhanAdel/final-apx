@@ -31,9 +31,67 @@ interface Transfer {
   updated_at: string;
 }
 
+// ✅ STATUS_TRANSLATIONS - ترجمات الحالات باللغات الأربع
+const STATUS_TRANSLATIONS: Record<string, Record<string, string>> = {
+  PENDING: {
+    en: "Pending",
+    ar: "قيد الانتظار",
+    pt: "Pendente",
+    zh: "待处理",
+  },
+  COMPLETED: {
+    en: "Completed",
+    ar: "مكتمل",
+    pt: "Concluído",
+    zh: "已完成",
+  },
+  CANCELLED: {
+    en: "Cancelled",
+    ar: "ملغي",
+    pt: "Cancelado",
+    zh: "已取消",
+  },
+};
+
+// ✅ دالة لتوحيد الحالة - بترجع المفتاح بغض النظر عن اللغة
+const getStatusKey = (status: string): string => {
+  const lower = status.toLowerCase().trim();
+  
+  for (const [key, translations] of Object.entries(STATUS_TRANSLATIONS)) {
+    for (const [, value] of Object.entries(translations)) {
+      if (lower.includes(value.toLowerCase())) {
+        return key;
+      }
+    }
+  }
+  
+  const statusMap: Record<string, string> = {
+    "pending": "PENDING",
+    "قيد الانتظار": "PENDING",
+    "pendente": "PENDING",
+    "待处理": "PENDING",
+    "completed": "COMPLETED",
+    "مكتمل": "COMPLETED",
+    "concluído": "COMPLETED",
+    "已完成": "COMPLETED",
+    "cancelled": "CANCELLED",
+    "ملغي": "CANCELLED",
+    "cancelado": "CANCELLED",
+    "已取消": "CANCELLED",
+  };
+  
+  return statusMap[lower] || status.toUpperCase();
+};
+
+// ✅ دالة للتحقق من تطابق الحالة
+const matchesStatus = (status: string, targetKey: string): boolean => {
+  const normalized = getStatusKey(status);
+  return normalized === targetKey;
+};
+
 export default function TransfersPage() {
   const { theme } = useTheme();
-  const { t } = useTranslate();
+  const { t, lang } = useTranslate();
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [filteredTransfers, setFilteredTransfers] = useState<Transfer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,31 +124,13 @@ export default function TransfersPage() {
     fetchTransfers();
   }, [fetchTransfers]);
 
-  // Apply filter when statusFilter changes
+  // ✅ تصفية باستخدام getStatusKey
   useEffect(() => {
     if (statusFilter === "ALL") {
       setFilteredTransfers(transfers);
     } else {
       const filtered = transfers.filter((transfer) => {
-        const lowerStatus = transfer.status.toLowerCase();
-        const filterLower = statusFilter.toLowerCase();
-        if (filterLower === "completed") {
-          return (
-            lowerStatus.includes("completed") || lowerStatus.includes("مكتمل")
-          );
-        }
-        if (filterLower === "pending") {
-          return (
-            lowerStatus.includes("pending") ||
-            lowerStatus.includes("قيد الانتظار")
-          );
-        }
-        if (filterLower === "cancelled") {
-          return (
-            lowerStatus.includes("cancelled") || lowerStatus.includes("ملغي")
-          );
-        }
-        return false;
+        return matchesStatus(transfer.status, statusFilter);
       });
       setFilteredTransfers(filtered);
     }
@@ -108,79 +148,61 @@ export default function TransfersPage() {
     }
   };
 
+  // ✅ دالة لجلب لون الحالة
   const getStatusColor = (status: string) => {
-    const lowerStatus = status.toLowerCase();
-    if (lowerStatus.includes("completed") || lowerStatus.includes("مكتمل")) {
-      return "text-green-500";
+    const key = getStatusKey(status);
+    switch (key) {
+      case "PENDING":
+        return "text-yellow-500";
+      case "COMPLETED":
+        return "text-green-500";
+      case "CANCELLED":
+        return "text-red-500";
+      default:
+        return "text-gray-400";
     }
-    if (
-      lowerStatus.includes("pending") ||
-      lowerStatus.includes("قيد الانتظار")
-    ) {
-      return "text-yellow-500";
-    }
-    if (lowerStatus.includes("cancelled") || lowerStatus.includes("ملغي")) {
-      return "text-red-500";
-    }
-    return "text-gray-400";
   };
 
+  // ✅ دالة لجلب أيقونة الحالة
   const getStatusIcon = (status: string) => {
-    const lowerStatus = status.toLowerCase();
-    if (lowerStatus.includes("completed") || lowerStatus.includes("مكتمل")) {
-      return <CheckCircle size={16} className="text-green-500" />;
+    const key = getStatusKey(status);
+    switch (key) {
+      case "COMPLETED":
+        return <CheckCircle size={16} className="text-green-500" />;
+      case "PENDING":
+        return <Clock size={16} className="text-yellow-500" />;
+      case "CANCELLED":
+        return <XCircle size={16} className="text-red-500" />;
+      default:
+        return <Clock size={16} className="text-gray-400" />;
     }
-    if (
-      lowerStatus.includes("pending") ||
-      lowerStatus.includes("قيد الانتظار")
-    ) {
-      return <Clock size={16} className="text-yellow-500" />;
-    }
-    if (lowerStatus.includes("cancelled") || lowerStatus.includes("ملغي")) {
-      return <XCircle size={16} className="text-red-500" />;
-    }
-    return <Clock size={16} className="text-gray-400" />;
   };
 
+  // ✅ دالة لعرض الحالة بلغة الواجهة الحالية
   const getStatusLabel = (status: string) => {
-    const lowerStatus = status.toLowerCase();
-    if (
-      lowerStatus.includes("pending") ||
-      lowerStatus.includes("قيد الانتظار")
-    ) {
-      return t("Pending");
-    }
-    if (lowerStatus.includes("completed") || lowerStatus.includes("مكتمل")) {
-      return t("Completed");
-    }
-    if (lowerStatus.includes("cancelled") || lowerStatus.includes("ملغي")) {
-      return t("Cancelled");
+    const key = getStatusKey(status);
+    const translations = STATUS_TRANSLATIONS[key as keyof typeof STATUS_TRANSLATIONS];
+    if (translations && translations[lang]) {
+      return translations[lang];
     }
     return status;
   };
 
+  // ✅ دالة لجلب عدد الصفقات لكل حالة
   const getStatusCount = (statusType: string) => {
     if (statusType === "ALL") return transfers.length;
     return transfers.filter((transfer) => {
-      const lowerStatus = transfer.status.toLowerCase();
-      if (statusType === "PENDING") {
-        return (
-          lowerStatus.includes("pending") ||
-          lowerStatus.includes("قيد الانتظار")
-        );
-      }
-      if (statusType === "COMPLETED") {
-        return (
-          lowerStatus.includes("completed") || lowerStatus.includes("مكتمل")
-        );
-      }
-      if (statusType === "CANCELLED") {
-        return (
-          lowerStatus.includes("cancelled") || lowerStatus.includes("ملغي")
-        );
-      }
-      return false;
+      return matchesStatus(transfer.status, statusType);
     }).length;
+  };
+
+  // ✅ رسائل عدم وجود صفقات
+  const getNoTransfersMessage = (status: string) => {
+    if (status === "ALL") return t("No transfers found");
+    if (status === "PENDING") return t("No pending transfers found");
+    if (status === "COMPLETED") return t("No completed transfers found");
+    if (status === "CANCELLED") return t("No cancelled transfers found");
+    return t("No transfers found");
   };
 
   if (loading) {
@@ -230,11 +252,7 @@ export default function TransfersPage() {
               <span className="text-sm font-medium">
                 {statusFilter === "ALL"
                   ? t("All Statuses")
-                  : statusFilter === "PENDING"
-                  ? t("Pending")
-                  : statusFilter === "COMPLETED"
-                  ? t("Completed")
-                  : t("Cancelled")}
+                  : getStatusLabel(statusFilter)}
               </span>
               <ChevronDown
                 size={16}
@@ -288,11 +306,7 @@ export default function TransfersPage() {
                           ></span>
                           {status === "ALL"
                             ? t("All Statuses")
-                            : status === "PENDING"
-                            ? t("Pending")
-                            : status === "COMPLETED"
-                            ? t("Completed")
-                            : t("Cancelled")}
+                            : getStatusLabel(status)}
                         </span>
                         <span className="text-xs px-2 py-0.5 rounded-full bg-gray-500/20">
                           {getStatusCount(status)}
@@ -311,17 +325,7 @@ export default function TransfersPage() {
             className={`text-center py-10 rounded-md
             ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}
           >
-            {statusFilter === "ALL"
-              ? t("No transfers found")
-              : t(
-                  `No ${getStatusLabel(
-                    statusFilter === "PENDING"
-                      ? "Pending"
-                      : statusFilter === "COMPLETED"
-                      ? "Completed"
-                      : "Cancelled",
-                  ).toLowerCase()} transfers found`,
-                )}
+            {getNoTransfersMessage(statusFilter)}
           </div>
         ) : (
           <div className="flex flex-col gap-6">
@@ -364,7 +368,7 @@ export default function TransfersPage() {
                         transfer.status,
                       )}`}
                     >
-                      {transfer.status}
+                      {getStatusLabel(transfer.status)}
                     </span>
                   </div>
                 </div>

@@ -79,10 +79,10 @@ export default function Ratings({ ratings = [], playerId }: RatingsProps) {
   const percentile = 35; // This should come from your API
   const ratingStatus =
     avgRating < 3
-      ? "BELOW AVERAGE"
+      ? t("BELOW AVERAGE")
       : avgRating < 5
-      ? "AVERAGE"
-      : "ABOVE AVERAGE";
+      ? t("AVERAGE")
+      : t("ABOVE AVERAGE");
   const ratingColor =
     avgRating < 3
       ? "text-red-500"

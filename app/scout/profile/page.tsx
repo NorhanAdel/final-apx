@@ -340,8 +340,8 @@ export default function ScoutProfile() {
 
         toast.success(
           isUpdate
-            ? "Profile Updated Successfully!"
-            : "Profile Created Successfully!",
+            ? t("Profile Updated Successfully!")
+            : t("Profile Created Successfully!"),
         );
 
         await fetchScoutProfile();

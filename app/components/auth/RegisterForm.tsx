@@ -70,7 +70,6 @@ export default function RegisterForm({
         </div>
       )}
 
-      {/* Username Field */}
       <div className="mb-5 sm:mb-6">
         <label className="text-gray-200 font-semibold text-sm block mb-1">
           {t("Username")}
@@ -103,7 +102,6 @@ export default function RegisterForm({
         )}
       </div>
 
-      {/* Email Field */}
       <div className="mb-5 sm:mb-6">
         <label className="text-gray-200 font-semibold text-sm block mb-1">
           {t("Email")}
@@ -137,7 +135,6 @@ export default function RegisterForm({
         )}
       </div>
 
-      {/* Password Field */}
       <div className="mb-5 sm:mb-6">
         <label className="text-gray-200 font-semibold text-sm block mb-1">
           {t("Password")}
@@ -177,7 +174,6 @@ export default function RegisterForm({
         )}
       </div>
 
-      {/* Role Field */}
       <div className="mb-5 sm:mb-6">
         <label className="text-gray-200 font-semibold text-sm block mb-3">
           {t("Select Role")}
@@ -212,7 +208,6 @@ export default function RegisterForm({
         )}
       </div>
 
-      {/* Submit Button */}
       <button
         type="submit"
         disabled={isLoading || !isValid}

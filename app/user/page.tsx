@@ -246,7 +246,7 @@ export default function UserProfilePage() {
 
         {/* Edit Profile Button with border-x-3 */}
         <button
-          onClick={() => router.push("/user/personal-information")}
+          onClick={() => router.push("/user/profile")}
           className={`w-full py-2.5 rounded-md mb-6 transition flex items-center justify-center gap-2 border-x-3 border-[#F0B100]
             ${
               isDark

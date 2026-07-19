@@ -326,6 +326,23 @@ export default function ScoutRequestsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
+  // =========================
+  // ✅ STATUS HELPERS
+  // =========================
+  const normalizeStatus = (status: string): string => {
+    const lower = status.toLowerCase();
+    if (lower.includes("pending") || lower.includes("قيد الانتظار")) return "PENDING";
+    if (lower.includes("accepted") || lower.includes("مقبول")) return "ACCEPTED";
+    if (lower.includes("rejected") || lower.includes("مرفوض")) return "REJECTED";
+    if (lower.includes("cancelled") || lower.includes("ملغي")) return "CANCELLED";
+    return status.toUpperCase();
+  };
+
+  const matchesStatus = (status: string, target: string): boolean => {
+    if (target === "ALL") return true;
+    return normalizeStatus(status) === target;
+  };
+
   const fetchPlayers = useCallback(async () => {
     try {
       const result = await fetchGraphQL<GetAllPlayersResponse>(
@@ -388,12 +405,15 @@ export default function ScoutRequestsPage() {
     fetchAllData();
   }, [fetchAllData]);
 
+  // =========================
+  // ✅ FILTERED REQUESTS
+  // =========================
   const getFilteredSentRequests = () => {
     let requests = sentRequests;
 
     if (statusFilter !== "ALL") {
       requests = requests.filter(
-        (r) => r.status?.toUpperCase() === statusFilter,
+        (r) => matchesStatus(r.status, statusFilter)
       );
     }
 
@@ -408,7 +428,7 @@ export default function ScoutRequestsPage() {
 
     if (statusFilter !== "ALL") {
       requests = requests.filter(
-        (r) => r.status?.toUpperCase() === statusFilter,
+        (r) => matchesStatus(r.status, statusFilter)
       );
     }
 
@@ -427,72 +447,69 @@ export default function ScoutRequestsPage() {
     return t("No message");
   };
 
-const handleSendRequest = async (e: React.FormEvent) => {
-  e.preventDefault();
+  const handleSendRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  if (!selectedTargetId) {
-    toast.error(t("Please select a player"));
-    return;
-  }
-
-  setLoading(true);
-
-  try {
-    const contactCheck = await fetchGraphQL<CanContactPlayerResponse>(
-      CAN_CONTACT_PLAYER,
-      {
-        playerId: selectedTargetId,
-      },
-    );
-
-    if (contactCheck.errors) {
-      toast.error(contactCheck.errors[0].message);
+    if (!selectedTargetId) {
+      toast.error(t("Please select a player"));
       return;
     }
 
-    const canContact = contactCheck.data?.canContactPlayer;
+    setLoading(true);
 
-    // ✅ HANDLE UNDEFINED RESPONSE
-    if (!canContact) {
-      toast.error(t("Unable to verify player contact"));
-      return;
-    }
-
-    // ❌ BLOCK REQUEST IF PLAYER STARS > PACKAGE LIMIT
-    if (!canContact.can_contact) {
-      toast.error(canContact.reason);
-      return;
-    }
-
-    // ✅ Send request normally
-    const result = await fetchGraphQL<SendRequestResponse>(
-      SEND_REQUEST_MUTATION,
-      {
-        input: {
-          player_id: selectedTargetId,
-          type: "SCOUT_OFFER",
-          message: details || null,
+    try {
+      const contactCheck = await fetchGraphQL<CanContactPlayerResponse>(
+        CAN_CONTACT_PLAYER,
+        {
+          playerId: selectedTargetId,
         },
-      },
-    );
+      );
 
-    if (result.errors) {
-      toast.error(result.errors[0].message);
-    } else if (result.data?.sendRequest) {
-      setSelectedTargetId("");
-      setDetails("");
+      if (contactCheck.errors) {
+        toast.error(contactCheck.errors[0].message);
+        return;
+      }
 
-      await fetchAllData();
+      const canContact = contactCheck.data?.canContactPlayer;
 
-      toast.success(t("Request sent successfully!"));
+      if (!canContact) {
+        toast.error(t("Unable to verify player contact"));
+        return;
+      }
+
+      if (!canContact.can_contact) {
+        toast.error(canContact.reason);
+        return;
+      }
+
+      const result = await fetchGraphQL<SendRequestResponse>(
+        SEND_REQUEST_MUTATION,
+        {
+          input: {
+            player_id: selectedTargetId,
+            type: "SCOUT_OFFER",
+            message: details || null,
+          },
+        },
+      );
+
+      if (result.errors) {
+        toast.error(result.errors[0].message);
+      } else if (result.data?.sendRequest) {
+        setSelectedTargetId("");
+        setDetails("");
+
+        await fetchAllData();
+
+        toast.success(t("Request sent successfully!"));
+      }
+    } catch (error) {
+      console.error("Error sending request:", error);
+      toast.error(t("Failed to send request"));
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error("Error sending request:", error);
-    toast.error(t("Failed to send request"));
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const handleCancelClick = (requestId: string) => {
     setSelectedRequestId(requestId);
@@ -576,8 +593,12 @@ const handleSendRequest = async (e: React.FormEvent) => {
     }
   };
 
+  // =========================
+  // ✅ STATUS HELPERS WITH TRANSLATION
+  // =========================
   const getStatusColor = (status: string) => {
-    switch (status?.toUpperCase()) {
+    const normalized = normalizeStatus(status);
+    switch (normalized) {
       case "PENDING":
         return "text-yellow-500 bg-yellow-500/10";
       case "ACCEPTED":
@@ -592,9 +613,8 @@ const handleSendRequest = async (e: React.FormEvent) => {
   };
 
   const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "ALL":
-        return t("All Statuses");
+    const normalized = normalizeStatus(status);
+    switch (normalized) {
       case "PENDING":
         return t("Pending");
       case "ACCEPTED":
@@ -610,14 +630,12 @@ const handleSendRequest = async (e: React.FormEvent) => {
 
   const getSentStatusCount = (status: string) => {
     if (status === "ALL") return sentRequests.length;
-    return sentRequests.filter((r) => r.status?.toUpperCase() === status)
-      .length;
+    return sentRequests.filter((r) => matchesStatus(r.status, status)).length;
   };
 
   const getClubStatusCount = (status: string) => {
     if (status === "ALL") return clubRequests.length;
-    return clubRequests.filter((r) => r.status?.toUpperCase() === status)
-      .length;
+    return clubRequests.filter((r) => matchesStatus(r.status, status)).length;
   };
 
   const formatDate = (dateString: string) => {
@@ -635,6 +653,26 @@ const handleSendRequest = async (e: React.FormEvent) => {
   };
 
   const selectedPlayer = players.find((p) => p.id === selectedTargetId);
+
+  const getNoRequestsMessage = (tab: string, status: string) => {
+    if (tab === "clubRequests") {
+      if (status === "ALL") return t("No club requests");
+      if (status === "PENDING") return t("No pending requests found");
+      if (status === "ACCEPTED") return t("No accepted requests found");
+      if (status === "REJECTED") return t("No rejected requests found");
+      if (status === "CANCELLED") return t("No cancelled requests found");
+      return t("No club requests");
+    }
+    if (tab === "sent") {
+      if (status === "ALL") return t("No sent requests");
+      if (status === "PENDING") return t("No pending requests found");
+      if (status === "ACCEPTED") return t("No accepted requests found");
+      if (status === "REJECTED") return t("No rejected requests found");
+      if (status === "CANCELLED") return t("No cancelled requests found");
+      return t("No sent requests");
+    }
+    return t("No requests found");
+  };
 
   return (
     <div
@@ -937,13 +975,7 @@ const handleSendRequest = async (e: React.FormEvent) => {
               >
                 <Building2 size={48} className="mx-auto mb-4 text-gray-500" />
                 <p className={isDark ? "text-gray-400" : "text-gray-500"}>
-                  {statusFilter === "ALL"
-                    ? t("No club requests")
-                    : t(
-                        `No ${getStatusLabel(
-                          statusFilter,
-                        ).toLowerCase()} requests found`,
-                      )}
+                  {getNoRequestsMessage("clubRequests", statusFilter)}
                 </p>
               </div>
             ) : (
@@ -1129,13 +1161,7 @@ const handleSendRequest = async (e: React.FormEvent) => {
               >
                 <Send size={48} className="mx-auto mb-4 text-gray-500" />
                 <p className={isDark ? "text-gray-400" : "text-gray-500"}>
-                  {statusFilter === "ALL"
-                    ? t("No sent requests")
-                    : t(
-                        `No ${getStatusLabel(
-                          statusFilter,
-                        ).toLowerCase()} requests found`,
-                      )}
+                  {getNoRequestsMessage("sent", statusFilter)}
                 </p>
               </div>
             ) : (
