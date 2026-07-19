@@ -24,6 +24,12 @@ interface Request {
   } | null;
   created_at: string;
   updated_at: string;
+  sender?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    profile_image_url?: string;
+  };
   player?: {
     id: string;
     user?: {
@@ -32,21 +38,8 @@ interface Request {
       profile_image_url?: string;
     };
   };
-  sender?: {
-    id: string;
-    first_name: string;
-    last_name: string;
-    profile_image_url?: string;
-  };
 }
 
-/**
- * The backend returns `status` already translated into the current UI
- * language (e.g. "Pending", "قيد الانتظار", "Pendente", "待处理").
- * To filter/match reliably regardless of the active language, we match
- * against every known translation for each raw status value instead of
- * relying on a single hardcoded string.
- */
 const STATUS_TRANSLATIONS: Record<"PENDING" | "ACCEPTED" | "REJECTED" | "CANCELLED", string[]> = {
   PENDING: ["pending", "قيد الانتظار", "pendente", "待处理", "待定"],
   ACCEPTED: ["accepted", "مقبول", "aceito", "aceite", "已接受", "已同意"],
@@ -91,6 +84,8 @@ export default function RequestsPage() {
         GET_INCOMING_REQUESTS,
       );
 
+      console.log("📋 Incoming requests response:", result);
+
       if (result.data?.myIncomingRequests) {
         setRequests(result.data.myIncomingRequests);
         setFilteredRequests(result.data.myIncomingRequests);
@@ -129,6 +124,8 @@ export default function RequestsPage() {
       const result = await fetchGraphQL<{
         respondToRequest: { id: string; status: string };
       }>(RESPOND_TO_REQUEST, { input: { request_id: requestId, accept } });
+
+      console.log("📋 Respond response:", result);
 
       if (result.data?.respondToRequest) {
         const updatedRequest = result.data.respondToRequest;
@@ -247,7 +244,6 @@ export default function RequestsPage() {
           {t("Requests")}
         </h1>
 
-        {/* Status Filter */}
         <div className="flex justify-end mb-6">
           <div className="relative">
             <button
@@ -346,9 +342,12 @@ export default function RequestsPage() {
         ) : (
           <div className="flex flex-col gap-6">
             {filteredRequests.map((req) => {
-              const profileImage = req.sender?.profile_image_url;
-              const displayName =
-                req.senderName || req.sender?.first_name || req.sender_id;
+              const profileImage = req.sender?.profile_image_url || 
+                                   req.player?.user?.profile_image_url;
+              const displayName = req.senderName || 
+                                  req.sender?.first_name || 
+                                  req.sender?.last_name || 
+                                  req.sender_id;
               const typeDisplay = getTypeDisplay(req.type);
 
               return (

@@ -95,6 +95,8 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
 
   const activeLang = lang || currentLang || "en";
 
+  const activeUser = localUser || user;
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
@@ -252,8 +254,6 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
     pathname.startsWith(`/${sport.name.toLowerCase()}`),
   );
 
-  const activeUser = localUser || user;
-
   const getCheckoutRoute = (): string => {
     if (!activeUser) return "/auth/login";
 
@@ -366,6 +366,21 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
     setProfileOpen(false);
   };
 
+  const requiresSubscription = (): boolean => {
+    if (!activeUser) return false;
+
+    const requiresRole = ["PLAYER", "CLUB", "SCOUT", "AGENT"].includes(
+      activeUser.role,
+    );
+    if (!requiresRole) return false;
+
+    if (activeUser.has_active_subscription === true) {
+      return false;
+    }
+
+    return true;
+  };
+
   const renderAuthButton = (): React.ReactNode => {
     if (loading) {
       return <div className="w-8 h-8 rounded-full bg-white/10 animate-pulse" />;
@@ -404,18 +419,11 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                 <Link
                   href={getProfileLink()}
                   onClick={(e) => {
-                    const requiresSub = [
-                      "PLAYER",
-                      "CLUB",
-                      "SCOUT",
-                      "AGENT",
-                    ].includes(activeUser?.role || "");
-                    if (requiresSub && !activeUser?.has_active_subscription) {
+                    if (requiresSubscription() && !activeUser?.has_active_subscription) {
                       e.preventDefault();
                       router.push(getCheckoutRoute());
                       return;
                     }
-
                     setProfileOpen(false);
                   }}
                   className="flex items-center gap-3 px-4 py-3 hover:bg-[#F0B100] hover:text-black transition-colors"
@@ -730,7 +738,14 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                   </div>
                   <Link
                     href={getProfileLink()}
-                    onClick={() => setOpen(false)}
+                    onClick={(e) => {
+                      if (requiresSubscription() && !activeUser?.has_active_subscription) {
+                        e.preventDefault();
+                        router.push(getCheckoutRoute());
+                        return;
+                      }
+                      setOpen(false);
+                    }}
                     className="block w-full text-center px-4 py-2 bg-[#001a4d] border border-[#F0B100] rounded-lg text-[#F0B100] hover:bg-[#002060] transition-colors"
                   >
                     {translate("View Profile", activeLang)}

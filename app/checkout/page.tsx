@@ -82,19 +82,78 @@ const translations: any = {
     PROFESSIONAL: "Professional",
     PREMIUM: "Premium Player",
   },
+
+  pt: {
+    checkout: "Checkout",
+    paymentDetails: "Detalhes do Pagamento",
+    cardName: "Nome do Titular",
+    cardNumber: "Número do Cartão",
+    expiryMonth: "Mês",
+    expiryYear: "Ano",
+    cvv: "CVV",
+    payNow: "Pagar Agora",
+    processing: "Processando...",
+    success: "Pagamento Bem-sucedido",
+    summary: "Resumo da Assinatura",
+    package: "Pacote",
+    photos: "Fotos",
+    videos: "Vídeos",
+    ads: "Anúncios",
+    remainingDays: "Dias Restantes",
+    noPackage: "Nenhuma Assinatura Encontrada",
+    paymentError: "Erro no Pagamento",
+    securePayment: "Pagamento Seguro",
+
+    BASIC: "Básico",
+    PROFESSIONAL: "Profissional",
+    PREMIUM: "Jogador Premium",
+  },
+
+  zh: {
+    checkout: "结账",
+    paymentDetails: "付款详情",
+    cardName: "持卡人姓名",
+    cardNumber: "卡号",
+    expiryMonth: "月份",
+    expiryYear: "年份",
+    cvv: "CVV",
+    payNow: "立即支付",
+    processing: "处理中...",
+    success: "支付成功",
+    summary: "订阅摘要",
+    package: "套餐",
+    photos: "照片",
+    videos: "视频",
+    ads: "广告",
+    remainingDays: "剩余天数",
+    noPackage: "未找到订阅",
+    paymentError: "支付错误",
+    securePayment: "安全支付",
+
+    BASIC: "基础",
+    PROFESSIONAL: "专业",
+    PREMIUM: "高级玩家",
+  },
 };
 
 export default function CheckoutPage() {
   const { theme } = useTheme();
-const router = useRouter();
+  const router = useRouter();
   const isDark = theme === "dark";
 
-  const lang =
-    typeof window !== "undefined"
-      ? localStorage.getItem("lang") || "en"
-      : "en";
+  // =========================
+  // FIX HYDRATION ERROR
+  // =========================
+  const [isClient, setIsClient] = useState(false);
+  const [lang, setLang] = useState("en");
 
-  const t = translations[lang] || translations.en;
+  useEffect(() => {
+    setIsClient(true);
+    const storedLang = localStorage.getItem("lang") || "en";
+    setLang(storedLang);
+  }, []);
+
+  const t = isClient ? translations[lang] || translations.en : translations.en;
 
   // =========================
   // STATES
@@ -147,15 +206,17 @@ const router = useRouter();
   // LOAD PACKAGE
   // =========================
   useEffect(() => {
-    fetchSubscriptions();
+    if (isClient) {
+      fetchSubscriptions();
 
-    const stored =
-      localStorage.getItem("selectedPackage");
+      const stored =
+        localStorage.getItem("selectedPackage");
 
-    if (stored) {
-      setSelectedPackage(JSON.parse(stored));
+      if (stored) {
+        setSelectedPackage(JSON.parse(stored));
+      }
     }
-  }, []);
+  }, [isClient]);
 
   // =========================
   // PACKAGE LABEL
@@ -179,146 +240,144 @@ const router = useRouter();
   // =========================
   // PAYMENT
   // =========================
-const handlePayment = async () => {
-  try {
-    setLoading(true);
+  const handlePayment = async () => {
+    try {
+      setLoading(true);
 
-    setError("");
+      setError("");
 
- 
-    const activeSubscription = subscriptions.find(
-      (s) => s.is_active
-    );
-
-    if (activeSubscription) {
-      toast.success(
-        lang === "ar"
-          ? "تم الدفع بالفعل من قبل"
-          : "You already purchased a package"
+      const activeSubscription = subscriptions.find(
+        (s) => s.is_active
       );
 
-      router.push("/profile");
+      if (activeSubscription) {
+        toast.success(
+          lang === "ar"
+            ? "تم الدفع بالفعل من قبل"
+            : "You already purchased a package"
+        );
 
-      return;
-    }
+        router.push("/profile");
 
-    const stored =
-      localStorage.getItem("selectedPackage");
+        return;
+      }
 
-    if (!stored) {
-      setError(t.noPackage);
-      return;
-    }
+      const stored =
+        localStorage.getItem("selectedPackage");
 
-    const parsed = JSON.parse(stored);
+      if (!stored) {
+        setError(t.noPackage);
+        return;
+      }
 
-    const allowedEnums = [
-      "PLAYER_BASIC",
-      "PLAYER_PROFESSIONAL",
-      "PLAYER_PREMIUM",
-    ];
+      const parsed = JSON.parse(stored);
 
-    const enumValue = allowedEnums.includes(
-      parsed.package_type
-    )
-      ? parsed.package_type
-      : "PLAYER_BASIC";
+      const allowedEnums = [
+        "PLAYER_BASIC",
+        "PLAYER_PROFESSIONAL",
+        "PLAYER_PREMIUM",
+      ];
 
-    const res: any = await fetchGraphQL(
-      `
-      mutation PurchasePackage($input: PurchasePackageInput!) {
-        purchasePlayerPackage(input: $input) {
-          success
-          message
-          subscription_id
-          redirect_url
+      const enumValue = allowedEnums.includes(
+        parsed.package_type
+      )
+        ? parsed.package_type
+        : "PLAYER_BASIC";
+
+      const res: any = await fetchGraphQL(
+        `
+        mutation PurchasePackage($input: PurchasePackageInput!) {
+          purchasePlayerPackage(input: $input) {
+            success
+            message
+            subscription_id
+            redirect_url
+          }
         }
-      }
-    `,
-      {
-        input: {
-          package_type: enumValue,
+      `,
+        {
+          input: {
+            package_type: enumValue,
 
-          card: {
-            cardholder_name:
-              cardData.cardholder_name,
+            card: {
+              cardholder_name:
+                cardData.cardholder_name,
 
-            card_number:
-              cardData.card_number,
+              card_number:
+                cardData.card_number,
 
-            expiry_month: Number(
-              cardData.expiry_month
-            ),
+              expiry_month: Number(
+                cardData.expiry_month
+              ),
 
-            expiry_year: Number(
-              cardData.expiry_year
-            ),
+              expiry_year: Number(
+                cardData.expiry_year
+              ),
 
-            cvv: cardData.cvv,
+              cvv: cardData.cvv,
+            },
           },
-        },
+        }
+      );
+
+      if (
+        res?.data?.purchasePlayerPackage?.success
+      ) {
+        const updatedUser = {
+          ...JSON.parse(localStorage.getItem("user") || "{}"),
+          has_active_subscription: true,
+        };
+
+        localStorage.setItem(
+          "user",
+          JSON.stringify(updatedUser)
+        );
+
+        window.dispatchEvent(
+          new Event("user-updated")
+        );
+
+        setSuccess(true);
+
+        fetchSubscriptions();
+
+        toast.success(
+          lang === "ar"
+            ? "تم الدفع بنجاح"
+            : "Payment successful"
+        );
+
+        localStorage.removeItem("selectedPackage");
+
+        setTimeout(() => {
+          router.push("/profile");
+        }, 2000);
+      } else {
+        toast.error(
+          res?.errors?.[0]?.message ||
+            res?.data?.purchasePlayerPackage
+              ?.message ||
+            t.paymentError
+        );
+
+        setError(
+          res?.errors?.[0]?.message ||
+            res?.data?.purchasePlayerPackage
+              ?.message ||
+            t.paymentError
+        );
       }
-    );
+    } catch (err) {
+      console.log(err);
 
-   if (
-  res?.data?.purchasePlayerPackage?.success
-) {
+      toast.error(t.paymentError);
 
-  const updatedUser = {
-    ...JSON.parse(localStorage.getItem("user") || "{}"),
-    has_active_subscription: true,
+      setError(t.paymentError);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  localStorage.setItem(
-    "user",
-    JSON.stringify(updatedUser)
-  );
-
-  window.dispatchEvent(
-    new Event("user-updated")
-  );
-
-  setSuccess(true);
-
-  fetchSubscriptions();
-
-  toast.success(
-    lang === "ar"
-      ? "تم الدفع بنجاح"
-      : "Payment successful"
-  );
-
-  localStorage.removeItem("selectedPackage");
-
-  setTimeout(() => {
-    router.push("/profile");
-  }, 2000);
-
-} else {
-      toast.error(
-        res?.errors?.[0]?.message ||
-          res?.data?.purchasePlayerPackage
-            ?.message ||
-          t.paymentError
-      );
-
-      setError(
-        res?.errors?.[0]?.message ||
-          res?.data?.purchasePlayerPackage
-            ?.message ||
-          t.paymentError
-      );
-    }
-  } catch (err) {
-    console.log(err);
-
-    toast.error(t.paymentError);
-
-    setError(t.paymentError);
-  } finally {
-    setLoading(false);
-  }
-};
   // =========================
   // ACTIVE SUB
   // =========================
@@ -326,6 +385,65 @@ const handlePayment = async () => {
     (s) => s.is_active
   );
 
+  // =========================
+  // LOADING STATE (PREVENT HYDRATION ERROR)
+  // =========================
+  if (!isClient) {
+    return (
+      <div
+        className={`min-h-screen py-32 px-4 ${
+          isDark
+            ? "bg-[#07111f]"
+            : "bg-[#edf4ff]"
+        }`}
+      >
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-14">
+            <div className="flex items-center gap-5">
+              <div className="w-20 h-20 rounded-3xl bg-yellow-400/20 animate-pulse"></div>
+              <div>
+                <div className="h-14 w-48 bg-yellow-400/20 rounded-2xl animate-pulse"></div>
+                <div className="h-4 w-32 bg-gray-600/20 rounded-lg mt-2 animate-pulse"></div>
+              </div>
+            </div>
+          </div>
+          <div className="grid lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+              <div className="rounded-[35px] border p-8 bg-[#0b1730]/50">
+                <div className="h-10 w-48 bg-gray-600/20 rounded-2xl animate-pulse mb-8"></div>
+                <div className="grid grid-cols-2 gap-5">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div
+                      key={i}
+                      className={`h-14 rounded-2xl bg-gray-600/20 animate-pulse ${
+                        i === 5 ? "col-span-2" : ""
+                      }`}
+                    ></div>
+                  ))}
+                </div>
+                <div className="w-full h-16 mt-10 bg-yellow-400/20 rounded-2xl animate-pulse"></div>
+              </div>
+            </div>
+            <div className="rounded-[35px] border p-8 bg-[#0b1730]/50">
+              <div className="h-10 w-40 bg-gray-600/20 rounded-2xl animate-pulse mb-6"></div>
+              <div className="space-y-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <div
+                    key={i}
+                    className="h-6 w-full bg-gray-600/20 rounded-lg animate-pulse"
+                  ></div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // =========================
+  // MAIN RENDER
+  // =========================
   return (
     <div
       className={`min-h-screen py-32 px-4 ${
@@ -462,7 +580,7 @@ const handlePayment = async () => {
               <button
                 onClick={handlePayment}
                 disabled={loading}
-                className="w-full h-16 mt-10 bg-yellow-400 text-black font-black rounded-2xl"
+                className="w-full h-16 mt-10 bg-yellow-400 text-black font-black rounded-2xl hover:bg-yellow-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading
                   ? t.processing
@@ -544,15 +662,15 @@ const handlePayment = async () => {
 
       {/* SUCCESS */}
       {success && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center">
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
 
-          <div className="bg-white text-black p-10 rounded-2xl relative">
+          <div className="bg-white text-black p-10 rounded-2xl relative max-w-md w-full mx-4">
 
             <button
               onClick={() =>
                 setSuccess(false)
               }
-              className="absolute top-3 right-3"
+              className="absolute top-3 right-3 hover:bg-gray-100 p-2 rounded-full transition-all"
             >
               <X />
             </button>
@@ -562,7 +680,7 @@ const handlePayment = async () => {
               size={60}
             />
 
-            <h2 className="text-2xl font-bold mt-4">
+            <h2 className="text-2xl font-bold mt-4 text-center">
               {t.success}
             </h2>
 
@@ -591,8 +709,8 @@ function Input({
       onChange={onChange}
       className={`w-full h-14 px-5 rounded-2xl border ${
         isDark
-          ? "bg-[#111c33] text-white"
-          : "bg-white"
+          ? "bg-[#111c33] text-white border-gray-700 focus:border-yellow-400 focus:outline-none"
+          : "bg-white text-black border-gray-300 focus:border-yellow-400 focus:outline-none"
       }`}
     />
   );

@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import BackButton from "@/app/components/BackButton";
 import { ShoppingCart } from "lucide-react";
 import { useRouter } from "next/navigation";
+
 interface Ad {
   id: string;
   title: string;
@@ -47,7 +48,6 @@ interface Ad {
   };
 }
 
-
 interface UploadLimits {
   max_ads: number;
   uploaded_ads: number;
@@ -61,6 +61,7 @@ interface OrgLimits {
   ads_remaining: number;
   can_create_ad: boolean;
 }
+
 function getFullUrl(url: string | undefined): string {
   if (!url) return "";
   if (url.startsWith("blob:") || url.startsWith("http")) return url;
@@ -180,8 +181,7 @@ function ShareAdPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [uploadLimits, setUploadLimits] =
-    useState<UploadLimits | null>(null);
+  const [uploadLimits, setUploadLimits] = useState<UploadLimits | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [targetRole, setTargetRole] = useState("");
@@ -234,39 +234,66 @@ function ShareAdPageContent() {
       setLoading(false);
     }
   }, [t]);
-const fetchUploadLimits = useCallback(async () => {
-  try {
-    const result = await fetchGraphQL<{
-      myOrganizationLimits: OrgLimits;
-    }>(GET_MY_ORGANIZATION_LIMITS);
 
-    if (result.data?.myOrganizationLimits) {
-      setUploadLimits({
-        max_ads: result.data.myOrganizationLimits.max_ads,
-        uploaded_ads: result.data.myOrganizationLimits.ads_used,
-        remaining_ads: result.data.myOrganizationLimits.ads_remaining,
-        can_create_ad: result.data.myOrganizationLimits.can_create_ad,
-      });
+  const fetchUploadLimits = useCallback(async () => {
+    try {
+      const result = await fetchGraphQL<{
+        myOrganizationLimits: OrgLimits;
+      }>(GET_MY_ORGANIZATION_LIMITS);
+
+      if (result.data?.myOrganizationLimits) {
+        setUploadLimits({
+          max_ads: result.data.myOrganizationLimits.max_ads,
+          uploaded_ads: result.data.myOrganizationLimits.ads_used,
+          remaining_ads: result.data.myOrganizationLimits.ads_remaining,
+          can_create_ad: result.data.myOrganizationLimits.can_create_ad,
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching upload limits:", error);
     }
-  } catch (error) {
-    console.error("Error fetching upload limits:", error);
-  }
-}, []);
- useEffect(() => {
-  fetchMyAds();
-  fetchUploadLimits();
-}, [fetchMyAds, fetchUploadLimits]);
+  }, []);
+
+  // ✅ دالة محدثة لتحديث كل البيانات
+  const refreshAllData = useCallback(async () => {
+    try {
+      await Promise.all([
+        fetchMyAds(),
+        fetchUploadLimits(),
+      ]);
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+    }
+  }, [fetchMyAds, fetchUploadLimits]);
+
+  useEffect(() => {
+    refreshAllData();
+  }, [refreshAllData]);
+
+  // ✅ استماع لحدث شراء الإعلان
+  useEffect(() => {
+    const handleAdPurchased = () => {
+      refreshAllData();
+    };
+
+    window.addEventListener("ad-purchased", handleAdPurchased);
+    
+    return () => {
+      window.removeEventListener("ad-purchased", handleAdPurchased);
+    };
+  }, [refreshAllData]);
 
   const handleImageClick = () => {
     imageFileRef.current?.click();
   };
-const handleBuyAd = () => {
-  router.push("/ad/purchase");
-};
+
+  const handleBuyAd = () => {
+    router.push("/ad/purchase");
+  };
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Clear video if exists
       if (videoFile || videoPreview) {
         setVideoFile(null);
         setVideoPreview(null);
@@ -285,7 +312,6 @@ const handleBuyAd = () => {
   const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Clear image if exists
       if (imageFile || imagePreview) {
         setImageFile(null);
         setImagePreview(null);
@@ -306,101 +332,101 @@ const handleBuyAd = () => {
     if (videoFileRef.current) videoFileRef.current.value = "";
   };
 
-const handleCreateAd = async () => {
-  if (!title.trim()) {
-    toast.error(t("Please enter a title"));
-    return;
-  }
-
-  if (!imageFile && !videoFile) {
-    toast.error(t("Please add an image or video"));
-    return;
-  }
-
-  setLoading(true);
-
-  try {
-    const input = {
-      title: title.trim(),
-      description: description.trim() || undefined,
-      target_role: targetRole || undefined,
-    };
-
-    let result;
-
-    if (imageFile) {
-      result = await uploadGraphQL<{ createAd: Ad }>(CREATE_AD_WITH_IMAGE, {
-        image: imageFile,
-        input,
-      });
-    } else if (videoFile) {
-      result = await uploadGraphQL<{ createAd: Ad }>(CREATE_AD_WITH_VIDEO, {
-        video: videoFile,
-        input,
-      });
-    } else {
-      toast.error(t("Please add an image or video"));
-      setLoading(false);
+  const handleCreateAd = async () => {
+    if (!title.trim()) {
+      toast.error(t("Please enter a title"));
       return;
     }
 
-    if (result.data?.createAd) {
-      toast.success(t("Ad created successfully! Waiting for admin approval"));
-      setTitle("");
-      setDescription("");
-      setTargetRole("");
-      setExpiresAt("");
-      clearFiles();
-      await fetchMyAds();
-    } else if (result.errors) {
-      toast.error(result.errors[0].message);
+    if (!imageFile && !videoFile) {
+      toast.error(t("Please add an image or video"));
+      return;
     }
-  } catch (error) {
-    console.error("Error creating ad:", error);
-    toast.error(t("Failed to create ad"));
-  } finally {
-    setLoading(false);
-  }
-};
 
-const handleUpdateAd = async () => {
-  if (!editingAd || !title.trim()) {
-    toast.error(t("Please enter a title"));
-    return;
-  }
+    setLoading(true);
 
-  setLoading(true);
+    try {
+      const input = {
+        title: title.trim(),
+        description: description.trim() || undefined,
+        target_role: targetRole || undefined,
+      };
 
-  try {
-    const input: Record<string, unknown> = {
-      title: title.trim(),
-    };
-    if (description.trim()) input.description = description.trim();
-    if (targetRole) input.target_role = targetRole;
+      let result;
 
-    const result = await fetchGraphQL<{ updateAd: Ad }>(UPDATE_AD, {
-      adId: editingAd.id,
-      input,
-    });
+      if (imageFile) {
+        result = await uploadGraphQL<{ createAd: Ad }>(CREATE_AD_WITH_IMAGE, {
+          image: imageFile,
+          input,
+        });
+      } else if (videoFile) {
+        result = await uploadGraphQL<{ createAd: Ad }>(CREATE_AD_WITH_VIDEO, {
+          video: videoFile,
+          input,
+        });
+      } else {
+        toast.error(t("Please add an image or video"));
+        setLoading(false);
+        return;
+      }
 
-    if (result.data?.updateAd) {
-      toast.success(t("Ad updated successfully! Resubmitted for approval"));
-      setEditingAd(null);
-      setTitle("");
-      setDescription("");
-      setTargetRole("");
-      setExpiresAt("");
-      await fetchMyAds();
-    } else if (result.errors) {
-      toast.error(result.errors[0].message);
+      if (result.data?.createAd) {
+        toast.success(t("Ad created successfully! Waiting for admin approval"));
+        setTitle("");
+        setDescription("");
+        setTargetRole("");
+        setExpiresAt("");
+        clearFiles();
+        await refreshAllData(); // ✅ تحديث كل البيانات
+      } else if (result.errors) {
+        toast.error(result.errors[0].message);
+      }
+    } catch (error) {
+      console.error("Error creating ad:", error);
+      toast.error(t("Failed to create ad"));
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error("Error updating ad:", error);
-    toast.error(t("Failed to update ad"));
-  } finally {
-    setLoading(false);
-  }
-};
+  };
+
+  const handleUpdateAd = async () => {
+    if (!editingAd || !title.trim()) {
+      toast.error(t("Please enter a title"));
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const input: Record<string, unknown> = {
+        title: title.trim(),
+      };
+      if (description.trim()) input.description = description.trim();
+      if (targetRole) input.target_role = targetRole;
+
+      const result = await fetchGraphQL<{ updateAd: Ad }>(UPDATE_AD, {
+        adId: editingAd.id,
+        input,
+      });
+
+      if (result.data?.updateAd) {
+        toast.success(t("Ad updated successfully! Resubmitted for approval"));
+        setEditingAd(null);
+        setTitle("");
+        setDescription("");
+        setTargetRole("");
+        setExpiresAt("");
+        await refreshAllData(); // ✅ تحديث كل البيانات
+      } else if (result.errors) {
+        toast.error(result.errors[0].message);
+      }
+    } catch (error) {
+      console.error("Error updating ad:", error);
+      toast.error(t("Failed to update ad"));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleDeleteClick = (adId: string) => {
     setAdToDelete(adId);
@@ -420,7 +446,7 @@ const handleUpdateAd = async () => {
 
       if (result.data?.deleteAd) {
         toast.success(t("Ad deleted successfully"));
-        await fetchMyAds();
+        await refreshAllData(); // ✅ تحديث كل البيانات
       } else if (result.errors) {
         toast.error(result.errors[0].message);
       }
@@ -440,7 +466,6 @@ const handleUpdateAd = async () => {
     setTargetRole(ad.target_role || "");
     setExpiresAt(ad.expires_at?.split("T")[0] || "");
     setShowMyAds(false);
-    // Clear any files when editing
     clearFiles();
   };
 
@@ -471,29 +496,31 @@ const handleUpdateAd = async () => {
     >
       <div className="w-full max-w-3xl py-12">
         <BackButton className="mb-6" />
-<div
-  className={`p-4 rounded-xl mb-6 flex items-center justify-between ${
-    isDark
-      ? "bg-[#0a0f2c] border border-[#1e2a5a]"
-      : "bg-white border border-gray-200 shadow"
-  }`}
->
-  <div>
-    <p className="text-sm opacity-70">{t("Remaining Ads")}</p>
-    <p className="text-2xl font-bold">
-      {uploadLimits?.remaining_ads || 0} /
-      {uploadLimits?.max_ads || 0}
-    </p>
-  </div>
 
-  <button
-    onClick={handleBuyAd}
-    className="px-4 py-2 rounded-lg bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-bold hover:scale-105 transition flex items-center gap-2"
-  >
-    <ShoppingCart size={18} />
-    {t("Buy Ad Slot")}
-  </button>
-</div>
+        <div
+          className={`p-4 rounded-xl mb-6 flex items-center justify-between ${
+            isDark
+              ? "bg-[#0a0f2c] border border-[#1e2a5a]"
+              : "bg-white border border-gray-200 shadow"
+          }`}
+        >
+          <div>
+            <p className="text-sm opacity-70">{t("Remaining Ads")}</p>
+            <p className="text-2xl font-bold">
+              {uploadLimits?.remaining_ads || 0} /
+              {uploadLimits?.max_ads || 0}
+            </p>
+          </div>
+
+          <button
+            onClick={handleBuyAd}
+            className="px-4 py-2 rounded-lg bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-bold hover:scale-105 transition flex items-center gap-2"
+          >
+            <ShoppingCart size={18} />
+            {t("Buy Ad Slot")}
+          </button>
+        </div>
+
         <h1
           className={`text-center text-2xl sm:text-3xl font-bold mb-8
           ${isDark ? "text-yellow-400" : "text-[#F0B100]"}`}
@@ -523,7 +550,7 @@ const handleUpdateAd = async () => {
             onClick={() => {
               setShowMyAds(true);
               setEditingAd(null);
-              fetchMyAds();
+              refreshAllData();
             }}
             className={`px-4 py-2 rounded-md transition ${
               showMyAds && !editingAd

@@ -48,6 +48,23 @@ export default function PurchaseAdPage() {
 
   const [isProcessing, setIsProcessing] = useState(false);
 
+  const getShareAdRoute = (days: number): string => {
+    const role = user?.role || "";
+    
+    switch (role) {
+      case "PLAYER":
+        return `/profile/share?days=${days}`;
+      case "CLUB":
+        return `/clubprofile/shareAd?days=${days}`;
+      case "SCOUT":
+        return `/scout/profile/share?days=${days}`;
+      case "AGENT":
+        return `/agent/shareAd?days=${days}`;
+      default:
+        return `/shareAd?days=${days}`;
+    }
+  };
+
   const handlePurchase = async (cardData: {
     cardholder_name: string;
     card_number: string;
@@ -112,7 +129,10 @@ export default function PurchaseAdPage() {
           } ${t("days")})`,
         );
 
-        router.push(`/clubprofile/shareAd?days=${selectedDuration.days}`);
+        window.dispatchEvent(new Event("ad-purchased"));
+
+        const shareAdRoute = getShareAdRoute(selectedDuration.days);
+        router.push(shareAdRoute);
       }
     } catch (error) {
       console.error(error);

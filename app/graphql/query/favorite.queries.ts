@@ -1,11 +1,11 @@
 export const IS_FAVORITE = `
-  query IsFavorite($playerId: ID!) {
+  query IsFavorite($playerId: String!) {
     isFavorite(playerId: $playerId)
   }
 `;
 
 export const GET_FAVORITE_COUNT = `
-  query FavoriteCount($playerId: ID!) {
+  query FavoriteCount($playerId: String!) {
     favoriteCount(playerId: $playerId)
   }
 `;

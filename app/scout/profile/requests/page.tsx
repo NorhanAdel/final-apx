@@ -28,8 +28,7 @@ import {
 import {
   SEND_REQUEST_MUTATION,
   CANCEL_REQUEST_MUTATION,
-  ACCEPT_SCOUT_REQUEST_MUTATION,
-  REJECT_SCOUT_REQUEST_MUTATION,
+  RESPOND_TO_REQUEST,
 } from "@/app/graphql/mutation/request.mutations";
 import { fetchGraphQL } from "@/app/lib/fetchGraphQL";
 import { useTheme } from "@/app/context/ThemeContext";
@@ -93,23 +92,6 @@ interface CanContactPlayerResponse {
     can_contact: boolean;
     reason: string;
     max_stars: number;
-  };
-}
-interface AcceptScoutRequestResponse {
-  acceptScoutRequest: {
-    id: string;
-    status: string;
-    message?: string;
-    created_at: string;
-  };
-}
-
-interface RejectScoutRequestResponse {
-  rejectScoutRequest: {
-    id: string;
-    status: string;
-    message?: string;
-    created_at: string;
   };
 }
 
@@ -327,14 +309,23 @@ export default function ScoutRequestsPage() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   // =========================
-  // ✅ STATUS HELPERS
+  // ✅ STATUS HELPERS - تدعم كل اللغات
   // =========================
   const normalizeStatus = (status: string): string => {
     const lower = status.toLowerCase();
-    if (lower.includes("pending") || lower.includes("قيد الانتظار")) return "PENDING";
-    if (lower.includes("accepted") || lower.includes("مقبول")) return "ACCEPTED";
-    if (lower.includes("rejected") || lower.includes("مرفوض")) return "REJECTED";
-    if (lower.includes("cancelled") || lower.includes("ملغي")) return "CANCELLED";
+    // العربية
+    if (lower.includes("قيد الانتظار") || lower.includes("pending"))
+      return "PENDING";
+    if (lower.includes("مقبول") || lower.includes("accepted"))
+      return "ACCEPTED";
+    if (lower.includes("مرفوض") || lower.includes("rejected"))
+      return "REJECTED";
+    if (
+      lower.includes("ملغي") ||
+      lower.includes("cancelled") ||
+      lower.includes("canceled")
+    )
+      return "CANCELLED";
     return status.toUpperCase();
   };
 
@@ -412,9 +403,7 @@ export default function ScoutRequestsPage() {
     let requests = sentRequests;
 
     if (statusFilter !== "ALL") {
-      requests = requests.filter(
-        (r) => matchesStatus(r.status, statusFilter)
-      );
+      requests = requests.filter((r) => matchesStatus(r.status, statusFilter));
     }
 
     return requests.sort(
@@ -427,9 +416,7 @@ export default function ScoutRequestsPage() {
     let requests = clubRequests;
 
     if (statusFilter !== "ALL") {
-      requests = requests.filter(
-        (r) => matchesStatus(r.status, statusFilter)
-      );
+      requests = requests.filter((r) => matchesStatus(r.status, statusFilter));
     }
 
     return requests.sort(
@@ -542,55 +529,58 @@ export default function ScoutRequestsPage() {
     }
   };
 
-  const handleRespondToClubRequest = (
-    request: ClubRequest,
+  const handleRespondToClubRequest = async (
+    requestId: string,
     action: "accept" | "reject",
   ) => {
-    setSelectedClubRequest(request);
-    setRespondAction(action);
-    setRespondModalOpen(true);
-  };
-
-  const confirmRespondToClubRequest = async () => {
-    if (!selectedClubRequest) return;
-
     setResponding(true);
     try {
-      let result;
-      if (respondAction === "accept") {
-        result = await fetchGraphQL<AcceptScoutRequestResponse>(
-          ACCEPT_SCOUT_REQUEST_MUTATION,
-          {
-            requestId: selectedClubRequest.id,
-          },
-        );
-      } else {
-        result = await fetchGraphQL<RejectScoutRequestResponse>(
-          REJECT_SCOUT_REQUEST_MUTATION,
-          {
-            requestId: selectedClubRequest.id,
-          },
-        );
-      }
+      const result = await fetchGraphQL<{
+        respondToRequest: {
+          id: string;
+          type: string;
+          status: string;
+          sender_role: string;
+          senderName: string;
+          playerName: string;
+          created_at: string;
+        };
+      }>(RESPOND_TO_REQUEST, {
+        input: {
+          request_id: requestId,
+          accept: action === "accept",
+        },
+      });
+
+      console.log("📋 Respond response:", result);
 
       if (result.errors) {
         toast.error(result.errors[0].message);
-      } else {
+      } else if (result.data?.respondToRequest) {
         toast.success(
-          respondAction === "accept"
+          action === "accept"
             ? t("Request accepted successfully!")
             : t("Request rejected successfully!"),
         );
         await fetchAllData();
       }
     } catch (error) {
-      console.error("Error responding to club request:", error);
+      console.error("Error responding to request:", error);
       toast.error(t("Failed to respond to request"));
     } finally {
       setResponding(false);
       setRespondModalOpen(false);
       setSelectedClubRequest(null);
     }
+  };
+
+  const openRespondModal = (
+    request: ClubRequest,
+    action: "accept" | "reject",
+  ) => {
+    setSelectedClubRequest(request);
+    setRespondAction(action);
+    setRespondModalOpen(true);
   };
 
   // =========================
@@ -697,7 +687,11 @@ export default function ScoutRequestsPage() {
           setRespondModalOpen(false);
           setSelectedClubRequest(null);
         }}
-        onConfirm={confirmRespondToClubRequest}
+        onConfirm={() => {
+          if (selectedClubRequest) {
+            handleRespondToClubRequest(selectedClubRequest.id, respondAction);
+          }
+        }}
         action={respondAction}
         isDark={isDark}
         t={t}
@@ -996,7 +990,7 @@ export default function ScoutRequestsPage() {
                             request.status,
                           )}`}
                         >
-                          {request.status}
+                          {getStatusLabel(request.status)}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -1034,20 +1028,16 @@ export default function ScoutRequestsPage() {
                       </p>
                     </div>
                     <div className="flex gap-2">
-                      {request.status?.toUpperCase() === "PENDING" && (
+                      {normalizeStatus(request.status) === "PENDING" && (
                         <>
                           <button
-                            onClick={() =>
-                              handleRespondToClubRequest(request, "accept")
-                            }
+                            onClick={() => openRespondModal(request, "accept")}
                             className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition whitespace-nowrap"
                           >
                             {t("Accept")}
                           </button>
                           <button
-                            onClick={() =>
-                              handleRespondToClubRequest(request, "reject")
-                            }
+                            onClick={() => openRespondModal(request, "reject")}
                             className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition whitespace-nowrap"
                           >
                             {t("Reject")}
@@ -1182,7 +1172,7 @@ export default function ScoutRequestsPage() {
                             request.status,
                           )}`}
                         >
-                          {request.status}
+                          {getStatusLabel(request.status)}
                         </span>
                       </div>
                       <h3 className="font-bold text-lg">
@@ -1208,7 +1198,7 @@ export default function ScoutRequestsPage() {
                       </p>
                     </div>
                     <div className="flex gap-2">
-                      {request.status?.toUpperCase() === "PENDING" && (
+                      {normalizeStatus(request.status) === "PENDING" && (
                         <button
                           onClick={() => handleCancelClick(request.id)}
                           className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition whitespace-nowrap"
