@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner"; // ← أضف هذا السطر
+import { toast } from "sonner";
 
 import { Sparkles, CheckCircle2, X, ShieldCheck } from "lucide-react";
 
@@ -296,7 +296,6 @@ export default function AgentCheckoutPage() {
                     }}
                     isDark={isDark}
                     maxLength={2}
-                    placeholder="MM"
                   />
                 </div>
 
@@ -315,7 +314,6 @@ export default function AgentCheckoutPage() {
                     }}
                     isDark={isDark}
                     maxLength={4}
-                    placeholder="YYYY"
                   />
                 </div>
 
