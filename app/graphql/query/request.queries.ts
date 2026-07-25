@@ -1,3 +1,7 @@
+/* ============================================
+   REQUEST.QUERIES.TS
+   ============================================ */
+
 export const GET_INCOMING_REQUESTS = `
   query GetIncomingRequests {
     myIncomingRequests {
@@ -8,9 +12,12 @@ export const GET_INCOMING_REQUESTS = `
       sender_role
       senderName
       playerName
+      playerImageUrl
       payload {
         message
       }
+      admin_notified
+      adminName
       created_at
       updated_at
     }
@@ -41,9 +48,12 @@ export const GET_MY_SENT_REQUESTS = `
       player_id
       senderName
       playerName
+      playerImageUrl
       payload {
         message
       }
+      admin_notified
+      adminName
       created_at
       updated_at
     }

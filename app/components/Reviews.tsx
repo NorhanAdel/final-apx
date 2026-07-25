@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
+import Image from "next/image";
 import { Star, ChevronLeft, ChevronRight } from "lucide-react";
 import useTranslate from "@/app/hooks/useTranslate";
 import { useTheme } from "@/app/context/ThemeContext";
@@ -12,15 +13,27 @@ interface Rating {
   calculated_stars: number;
   notes: string | null;
   created_at: string;
-  rater: {
+  raterFirstName?: string;
+  raterLastName?: string;
+  raterProfileImageUrl?: string;
+  rater?: {
     id: string;
+    username: string;
     first_name?: string;
     last_name?: string;
+    profile_image_url?: string;
   };
 }
 
 interface ReviewsProps {
   playerId?: string;
+}
+
+function getFullImageUrl(url: string | undefined | null): string {
+  if (!url) return "";
+  if (url.startsWith("http")) return url;
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+  return `${API_URL}${url.startsWith("/") ? "" : "/"}${url}`;
 }
 
 export default function Reviews({ playerId }: ReviewsProps) {
@@ -42,6 +55,7 @@ export default function Reviews({ playerId }: ReviewsProps) {
           GET_PLAYER_RATINGS,
           { playerId },
         );
+        console.log("📊 Ratings response:", JSON.stringify(result, null, 2));
         if (result.data?.playerRatings) {
           setReviews(result.data.playerRatings);
         }
@@ -87,6 +101,35 @@ export default function Reviews({ playerId }: ReviewsProps) {
         lastName?.charAt(0) || ""
       }`.toUpperCase() || "U"
     );
+  };
+
+  const getRaterName = (review: Rating) => {
+    // ✅ الأولوية للـ rater المضمن
+    if (review.rater) {
+      const firstName = review.rater.first_name || "";
+      const lastName = review.rater.last_name || "";
+      if (firstName && lastName) return `${firstName} ${lastName}`;
+      if (firstName) return firstName;
+      if (lastName) return lastName;
+      return review.rater.username || t("Unknown");
+    }
+    
+    // ✅ استخدام الحقول المنفصلة
+    const firstName = review.raterFirstName || "";
+    const lastName = review.raterLastName || "";
+    if (firstName && lastName) return `${firstName} ${lastName}`;
+    if (firstName) return firstName;
+    if (lastName) return lastName;
+    return t("Unknown");
+  };
+
+  const getRaterImage = (review: Rating) => {
+    // ✅ الأولوية للـ rater المضمن
+    if (review.rater?.profile_image_url) {
+      return getFullImageUrl(review.rater.profile_image_url);
+    }
+    // ✅ استخدام الحقل المنفصل
+    return getFullImageUrl(review.raterProfileImageUrl);
   };
 
   const renderStars = (stars: number) => {
@@ -219,27 +262,48 @@ export default function Reviews({ playerId }: ReviewsProps) {
         onScroll={handleScroll}
         className="flex gap-4 sm:gap-6 md:gap-8 overflow-x-auto no-scrollbar scroll-smooth px-6 sm:px-8 md:px-2"
       >
-        {reviews.map((review) => (
-          <div
-            key={review.id}
-            className={`min-w-[220px] sm:min-w-[240px] md:min-w-[260px] ${cardBg} border ${cardBorder} px-4 sm:px-6 md:px-8 py-4 sm:py-5 rounded-xl flex items-center gap-3 sm:gap-4 ${cardShadow} flex-shrink-0`}
-          >
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-yellow-400 flex items-center justify-center text-black font-bold text-sm shrink-0">
-              {getInitials(review.rater?.first_name, review.rater?.last_name)}
+        {reviews.map((review) => {
+          const raterName = getRaterName(review);
+          const raterImage = getRaterImage(review);
+          const initials = getInitials(
+            review.rater?.first_name || review.raterFirstName,
+            review.rater?.last_name || review.raterLastName,
+          );
+
+          return (
+            <div
+              key={review.id}
+              className={`min-w-[220px] sm:min-w-[240px] md:min-w-[260px] ${cardBg} border ${cardBorder} px-4 sm:px-6 md:px-8 py-4 sm:py-5 rounded-xl flex items-center gap-3 sm:gap-4 ${cardShadow} flex-shrink-0`}
+            >
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden flex-shrink-0 border border-yellow-500/30 bg-yellow-400/10 flex items-center justify-center">
+                {raterImage ? (
+                  <Image
+                    src={raterImage}
+                    alt={raterName}
+                    width={40}
+                    height={40}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-black font-bold text-sm">
+                    {initials}
+                  </span>
+                )}
+              </div>
+              <div className="flex-1">
+                <h4 className={`font-semibold text-xs sm:text-sm ${textColor}`}>
+                  {raterName}
+                </h4>
+                {renderStars(review.calculated_stars)}
+                {review.notes && (
+                  <p className={`text-xs ${secondaryTextColor} mt-1 line-clamp-2`}>
+                    {review.notes}
+                  </p>
+                )}
+              </div>
             </div>
-            <div className="flex-1">
-              <h4 className={`font-semibold text-xs sm:text-sm ${textColor}`}>
-                {review.rater?.first_name} {review.rater?.last_name}
-              </h4>
-              {renderStars(review.calculated_stars)}
-              {review.notes && (
-                <p className={`text-xs ${secondaryTextColor} mt-1 line-clamp-2`}>
-                  {review.notes}
-                </p>
-              )}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {reviews.length > 1 && (

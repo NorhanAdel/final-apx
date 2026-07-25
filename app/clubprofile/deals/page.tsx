@@ -28,6 +28,7 @@ import {
   CREATE_DEAL,
   UPDATE_DEAL,
   DELETE_DEAL,
+  CANCEL_DEAL_BY_CLUB,
 } from "@/app/graphql/mutation/deal.mutations";
 import { toast } from "sonner";
 import BackButton from "@/app/components/BackButton";
@@ -49,6 +50,7 @@ interface Deal {
   updated_at: string;
   playerName: string;
   senderName: string;
+  playerImageUrl?: string | null;
 }
 
 interface Player {
@@ -121,10 +123,119 @@ const DeleteConfirmModal = ({
   );
 };
 
+function getFullImageUrl(url: string | undefined | null): string {
+  if (!url) return "";
+  if (url.startsWith("http")) return url;
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+  return `${API_URL}${url.startsWith("/") ? "" : "/"}${url}`;
+}
+
+const DEAL_STATUS_TRANSLATIONS: Record<string, Record<string, string>> = {
+  PENDING: {
+    en: "Pending",
+    ar: "قيد الانتظار",
+    pt: "Pendente",
+    zh: "待处理",
+  },
+  ACCEPTED: {
+    en: "Accepted",
+    ar: "مقبول",
+    pt: "Aceito",
+    zh: "已接受",
+  },
+  REJECTED: {
+    en: "Rejected",
+    ar: "مرفوض",
+    pt: "Rejeitado",
+    zh: "已拒绝",
+  },
+  EXPIRED: {
+    en: "Expired",
+    ar: "منتهي",
+    pt: "Expirado",
+    zh: "已过期",
+  },
+};
+
+const DEAL_TYPE_TRANSLATIONS: Record<string, Record<string, string>> = {
+  TRANSFER: {
+    en: "Transfer",
+    ar: "انتقال",
+    pt: "Transferência",
+    zh: "转会",
+  },
+  LOAN: {
+    en: "Loan",
+    ar: "إعارة",
+    pt: "Empréstimo",
+    zh: "租借",
+  },
+  TRIAL: {
+    en: "Trial",
+    ar: "تجربة",
+    pt: "Teste",
+    zh: "试训",
+  },
+  SPONSORSHIP: {
+    en: "Sponsorship",
+    ar: "رعاية",
+    pt: "Patrocínio",
+    zh: "赞助",
+  },
+};
+
+// Build reverse map for status normalization
+const STATUS_TEXT_TO_KEY: Record<string, string> = {};
+Object.entries(DEAL_STATUS_TRANSLATIONS).forEach(([key, translations]) => {
+  Object.values(translations).forEach((text) => {
+    STATUS_TEXT_TO_KEY[text.toLowerCase()] = key;
+  });
+});
+
+const normalizeStatus = (status: string): string => {
+  if (!status) return "UNKNOWN";
+  const trimmed = status.trim();
+
+  // Check if it's already a raw enum key
+  const upper = trimmed.toUpperCase();
+  if (["PENDING", "ACCEPTED", "REJECTED", "EXPIRED"].includes(upper)) {
+    return upper;
+  }
+
+  // Check against translated texts
+  const matched = STATUS_TEXT_TO_KEY[trimmed.toLowerCase()];
+  if (matched) return matched;
+
+  // Fuzzy match as fallback
+  const lower = trimmed.toLowerCase();
+  if (lower.includes("pend") || lower.includes("قيد")) return "PENDING";
+  if (
+    lower.includes("accept") ||
+    lower.includes("مقبول") ||
+    lower.includes("aceito")
+  )
+    return "ACCEPTED";
+  if (
+    lower.includes("reject") ||
+    lower.includes("مرفوض") ||
+    lower.includes("rejeitado")
+  )
+    return "REJECTED";
+  if (
+    lower.includes("expir") ||
+    lower.includes("منتهي") ||
+    lower.includes("expirado")
+  )
+    return "EXPIRED";
+
+  return "UNKNOWN";
+};
+
 export default function ClubDealsPage() {
   const { theme } = useTheme();
-  const { t } = useTranslate();
+  const { t, lang } = useTranslate();
   const isDark = theme === "dark";
+  const isRTL = lang === "ar";
 
   const [activeTab, setActiveTab] = useState<"send" | "sent">("send");
   const [deals, setDeals] = useState<Deal[]>([]);
@@ -151,7 +262,18 @@ export default function ClubDealsPage() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // ✅ fetchDeals now takes the status and sends it to the server
+  const STATUS_KEYS = ["ALL", "PENDING", "ACCEPTED", "REJECTED", "EXPIRED"];
+
+  const getTranslatedStatus = (status: string): string => {
+    const key = status?.toUpperCase();
+    return DEAL_STATUS_TRANSLATIONS[key]?.[lang] || status;
+  };
+
+  const getTranslatedOfferType = (type: string): string => {
+    const key = type?.toUpperCase();
+    return DEAL_TYPE_TRANSLATIONS[key]?.[lang] || type;
+  };
+
   const fetchDeals = useCallback(
     async (status: string) => {
       setLoading(true);
@@ -190,18 +312,13 @@ export default function ClubDealsPage() {
     }
   }, []);
 
-  // ✅ load players once
   useEffect(() => {
     fetchPlayers();
   }, [fetchPlayers]);
 
-  // ✅ re-fetch deals from the server whenever the status filter changes
   useEffect(() => {
     fetchDeals(statusFilter);
   }, [statusFilter, fetchDeals]);
-
-  // ❌ removed: local re-filtering of an already status-limited list
-  // (was causing "no results" for any status other than PENDING)
 
   useEffect(() => {
     if (!searchTerm || !isDropdownOpen) return;
@@ -224,6 +341,17 @@ export default function ClubDealsPage() {
 
     return () => clearTimeout(delayDebounceFn);
   }, [searchTerm, isDropdownOpen]);
+
+  // Apply filter whenever deals or statusFilter changes
+  useEffect(() => {
+    if (statusFilter === "ALL") {
+      setFilteredDeals(deals);
+    } else {
+      setFilteredDeals(
+        deals.filter((deal) => normalizeStatus(deal.status) === statusFilter),
+      );
+    }
+  }, [deals, statusFilter]);
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -350,10 +478,32 @@ export default function ClubDealsPage() {
     }
   };
 
+  const handleCancelDeal = async (dealId: string) => {
+    setProcessing(true);
+    try {
+      const result = await fetchGraphQL<{
+        cancelDealByClub: { id: string; status: string };
+      }>(CANCEL_DEAL_BY_CLUB, { id: dealId });
+
+      if (result.data?.cancelDealByClub) {
+        toast.success(t("Deal cancelled successfully"));
+        await fetchDeals(statusFilter);
+      } else if (result.errors) {
+        toast.error(result.errors[0]?.message || t("Failed to cancel deal"));
+      }
+    } catch (error) {
+      console.error("Error cancelling deal:", error);
+      toast.error(t("Failed to cancel deal"));
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   const handleDeleteClick = (deal: Deal) => {
     setDealToDelete(deal);
     setDeleteModalOpen(true);
   };
+
   const confirmDelete = async () => {
     if (!dealToDelete) return;
     setProcessing(true);
@@ -377,58 +527,81 @@ export default function ClubDealsPage() {
 
   const formatDate = (dateString: string) => {
     try {
-      return new Date(dateString).toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      });
+      return new Date(dateString).toLocaleDateString(
+        lang === "ar"
+          ? "ar-EG"
+          : lang === "pt"
+          ? "pt-PT"
+          : lang === "zh"
+          ? "zh-CN"
+          : "en-US",
+        {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        },
+      );
     } catch {
       return dateString;
     }
   };
+
   const formatCurrency = (value: number | null) => {
     if (!value) return "N/A";
-    return new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 0,
-    }).format(value);
+    return new Intl.NumberFormat(
+      lang === "ar"
+        ? "ar-EG"
+        : lang === "pt"
+        ? "pt-PT"
+        : lang === "zh"
+        ? "zh-CN"
+        : "en-US",
+      {
+        style: "currency",
+        currency: "USD",
+        minimumFractionDigits: 0,
+      },
+    ).format(value);
   };
+
   const isPending = (status: string) => {
-    const lowerStatus = status.toLowerCase();
-    return (
-      lowerStatus.includes("pending") || lowerStatus.includes("قيد الانتظار")
-    );
+    const normalized = normalizeStatus(status);
+    return normalized === "PENDING";
   };
+
   const getStatusColor = (status: string) => {
-    const lowerStatus = status.toLowerCase();
-    if (lowerStatus.includes("pending") || lowerStatus.includes("قيد الانتظار"))
-      return "text-yellow-500";
-    if (lowerStatus.includes("accepted") || lowerStatus.includes("مقبول"))
-      return "text-green-500";
-    if (lowerStatus.includes("rejected") || lowerStatus.includes("مرفوض"))
-      return "text-red-500";
-    if (lowerStatus.includes("expired") || lowerStatus.includes("منتهي"))
-      return "text-gray-500";
-    return "text-gray-400";
+    const normalized = normalizeStatus(status);
+    switch (normalized) {
+      case "PENDING":
+        return "text-yellow-500 bg-yellow-500/10";
+      case "ACCEPTED":
+        return "text-green-500 bg-green-500/10";
+      case "REJECTED":
+        return "text-red-500 bg-red-500/10";
+      case "EXPIRED":
+        return "text-gray-500 bg-gray-500/10";
+      default:
+        return "text-gray-400 bg-gray-400/10";
+    }
   };
+
   const getOfferTypeIcon = (type: string) => {
     const lowerType = type.toLowerCase();
     if (lowerType.includes("transfer")) return "🔄";
     if (lowerType.includes("loan")) return "📋";
     if (lowerType.includes("trial")) return "⚽";
+    if (lowerType.includes("sponsorship")) return "🤝";
     return "📄";
   };
+
   const selectedPlayer = players.find((p) => p.id === formData.player_id);
 
-  // ✅ getStatusCount now reflects counts from the currently loaded `deals`
-  // (which itself is now server-filtered). If you want accurate counts for
-  // ALL statuses regardless of the active filter, consider fetching
-  // `dealStats` separately instead of deriving counts from `deals`.
   const getStatusCount = (status: string) => {
     if (status === "ALL") return deals.length;
-    return deals.filter((deal) => deal.status.toUpperCase() === status).length;
+    return deals.filter((deal) => normalizeStatus(deal.status) === status)
+      .length;
   };
+
   const getStatusLabel = (status: string) => {
     switch (status) {
       case "ALL":
@@ -451,15 +624,24 @@ export default function ClubDealsPage() {
       className={`min-h-screen py-40 px-6 transition ${
         isDark ? "bg-[#020617] text-white" : "bg-gray-100 text-black"
       }`}
+      dir={isRTL ? "rtl" : "ltr"}
     >
       <div className="max-w-6xl mx-auto">
         <BackButton className="mb-6" />
 
-        <h1 className="text-4xl font-black italic tracking-tighter text-yellow-400 uppercase text-center mb-10">
+        <h1
+          className={`text-4xl font-black italic tracking-tighter text-yellow-400 uppercase text-center mb-10 ${
+            isRTL ? "text-right" : "text-left"
+          }`}
+        >
           {t("Deals")}
         </h1>
 
-        <div className="flex justify-center gap-4 mb-8">
+        <div
+          className={`flex justify-center gap-4 mb-8 ${
+            isRTL ? "flex-row-reverse" : ""
+          }`}
+        >
           <button
             onClick={() => {
               setActiveTab("send");
@@ -504,7 +686,7 @@ export default function ClubDealsPage() {
             <h2
               className={`text-2xl font-bold mb-4 ${
                 isDark ? "text-white" : "text-black"
-              }`}
+              } ${isRTL ? "text-right" : "text-left"}`}
             >
               {editingDeal ? t("Edit Deal") : t("Create New Deal")}
             </h2>
@@ -516,7 +698,7 @@ export default function ClubDealsPage() {
                 <label
                   className={`block text-sm mb-1 ${
                     isDark ? "text-gray-300" : "text-gray-700"
-                  }`}
+                  } ${isRTL ? "text-right" : "text-left"}`}
                 >
                   {t("Player")} <span className="text-red-500">*</span>
                 </label>
@@ -524,7 +706,9 @@ export default function ClubDealsPage() {
                   <div className="relative">
                     <div className="relative">
                       <Search
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                        className={`absolute top-1/2 -translate-y-1/2 ${
+                          isRTL ? "right-3" : "left-3"
+                        } text-gray-400`}
                         size={18}
                       />
                       <input
@@ -537,18 +721,24 @@ export default function ClubDealsPage() {
                           if (!e.target.value) fetchPlayers();
                         }}
                         onFocus={() => setIsDropdownOpen(true)}
-                        className={`w-full rounded-lg pl-10 pr-4 py-2 outline-none border ${
+                        className={`w-full rounded-lg ${
+                          isRTL ? "pr-10 pl-4" : "pl-10 pr-4"
+                        } py-2 outline-none border ${
                           isDark
                             ? "bg-[#0b1736] border-[#1e2a5a] text-white focus:border-yellow-400"
                             : "bg-white border-gray-300 text-black focus:border-yellow-400"
-                        } ${errors.player_id ? "border-red-500" : ""}`}
+                        } ${errors.player_id ? "border-red-500" : ""} ${
+                          isRTL ? "text-right" : "text-left"
+                        }`}
                         disabled={!!editingDeal}
                       />
                     </div>
 
                     {isDropdownOpen && (
                       <div
-                        className={`absolute top-full left-0 right-0 mt-1 rounded-lg shadow-lg overflow-hidden z-50 border max-h-60 overflow-y-auto ${
+                        className={`absolute top-full ${
+                          isRTL ? "right-0" : "left-0"
+                        } right-0 mt-1 rounded-lg shadow-lg overflow-hidden z-50 border max-h-60 overflow-y-auto ${
                           isDark
                             ? "bg-[#0b1736] border-[#1e2a5a]"
                             : "bg-white border-gray-200"
@@ -573,7 +763,6 @@ export default function ClubDealsPage() {
                                 }));
                                 setSearchTerm("");
                                 setIsDropdownOpen(false);
-                                setPlayers([player]);
                                 setErrors((prev) => ({
                                   ...prev,
                                   player_id: "",
@@ -583,12 +772,14 @@ export default function ClubDealsPage() {
                                 isDark
                                   ? "hover:bg-[#1e2a5a] text-white"
                                   : "hover:bg-gray-50 text-black"
-                              }`}
+                              } ${isRTL ? "flex-row-reverse" : ""}`}
                             >
                               <div className="w-8 h-8 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center overflow-hidden relative">
                                 {player.profile_image_url ? (
                                   <Image
-                                    src={player.profile_image_url}
+                                    src={getFullImageUrl(
+                                      player.profile_image_url,
+                                    )}
                                     alt=""
                                     fill
                                     className="object-cover"
@@ -598,7 +789,9 @@ export default function ClubDealsPage() {
                                   <User size={14} className="text-gray-500" />
                                 )}
                               </div>
-                              <div>
+                              <div
+                                className={isRTL ? "text-right" : "text-left"}
+                              >
                                 <p className="text-sm font-medium">
                                   {player.first_name} {player.last_name}
                                 </p>
@@ -645,12 +838,24 @@ export default function ClubDealsPage() {
                     isDark
                       ? "bg-[#051139]/50 border border-blue-900/30"
                       : "bg-gray-50 border"
-                  }`}
+                  } ${isRTL ? "flex-row-reverse" : ""}`}
                 >
-                  <div className="w-10 h-10 rounded-full bg-yellow-400/20 flex items-center justify-center">
-                    <User size={18} className="text-yellow-500" />
+                  <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 border-2 border-yellow-500/30">
+                    {selectedPlayer.profile_image_url ? (
+                      <Image
+                        src={getFullImageUrl(selectedPlayer.profile_image_url)}
+                        alt={`${selectedPlayer.first_name} ${selectedPlayer.last_name}`}
+                        width={40}
+                        height={40}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-yellow-400/20 flex items-center justify-center">
+                        <User size={18} className="text-yellow-500" />
+                      </div>
+                    )}
                   </div>
-                  <div>
+                  <div className={isRTL ? "text-right" : "text-left"}>
                     <p className="font-medium">
                       {selectedPlayer.first_name} {selectedPlayer.last_name}
                     </p>
@@ -670,7 +875,7 @@ export default function ClubDealsPage() {
                 <label
                   className={`block text-sm mb-1 ${
                     isDark ? "text-gray-300" : "text-gray-700"
-                  }`}
+                  } ${isRTL ? "text-right" : "text-left"}`}
                 >
                   {t("Offer Type")} <span className="text-red-500">*</span>
                 </label>
@@ -683,11 +888,18 @@ export default function ClubDealsPage() {
                     isDark
                       ? "bg-[#0b1736] border-[#1e2a5a] text-white focus:border-yellow-400"
                       : "bg-white border-gray-300 text-black focus:border-yellow-400"
-                  }`}
+                  } ${isRTL ? "text-right" : "text-left"}`}
                 >
-                  <option value="TRANSFER">{t("Transfer")}</option>
-                  <option value="LOAN">{t("Loan")}</option>
-                  <option value="TRIAL">{t("Trial")}</option>
+                  <option value="TRANSFER">
+                    {getTranslatedOfferType("TRANSFER")}
+                  </option>
+                  <option value="LOAN">{getTranslatedOfferType("LOAN")}</option>
+                  <option value="TRIAL">
+                    {getTranslatedOfferType("TRIAL")}
+                  </option>
+                  <option value="SPONSORSHIP">
+                    {getTranslatedOfferType("SPONSORSHIP")}
+                  </option>
                 </select>
               </div>
 
@@ -695,7 +907,7 @@ export default function ClubDealsPage() {
                 <label
                   className={`block text-sm mb-1 ${
                     isDark ? "text-gray-300" : "text-gray-700"
-                  }`}
+                  } ${isRTL ? "text-right" : "text-left"}`}
                 >
                   {t("Description")}
                 </label>
@@ -708,7 +920,7 @@ export default function ClubDealsPage() {
                     isDark
                       ? "bg-[#0b1736] border-[#1e2a5a] text-white focus:border-yellow-400"
                       : "bg-white border-gray-300 text-black focus:border-yellow-400"
-                  }`}
+                  } ${isRTL ? "text-right" : "text-left"}`}
                   placeholder={t("Describe the deal offer...")}
                 />
               </div>
@@ -717,7 +929,7 @@ export default function ClubDealsPage() {
                 <label
                   className={`block text-sm mb-1 ${
                     isDark ? "text-gray-300" : "text-gray-700"
-                  }`}
+                  } ${isRTL ? "text-right" : "text-left"}`}
                 >
                   {t("Club Name")}
                 </label>
@@ -730,17 +942,21 @@ export default function ClubDealsPage() {
                     isDark
                       ? "bg-[#0b1736] border-[#1e2a5a] text-white focus:border-yellow-400"
                       : "bg-white border-gray-300 text-black focus:border-yellow-400"
-                  }`}
+                  } ${isRTL ? "text-right" : "text-left"}`}
                   placeholder={t("Your club name")}
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div
+                className={`grid grid-cols-2 gap-4 ${
+                  isRTL ? "flex-row-reverse" : ""
+                }`}
+              >
                 <div>
                   <label
                     className={`block text-sm mb-1 ${
                       isDark ? "text-gray-300" : "text-gray-700"
-                    }`}
+                    } ${isRTL ? "text-right" : "text-left"}`}
                   >
                     {t("Value (USD)")}
                   </label>
@@ -753,7 +969,7 @@ export default function ClubDealsPage() {
                       isDark
                         ? "bg-[#0b1736] border-[#1e2a5a] text-white focus:border-yellow-400"
                         : "bg-white border-gray-300 text-black focus:border-yellow-400"
-                    }`}
+                    } ${isRTL ? "text-right" : "text-left"}`}
                     placeholder="0"
                   />
                 </div>
@@ -761,7 +977,7 @@ export default function ClubDealsPage() {
                   <label
                     className={`block text-sm mb-1 ${
                       isDark ? "text-gray-300" : "text-gray-700"
-                    }`}
+                    } ${isRTL ? "text-right" : "text-left"}`}
                   >
                     {t("Commission Rate")} (%){" "}
                     <span className="text-red-500">*</span>
@@ -775,7 +991,9 @@ export default function ClubDealsPage() {
                       isDark
                         ? "bg-[#0b1736] border-[#1e2a5a] text-white focus:border-yellow-400"
                         : "bg-white border-gray-300 text-black focus:border-yellow-400"
-                    } ${errors.commission_rate ? "border-red-500" : ""}`}
+                    } ${errors.commission_rate ? "border-red-500" : ""} ${
+                      isRTL ? "text-right" : "text-left"
+                    }`}
                     placeholder="15"
                     min="10"
                     max="30"
@@ -792,7 +1010,7 @@ export default function ClubDealsPage() {
                 <label
                   className={`block text-sm mb-1 ${
                     isDark ? "text-gray-300" : "text-gray-700"
-                  }`}
+                  } ${isRTL ? "text-right" : "text-left"}`}
                 >
                   {t("Expiry Date")}
                 </label>
@@ -805,11 +1023,13 @@ export default function ClubDealsPage() {
                     isDark
                       ? "bg-[#0b1736] border-[#1e2a5a] text-white focus:border-yellow-400"
                       : "bg-white border-gray-300 text-black focus:border-yellow-400"
-                  }`}
+                  } ${isRTL ? "text-right" : "text-left"}`}
                 />
               </div>
 
-              <div className="flex gap-3 pt-4">
+              <div
+                className={`flex gap-3 pt-4 ${isRTL ? "flex-row-reverse" : ""}`}
+              >
                 <button
                   type="button"
                   onClick={resetForm}
@@ -843,7 +1063,7 @@ export default function ClubDealsPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="flex justify-end">
+            <div className={`flex ${isRTL ? "justify-start" : "justify-end"}`}>
               <div className="relative">
                 <button
                   onClick={() => setIsFilterOpen(!isFilterOpen)}
@@ -851,7 +1071,7 @@ export default function ClubDealsPage() {
                     isDark
                       ? "bg-[#0a0f2c] border border-[#1e2a5a] hover:bg-[#1e2a5a]"
                       : "bg-white border border-gray-200 shadow hover:bg-gray-50"
-                  }`}
+                  } ${isRTL ? "flex-row-reverse" : ""}`}
                 >
                   <Filter size={16} className="text-yellow-500" />
                   <span className="text-sm font-medium">
@@ -871,19 +1091,15 @@ export default function ClubDealsPage() {
                       onClick={() => setIsFilterOpen(false)}
                     />
                     <div
-                      className={`absolute top-full right-0 mt-2 w-56 rounded-lg shadow-lg overflow-hidden z-20 ${
+                      className={`absolute top-full ${
+                        isRTL ? "left-0" : "right-0"
+                      } mt-2 w-56 rounded-lg shadow-lg overflow-hidden z-20 ${
                         isDark
                           ? "bg-[#0a0f2c] border border-[#1e2a5a]"
                           : "bg-white border border-gray-200"
                       }`}
                     >
-                      {[
-                        "ALL",
-                        "PENDING",
-                        "ACCEPTED",
-                        "REJECTED",
-                        "EXPIRED",
-                      ].map((status) => (
+                      {STATUS_KEYS.map((status) => (
                         <button
                           key={status}
                           onClick={() => {
@@ -898,9 +1114,13 @@ export default function ClubDealsPage() {
                               : isDark
                               ? "hover:bg-[#1e2a5a] text-gray-300"
                               : "hover:bg-gray-50 text-gray-700"
-                          }`}
+                          } ${isRTL ? "flex-row-reverse text-right" : ""}`}
                         >
-                          <span className="flex items-center gap-2">
+                          <span
+                            className={`flex items-center gap-2 ${
+                              isRTL ? "flex-row-reverse" : ""
+                            }`}
+                          >
                             <span
                               className={`w-2 h-2 rounded-full ${
                                 status === "PENDING"
@@ -938,17 +1158,17 @@ export default function ClubDealsPage() {
                 }`}
               >
                 <Send size={48} className="mx-auto mb-4 text-gray-500" />
-<p className={isDark ? "text-gray-400" : "text-gray-500"}>
-  {statusFilter === "ALL" 
-    ? t("No deals sent yet")
-    : statusFilter === "PENDING" 
-    ? t("No pending deals found")
-    : statusFilter === "ACCEPTED" 
-    ? t("No accepted deals found")
-    : statusFilter === "REJECTED" 
-    ? t("No rejected deals found")
-    : t("No expired deals found")}
-</p>
+                <p className={isDark ? "text-gray-400" : "text-gray-500"}>
+                  {statusFilter === "ALL"
+                    ? t("No deals sent yet")
+                    : statusFilter === "PENDING"
+                    ? t("No pending deals found")
+                    : statusFilter === "ACCEPTED"
+                    ? t("No accepted deals found")
+                    : statusFilter === "REJECTED"
+                    ? t("No rejected deals found")
+                    : t("No expired deals found")}
+                </p>
                 {statusFilter !== "ALL" && (
                   <button
                     onClick={() => setStatusFilter("ALL")}
@@ -975,91 +1195,142 @@ export default function ClubDealsPage() {
                 )}
               </div>
             ) : (
-              filteredDeals.map((deal) => (
-                <div
-                  key={deal.id}
-                  className={`p-4 rounded-xl transition ${
-                    isDark
-                      ? "bg-[#0a1128] border border-[#0f2b63]"
-                      : "bg-white border border-gray-200 shadow"
-                  }`}
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-bold text-lg">{deal.playerName}</h3>
-                        <span
-                          className={`text-xs px-2 py-1 rounded-full ${getStatusColor(
-                            deal.status,
-                          )} bg-opacity-10`}
-                        >
-                          {deal.status}
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap gap-3 text-sm">
-                        <span className="text-yellow-500 flex items-center gap-1">
-                          <span>{getOfferTypeIcon(deal.offer_type)}</span>
-                          <span>{deal.offer_type}</span>
-                        </span>
-                        {deal.club_name && (
-                          <span className="flex items-center gap-1">
-                            <Building2 size={14} /> {deal.club_name}
-                          </span>
-                        )}
-                        {deal.value && (
-                          <span className="flex items-center gap-1 text-green-500">
-                            <DollarSign size={14} />{" "}
-                            {formatCurrency(deal.value)}
-                          </span>
-                        )}
-                        <span className="flex items-center gap-1">
-                          <Calendar size={14} /> {formatDate(deal.created_at)}
-                        </span>
-                      </div>
-                      {deal.description && (
-                        <p
-                          className={`text-sm mt-2 ${
-                            isDark ? "text-gray-400" : "text-gray-600"
+              filteredDeals.map((deal) => {
+                const playerImage = getFullImageUrl(deal.playerImageUrl);
+                const normalizedStatus = normalizeStatus(deal.status);
+                const displayStatus = getTranslatedStatus(deal.status);
+                const displayOfferType = getTranslatedOfferType(
+                  deal.offer_type,
+                );
+
+                return (
+                  <div
+                    key={deal.id}
+                    className={`p-4 rounded-xl transition ${
+                      isDark
+                        ? "bg-[#0a1128] border border-[#0f2b63]"
+                        : "bg-white border border-gray-200 shadow"
+                    } ${isRTL ? "text-right" : "text-left"}`}
+                  >
+                    <div
+                      className={`flex justify-between items-start gap-4 ${
+                        isRTL ? "flex-row-reverse" : ""
+                      }`}
+                    >
+                      <div className="flex-1">
+                        <div
+                          className={`flex items-center gap-3 mb-2 ${
+                            isRTL ? "flex-row-reverse" : ""
                           }`}
                         >
-                          {deal.description.length > 150
-                            ? `${deal.description.substring(0, 150)}...`
-                            : deal.description}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex gap-2">
-                      {isPending(deal.status) && (
-                        <>
-                          <button
-                            onClick={() => handleEditDeal(deal)}
-                            className={`p-2 rounded-md transition ${
-                              isDark
-                                ? "hover:bg-yellow-400/20"
-                                : "hover:bg-gray-100"
-                            }`}
-                            title={t("Edit Deal")}
+                          {playerImage && (
+                            <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-yellow-500/30">
+                              <Image
+                                src={playerImage}
+                                alt={deal.playerName || "Player"}
+                                width={32}
+                                height={32}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          )}
+                          <h3 className="font-bold text-lg">
+                            {deal.playerName}
+                          </h3>
+                          <span
+                            className={`text-xs px-2 py-1 rounded-full ${getStatusColor(
+                              deal.status,
+                            )}`}
                           >
-                            <Edit size={18} className="text-yellow-500" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteClick(deal)}
-                            disabled={processing}
-                            className={`p-2 rounded-md transition ${
-                              isDark
-                                ? "hover:bg-red-500/20"
-                                : "hover:bg-gray-100"
-                            }`}
-                            title={t("Delete Deal")}
+                            {displayStatus}
+                          </span>
+                        </div>
+                        <div
+                          className={`flex flex-wrap gap-3 text-sm ${
+                            isRTL ? "flex-row-reverse" : ""
+                          }`}
+                        >
+                          <span className="text-yellow-500 flex items-center gap-1">
+                            <span>{getOfferTypeIcon(deal.offer_type)}</span>
+                            <span>{displayOfferType}</span>
+                          </span>
+                          {deal.club_name && (
+                            <span className="flex items-center gap-1">
+                              <Building2 size={14} /> {deal.club_name}
+                            </span>
+                          )}
+                          {deal.value && (
+                            <span className="flex items-center gap-1 text-green-500">
+                              <DollarSign size={14} />{" "}
+                              {formatCurrency(deal.value)}
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1">
+                            <Calendar size={14} /> {formatDate(deal.created_at)}
+                          </span>
+                        </div>
+                        {deal.description && (
+                          <p
+                            className={`text-sm mt-2 ${
+                              isDark ? "text-gray-400" : "text-gray-600"
+                            } ${isRTL ? "text-right" : "text-left"}`}
                           >
-                            <Trash2 size={18} className="text-red-500" />
-                          </button>
-                        </>
-                      )}
+                            {deal.description.length > 150
+                              ? `${deal.description.substring(0, 150)}...`
+                              : deal.description}
+                          </p>
+                        )}
+                      </div>
+                      <div
+                        className={`flex gap-2 ${
+                          isRTL ? "flex-row-reverse" : ""
+                        }`}
+                      >
+                        {(normalizedStatus === "PENDING" ||
+                          normalizedStatus === "UNKNOWN") && (
+                          <>
+                            <button
+                              onClick={() => handleCancelDeal(deal.id)}
+                              disabled={processing}
+                              className={`p-2 rounded-md transition ${
+                                isDark
+                                  ? "hover:bg-red-500/20"
+                                  : "hover:bg-gray-100"
+                              }`}
+                              title={t("Cancel Deal")}
+                            >
+                              <X size={18} className="text-red-500" />
+                            </button>
+                            <button
+                              onClick={() => handleEditDeal(deal)}
+                              className={`p-2 rounded-md transition ${
+                                isDark
+                                  ? "hover:bg-yellow-400/20"
+                                  : "hover:bg-gray-100"
+                              }`}
+                              title={t("Edit Deal")}
+                            >
+                              <Edit size={18} className="text-yellow-500" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteClick(deal)}
+                              disabled={processing}
+                              className={`p-2 rounded-md transition ${
+                                isDark
+                                  ? "hover:bg-red-500/20"
+                                  : "hover:bg-gray-100"
+                              }`}
+                              title={t("Delete Deal")}
+                            >
+                              <Trash2 size={18} className="text-red-500" />
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         )}

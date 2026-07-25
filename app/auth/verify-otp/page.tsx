@@ -92,7 +92,6 @@ export default function VerifyOtpPage() {
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-
   const otpSchema = useMemo(() => {
     return z.object({
       otp: z.string().length(6, t("Please enter the full 6-digit code")),
@@ -128,9 +127,7 @@ export default function VerifyOtpPage() {
     }
   }, [router, timer]);
 
-  // Extract only digits from input (handles both Arabic and English numbers)
   const extractDigits = (value: string): string => {
-    // Convert Arabic numerals to English if needed
     const arabicToEnglish: Record<string, string> = {
       "٠": "0",
       "١": "1",
@@ -155,7 +152,6 @@ export default function VerifyOtpPage() {
     return result;
   };
 
-  // Handle paste event
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
     const pastedData = e.clipboardData.getData("text");
@@ -170,7 +166,6 @@ export default function VerifyOtpPage() {
       const otpString = newOtp.join("");
       setValue("otp", otpString, { shouldValidate: true });
 
-      // Focus on the last filled input
       const lastIndex = Math.min(pastedNumbers.length - 1, 5);
       inputRefs.current[lastIndex]?.focus();
     }
@@ -221,13 +216,13 @@ export default function VerifyOtpPage() {
   const getRedirectPath = (role: string, hasProfile: boolean): string => {
     switch (role) {
       case "PLAYER":
-        return hasProfile ? "/" : "/";
+        return hasProfile ? "/" : "/player/profile";
       case "CLUB":
-        return hasProfile ? "/" : "/";
+        return hasProfile ? "/" : "/club/profile";
       case "SCOUT":
-        return hasProfile ? "/" : "/";
+        return hasProfile ? "/" : "/scout/profile";
       case "AGENT":
-        return hasProfile ? "/" : "/";
+        return hasProfile ? "/" : "/agent/profile";
       case "USER":
         return hasProfile ? "/" : "/";
       case "ADMIN":
@@ -238,7 +233,6 @@ export default function VerifyOtpPage() {
   };
 
   const handleChange = (value: string, index: number) => {
-    // Extract only digits from the input
     const digits = extractDigits(value);
     if (digits.length === 0 && value !== "") return;
 
@@ -249,7 +243,6 @@ export default function VerifyOtpPage() {
     const otpString = newOtp.join("");
     setValue("otp", otpString, { shouldValidate: true });
 
-    // Move to next input if value is entered
     if (digits && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
@@ -259,17 +252,14 @@ export default function VerifyOtpPage() {
     e: React.KeyboardEvent<HTMLInputElement>,
     index: number,
   ) => {
-    // Handle backspace
     if (e.key === "Backspace") {
       if (otpValues[index]) {
-        // Clear current input
         const newOtp = [...otpValues];
         newOtp[index] = "";
         setOtpValues(newOtp);
         const otpString = newOtp.join("");
         setValue("otp", otpString, { shouldValidate: true });
       } else if (index > 0) {
-        // Move to previous input and clear it
         const newOtp = [...otpValues];
         newOtp[index - 1] = "";
         setOtpValues(newOtp);
@@ -279,13 +269,11 @@ export default function VerifyOtpPage() {
       }
     }
 
-    // Handle right arrow key
     if (e.key === "ArrowRight" && index < 5) {
       e.preventDefault();
       inputRefs.current[index + 1]?.focus();
     }
 
-    // Handle left arrow key
     if (e.key === "ArrowLeft" && index > 0) {
       e.preventDefault();
       inputRefs.current[index - 1]?.focus();
@@ -334,7 +322,8 @@ export default function VerifyOtpPage() {
         console.log("User role:", user.role);
         console.log("Has profile:", hasProfile);
 
-        router.push(redirectPath);
+        router.replace(redirectPath);
+        router.refresh();
       } else if (result.errors) {
         toast.error(result.errors[0].message);
       }

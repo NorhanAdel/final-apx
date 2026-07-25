@@ -72,6 +72,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
   const router = useRouter();
   const { user, isLoading: loading, logout } = useAuth();
   const [mounted, setMounted] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const langRef = useRef<HTMLDivElement>(null);
   const sportsRef = useRef<HTMLDivElement>(null);
@@ -94,7 +95,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
   const { changeLang, lang: currentLang } = useTranslate();
 
   const activeLang = lang || currentLang || "en";
-  const activeUser = localUser || user;
+  const activeUser = loggingOut ? null : localUser || user;
   const isDark = theme === "dark";
 
   useEffect(() => {
@@ -358,12 +359,21 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
   };
 
   const handleLogout = async (): Promise<void> => {
-    await logout();
+    setLoggingOut(true);
+    setProfileOpen(false);
+    setOpen(false);
+
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setLocalUser(null);
-    router.push("/");
-    setProfileOpen(false);
+
+    try {
+      await logout();
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+
+    window.location.href = "/";
   };
 
   const requiresSubscription = (): boolean => {

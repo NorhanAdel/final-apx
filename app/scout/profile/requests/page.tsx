@@ -64,6 +64,7 @@ interface SentRequest {
   player_id?: string;
   senderName?: string;
   playerName?: string;
+  playerImageUrl?: string;
   payload?: string | { message?: string };
   created_at: string;
   updated_at: string;
@@ -94,6 +95,81 @@ interface CanContactPlayerResponse {
     max_stars: number;
   };
 }
+
+const REQUEST_STATUS_TRANSLATIONS: Record<string, Record<string, string>> = {
+  PENDING: {
+    en: "Pending",
+    ar: "قيد الانتظار",
+    pt: "Pendente",
+    zh: "待处理",
+  },
+  ACCEPTED: {
+    en: "Accepted",
+    ar: "مقبول",
+    pt: "Aceito",
+    zh: "已接受",
+  },
+  REJECTED: {
+    en: "Rejected",
+    ar: "مرفوض",
+    pt: "Rejeitado",
+    zh: "已拒绝",
+  },
+  CANCELLED: {
+    en: "Cancelled",
+    ar: "ملغي",
+    pt: "Cancelado",
+    zh: "已取消",
+  },
+};
+
+const STATUS_TEXT_TO_KEY: Record<string, string> = {};
+Object.entries(REQUEST_STATUS_TRANSLATIONS).forEach(([key, translations]) => {
+  Object.values(translations).forEach((text) => {
+    STATUS_TEXT_TO_KEY[text.toLowerCase()] = key;
+  });
+});
+
+const normalizeStatus = (status: string): string => {
+  if (!status) return "UNKNOWN";
+  const trimmed = status.trim();
+  const upper = trimmed.toUpperCase();
+  if (["PENDING", "ACCEPTED", "REJECTED", "CANCELLED"].includes(upper)) {
+    return upper;
+  }
+  const matched = STATUS_TEXT_TO_KEY[trimmed.toLowerCase()];
+  if (matched) return matched;
+  const lower = trimmed.toLowerCase();
+  if (
+    lower.includes("pend") ||
+    lower.includes("قيد") ||
+    lower.includes("pendente") ||
+    lower.includes("待处理")
+  )
+    return "PENDING";
+  if (
+    lower.includes("accept") ||
+    lower.includes("مقبول") ||
+    lower.includes("aceito") ||
+    lower.includes("已接受")
+  )
+    return "ACCEPTED";
+  if (
+    lower.includes("reject") ||
+    lower.includes("مرفوض") ||
+    lower.includes("rejeitado") ||
+    lower.includes("已拒绝")
+  )
+    return "REJECTED";
+  if (
+    lower.includes("cancell") ||
+    lower.includes("ملغي") ||
+    lower.includes("cancelado") ||
+    lower.includes("已取消")
+  )
+    return "CANCELLED";
+  return "UNKNOWN";
+};
 
 const CancelConfirmModal = ({
   isOpen,
@@ -279,10 +355,18 @@ const RespondModal = ({
   );
 };
 
+function getFullImageUrl(url: string | undefined | null): string {
+  if (!url) return "";
+  if (url.startsWith("http")) return url;
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+  return `${API_URL}${url.startsWith("/") ? "" : "/"}${url}`;
+}
+
 export default function ScoutRequestsPage() {
   const { theme } = useTheme();
-  const { t } = useTranslate();
+  const { t, lang } = useTranslate();
   const isDark = theme === "dark";
+  const isRTL = lang === "ar";
 
   const [activeTab, setActiveTab] = useState<"send" | "clubRequests" | "sent">(
     "send",
@@ -307,31 +391,16 @@ export default function ScoutRequestsPage() {
   const [responding, setResponding] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-
-  // =========================
-  // ✅ STATUS HELPERS - تدعم كل اللغات
-  // =========================
-  const normalizeStatus = (status: string): string => {
-    const lower = status.toLowerCase();
-    // العربية
-    if (lower.includes("قيد الانتظار") || lower.includes("pending"))
-      return "PENDING";
-    if (lower.includes("مقبول") || lower.includes("accepted"))
-      return "ACCEPTED";
-    if (lower.includes("مرفوض") || lower.includes("rejected"))
-      return "REJECTED";
-    if (
-      lower.includes("ملغي") ||
-      lower.includes("cancelled") ||
-      lower.includes("canceled")
-    )
-      return "CANCELLED";
-    return status.toUpperCase();
-  };
+  const [openPlayers, setOpenPlayers] = useState(false);
 
   const matchesStatus = (status: string, target: string): boolean => {
     if (target === "ALL") return true;
     return normalizeStatus(status) === target;
+  };
+
+  const getTranslatedStatus = (status: string): string => {
+    const key = normalizeStatus(status);
+    return REQUEST_STATUS_TRANSLATIONS[key]?.[lang] || status;
   };
 
   const fetchPlayers = useCallback(async () => {
@@ -396,9 +465,6 @@ export default function ScoutRequestsPage() {
     fetchAllData();
   }, [fetchAllData]);
 
-  // =========================
-  // ✅ FILTERED REQUESTS
-  // =========================
   const getFilteredSentRequests = () => {
     let requests = sentRequests;
 
@@ -583,9 +649,6 @@ export default function ScoutRequestsPage() {
     setRespondModalOpen(true);
   };
 
-  // =========================
-  // ✅ STATUS HELPERS WITH TRANSLATION
-  // =========================
   const getStatusColor = (status: string) => {
     const normalized = normalizeStatus(status);
     switch (normalized) {
@@ -603,8 +666,8 @@ export default function ScoutRequestsPage() {
   };
 
   const getStatusLabel = (status: string) => {
-    const normalized = normalizeStatus(status);
-    switch (normalized) {
+    const key = normalizeStatus(status);
+    switch (key) {
       case "PENDING":
         return t("Pending");
       case "ACCEPTED":
@@ -629,17 +692,20 @@ export default function ScoutRequestsPage() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
-
-  const getFullImageUrl = (url: string) => {
-    if (!url) return "";
-    if (url.startsWith("http")) return url;
-    return `${process.env.NEXT_PUBLIC_API_URL}${url}`;
+    return new Date(dateString).toLocaleDateString(
+      lang === "ar"
+        ? "ar-EG"
+        : lang === "pt"
+        ? "pt-PT"
+        : lang === "zh"
+        ? "zh-CN"
+        : "en-US",
+      {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      },
+    );
   };
 
   const selectedPlayer = players.find((p) => p.id === selectedTargetId);
@@ -669,6 +735,7 @@ export default function ScoutRequestsPage() {
       className={`min-h-screen p-6 md:p-12 flex justify-center font-sans relative transition ${
         isDark ? "bg-[#020617] text-white" : "bg-gray-100 text-black"
       }`}
+      dir={isRTL ? "rtl" : "ltr"}
     >
       <CancelConfirmModal
         isOpen={cancelModalOpen}
@@ -704,15 +771,19 @@ export default function ScoutRequestsPage() {
         <h1
           className={`text-center text-4xl font-black italic uppercase mb-10 ${
             isDark ? "text-[#FFD700]" : "text-yellow-600"
-          }`}
+          } ${isRTL ? "text-right" : "text-left"}`}
         >
           {t("Scout Requests")}
         </h1>
 
-        <div className="flex justify-center gap-4 mb-8 flex-wrap">
+        <div
+          className={`flex justify-center gap-4 mb-8 flex-wrap ${
+            isRTL ? "flex-row-reverse" : ""
+          }`}
+        >
           <button
             onClick={() => setActiveTab("send")}
-            className={`px-6 py-2 rounded-md font-semibold transition ${
+            className={`px-6 py-2 rounded-md font-semibold transition flex items-center gap-2 ${
               activeTab === "send"
                 ? isDark
                   ? "bg-yellow-400 text-black"
@@ -720,14 +791,14 @@ export default function ScoutRequestsPage() {
                 : isDark
                 ? "bg-[#0A1A44] text-gray-400 hover:text-white"
                 : "bg-gray-200 text-gray-600 hover:text-black"
-            }`}
+            } ${isRTL ? "flex-row-reverse" : ""}`}
           >
-            <SendIcon size={16} className="inline mr-2" />
+            <SendIcon size={16} />
             {t("Send Request to Player")}
           </button>
           <button
             onClick={() => setActiveTab("clubRequests")}
-            className={`px-6 py-2 rounded-md font-semibold transition ${
+            className={`px-6 py-2 rounded-md font-semibold transition flex items-center gap-2 ${
               activeTab === "clubRequests"
                 ? isDark
                   ? "bg-yellow-400 text-black"
@@ -735,14 +806,14 @@ export default function ScoutRequestsPage() {
                 : isDark
                 ? "bg-[#0A1A44] text-gray-400 hover:text-white"
                 : "bg-gray-200 text-gray-600 hover:text-black"
-            }`}
+            } ${isRTL ? "flex-row-reverse" : ""}`}
           >
-            <Building2 size={16} className="inline mr-2" />
+            <Building2 size={16} />
             {t("Club Requests")}
           </button>
           <button
             onClick={() => setActiveTab("sent")}
-            className={`px-6 py-2 rounded-md font-semibold transition ${
+            className={`px-6 py-2 rounded-md font-semibold transition flex items-center gap-2 ${
               activeTab === "sent"
                 ? isDark
                   ? "bg-yellow-400 text-black"
@@ -750,9 +821,9 @@ export default function ScoutRequestsPage() {
                 : isDark
                 ? "bg-[#0A1A44] text-gray-400 hover:text-white"
                 : "bg-gray-200 text-gray-600 hover:text-black"
-            }`}
+            } ${isRTL ? "flex-row-reverse" : ""}`}
           >
-            <Send size={16} className="inline mr-2" />
+            <Send size={16} />
             {t("Sent Requests")}
           </button>
         </div>
@@ -764,35 +835,88 @@ export default function ScoutRequestsPage() {
               <label
                 className={`${
                   isDark ? "text-gray-400" : "text-gray-600"
-                } text-sm uppercase font-semibold`}
+                } text-sm uppercase font-semibold ${
+                  isRTL ? "text-right" : "text-left"
+                }`}
               >
                 {t("Select Player")} *
               </label>
               <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#FFD700]">
-                  <Star size={18} fill="currentColor" />
-                </div>
-                <select
-                  value={selectedTargetId}
-                  onChange={(e) => setSelectedTargetId(e.target.value)}
-                  className={`w-full rounded-xl py-4 pl-12 pr-10 text-sm outline-none italic appearance-none cursor-pointer ${
+                <button
+                  type="button"
+                  onClick={() => setOpenPlayers(!openPlayers)}
+                  className={`w-full rounded-xl py-4 px-4 flex items-center justify-between transition ${
                     isDark
                       ? "bg-[#0A1A44]/40 border border-blue-900/50 text-white"
                       : "bg-white border border-gray-300 text-black"
-                  }`}
-                  required
+                  } ${isRTL ? "flex-row-reverse" : ""}`}
                 >
-                  <option value="">{t("Select Player")}</option>
-                  {players.map((player) => (
-                    <option key={player.id} value={player.id}>
-                      {player.first_name} {player.last_name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[#FFD700] pointer-events-none"
-                  size={18}
-                />
+                  <div
+                    className={`flex items-center gap-3 ${
+                      isRTL ? "flex-row-reverse" : ""
+                    }`}
+                  >
+                    <Star
+                      size={18}
+                      className="text-[#FFD700]"
+                      fill="currentColor"
+                    />
+                    <span>
+                      {selectedPlayer
+                        ? `${selectedPlayer.first_name} ${selectedPlayer.last_name}`
+                        : t("Select Player")}
+                    </span>
+                  </div>
+                  <ChevronDown
+                    size={18}
+                    className={`transition-transform ${
+                      openPlayers ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                {openPlayers && (
+                  <div
+                    className={`absolute top-full left-0 mt-2 w-full rounded-xl overflow-hidden z-50 max-h-72 overflow-y-auto shadow-xl ${
+                      isDark
+                        ? "bg-[#0A1A44] border border-blue-900/50"
+                        : "bg-white border border-gray-300"
+                    }`}
+                  >
+                    {players.map((player) => (
+                      <button
+                        key={player.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedTargetId(player.id);
+                          setOpenPlayers(false);
+                        }}
+                        className={`w-full p-3 text-left flex items-center gap-3 transition ${
+                          selectedTargetId === player.id
+                            ? "bg-yellow-500/20 text-yellow-400"
+                            : "hover:bg-yellow-500/10"
+                        } ${isRTL ? "flex-row-reverse text-right" : ""}`}
+                      >
+                        <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 bg-gray-200 flex items-center justify-center">
+                          {player.profile_image_url ? (
+                            <Image
+                              src={getFullImageUrl(player.profile_image_url)}
+                              alt={player.first_name}
+                              width={32}
+                              height={32}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <User size={14} className="text-gray-500" />
+                          )}
+                        </div>
+                        <span>
+                          {player.first_name} {player.last_name}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {selectedPlayer && (
@@ -801,9 +925,13 @@ export default function ScoutRequestsPage() {
                     isDark
                       ? "bg-[#051139]/50 border border-blue-900/30"
                       : "bg-white shadow"
-                  }`}
+                  } ${isRTL ? "flex-row-reverse" : ""}`}
                 >
-                  <div className="flex items-center gap-4">
+                  <div
+                    className={`flex items-center gap-4 ${
+                      isRTL ? "flex-row-reverse" : ""
+                    }`}
+                  >
                     <div className="w-12 h-12 relative rounded-md overflow-hidden">
                       {selectedPlayer.profile_image_url ? (
                         <Image
@@ -824,7 +952,7 @@ export default function ScoutRequestsPage() {
                         </div>
                       )}
                     </div>
-                    <div>
+                    <div className={isRTL ? "text-right" : "text-left"}>
                       <h4 className="text-sm font-bold">
                         {selectedPlayer.first_name} {selectedPlayer.last_name}
                       </h4>
@@ -850,7 +978,7 @@ export default function ScoutRequestsPage() {
                 isDark
                   ? "bg-[#0A1A44]/40 border border-blue-900/50 text-white placeholder:text-gray-500"
                   : "bg-white border border-gray-300 text-black placeholder:text-gray-400"
-              }`}
+              } ${isRTL ? "text-right" : "text-left"}`}
             />
 
             <button
@@ -860,7 +988,9 @@ export default function ScoutRequestsPage() {
                 isDark
                   ? "bg-[#0A1A44] border border-[#FFD700]/40 text-white hover:bg-[#FFD700] hover:text-black"
                   : "bg-yellow-400 text-black hover:bg-yellow-500"
-              } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
+              } ${loading ? "opacity-50 cursor-not-allowed" : ""} ${
+                isRTL ? "flex-row-reverse" : ""
+              }`}
             >
               <span className="font-bold uppercase">
                 {loading ? t("Sending...") : t("Send Request")}
@@ -873,7 +1003,7 @@ export default function ScoutRequestsPage() {
         {/* Club Requests Tab - from Clubs */}
         {activeTab === "clubRequests" && (
           <div className="space-y-4">
-            <div className="flex justify-end">
+            <div className={`flex ${isRTL ? "justify-start" : "justify-end"}`}>
               <div className="relative">
                 <button
                   onClick={() => setIsFilterOpen(!isFilterOpen)}
@@ -881,7 +1011,7 @@ export default function ScoutRequestsPage() {
                     isDark
                       ? "bg-[#0a0f2c] border border-[#1e2a5a] hover:bg-[#1e2a5a]"
                       : "bg-white border border-gray-200 shadow hover:bg-gray-50"
-                  }`}
+                  } ${isRTL ? "flex-row-reverse" : ""}`}
                 >
                   <Filter size={16} className="text-yellow-500" />
                   <span className="text-sm font-medium">
@@ -901,7 +1031,9 @@ export default function ScoutRequestsPage() {
                       onClick={() => setIsFilterOpen(false)}
                     />
                     <div
-                      className={`absolute top-full right-0 mt-2 w-56 rounded-lg shadow-lg overflow-hidden z-20 ${
+                      className={`absolute top-full ${
+                        isRTL ? "left-0" : "right-0"
+                      } mt-2 w-56 rounded-lg shadow-lg overflow-hidden z-20 ${
                         isDark
                           ? "bg-[#0a0f2c] border border-[#1e2a5a]"
                           : "bg-white border border-gray-200"
@@ -928,9 +1060,13 @@ export default function ScoutRequestsPage() {
                               : isDark
                               ? "hover:bg-[#1e2a5a] text-gray-300"
                               : "hover:bg-gray-50 text-gray-700"
-                          }`}
+                          } ${isRTL ? "flex-row-reverse text-right" : ""}`}
                         >
-                          <span className="flex items-center gap-2">
+                          <span
+                            className={`flex items-center gap-2 ${
+                              isRTL ? "flex-row-reverse" : ""
+                            }`}
+                          >
                             <span
                               className={`w-2 h-2 rounded-full ${
                                 status === "PENDING"
@@ -973,81 +1109,106 @@ export default function ScoutRequestsPage() {
                 </p>
               </div>
             ) : (
-              getFilteredClubRequests().map((request) => (
-                <div
-                  key={request.id}
-                  className={`p-5 rounded-xl transition ${
-                    isDark
-                      ? "bg-[#0A1A44]/40 border border-blue-900/30"
-                      : "bg-white shadow"
-                  }`}
-                >
-                  <div className="flex justify-between items-start gap-4 flex-wrap">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2 flex-wrap">
-                        <span
-                          className={`text-xs px-2 py-1 rounded-full ${getStatusColor(
-                            request.status,
-                          )}`}
+              getFilteredClubRequests().map((request) => {
+                const displayStatus = getTranslatedStatus(request.status);
+                return (
+                  <div
+                    key={request.id}
+                    className={`p-5 rounded-xl transition ${
+                      isDark
+                        ? "bg-[#0A1A44]/40 border border-blue-900/30"
+                        : "bg-white shadow"
+                    } ${isRTL ? "text-right" : "text-left"}`}
+                  >
+                    <div
+                      className={`flex justify-between items-start gap-4 flex-wrap ${
+                        isRTL ? "flex-row-reverse" : ""
+                      }`}
+                    >
+                      <div className="flex-1">
+                        <div
+                          className={`flex items-center gap-3 mb-2 flex-wrap ${
+                            isRTL ? "flex-row-reverse" : ""
+                          }`}
                         >
-                          {getStatusLabel(request.status)}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {request.club.logo_url && (
-                          <div className="w-8 h-8 relative rounded-full overflow-hidden">
-                            <Image
-                              src={getFullImageUrl(request.club.logo_url)}
-                              alt={request.club.club_name}
-                              fill
-                              className="object-cover"
-                            />
-                          </div>
+                          <span
+                            className={`text-xs px-2 py-1 rounded-full ${getStatusColor(
+                              request.status,
+                            )}`}
+                          >
+                            {displayStatus}
+                          </span>
+                        </div>
+                        <div
+                          className={`flex items-center gap-2 ${
+                            isRTL ? "flex-row-reverse" : ""
+                          }`}
+                        >
+                          {request.club.logo_url && (
+                            <div className="w-8 h-8 relative rounded-full overflow-hidden">
+                              <Image
+                                src={getFullImageUrl(request.club.logo_url)}
+                                alt={request.club.club_name}
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                          )}
+                          <h3 className="font-bold text-lg">
+                            {request.club.club_name}
+                          </h3>
+                        </div>
+                        {request.message && (
+                          <p
+                            className={`text-sm ${
+                              isDark ? "text-gray-400" : "text-gray-600"
+                            } mt-2 ${isRTL ? "text-right" : "text-left"}`}
+                          >
+                            <MessageSquare size={14} className="inline mr-1" />
+                            {request.message}
+                          </p>
                         )}
-                        <h3 className="font-bold text-lg">
-                          {request.club.club_name}
-                        </h3>
-                      </div>
-                      {request.message && (
                         <p
-                          className={`text-sm ${
-                            isDark ? "text-gray-400" : "text-gray-600"
-                          } mt-2`}
+                          className={`text-xs ${
+                            isDark ? "text-gray-500" : "text-gray-400"
+                          } mt-2 flex items-center gap-1 ${
+                            isRTL ? "flex-row-reverse" : ""
+                          }`}
                         >
-                          <MessageSquare size={14} className="inline mr-1" />
-                          {request.message}
+                          <Clock size={12} />
+                          {formatDate(request.created_at)}
                         </p>
-                      )}
-                      <p
-                        className={`text-xs ${
-                          isDark ? "text-gray-500" : "text-gray-400"
-                        } mt-2 flex items-center gap-1`}
+                      </div>
+                      <div
+                        className={`flex gap-2 ${
+                          isRTL ? "flex-row-reverse" : ""
+                        }`}
                       >
-                        <Clock size={12} />
-                        {formatDate(request.created_at)}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      {normalizeStatus(request.status) === "PENDING" && (
-                        <>
-                          <button
-                            onClick={() => openRespondModal(request, "accept")}
-                            className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition whitespace-nowrap"
-                          >
-                            {t("Accept")}
-                          </button>
-                          <button
-                            onClick={() => openRespondModal(request, "reject")}
-                            className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition whitespace-nowrap"
-                          >
-                            {t("Reject")}
-                          </button>
-                        </>
-                      )}
+                        {normalizeStatus(request.status) === "PENDING" && (
+                          <>
+                            <button
+                              onClick={() =>
+                                openRespondModal(request, "accept")
+                              }
+                              className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition whitespace-nowrap"
+                            >
+                              {t("Accept")}
+                            </button>
+                            <button
+                              onClick={() =>
+                                openRespondModal(request, "reject")
+                              }
+                              className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition whitespace-nowrap"
+                            >
+                              {t("Reject")}
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         )}
@@ -1055,7 +1216,7 @@ export default function ScoutRequestsPage() {
         {/* Sent Requests Tab */}
         {activeTab === "sent" && (
           <div className="space-y-4">
-            <div className="flex justify-end">
+            <div className={`flex ${isRTL ? "justify-start" : "justify-end"}`}>
               <div className="relative">
                 <button
                   onClick={() => setIsFilterOpen(!isFilterOpen)}
@@ -1063,7 +1224,7 @@ export default function ScoutRequestsPage() {
                     isDark
                       ? "bg-[#0a0f2c] border border-[#1e2a5a] hover:bg-[#1e2a5a]"
                       : "bg-white border border-gray-200 shadow hover:bg-gray-50"
-                  }`}
+                  } ${isRTL ? "flex-row-reverse" : ""}`}
                 >
                   <Filter size={16} className="text-yellow-500" />
                   <span className="text-sm font-medium">
@@ -1083,7 +1244,9 @@ export default function ScoutRequestsPage() {
                       onClick={() => setIsFilterOpen(false)}
                     />
                     <div
-                      className={`absolute top-full right-0 mt-2 w-56 rounded-lg shadow-lg overflow-hidden z-20 ${
+                      className={`absolute top-full ${
+                        isRTL ? "left-0" : "right-0"
+                      } mt-2 w-56 rounded-lg shadow-lg overflow-hidden z-20 ${
                         isDark
                           ? "bg-[#0a0f2c] border border-[#1e2a5a]"
                           : "bg-white border border-gray-200"
@@ -1110,9 +1273,13 @@ export default function ScoutRequestsPage() {
                               : isDark
                               ? "hover:bg-[#1e2a5a] text-gray-300"
                               : "hover:bg-gray-50 text-gray-700"
-                          }`}
+                          } ${isRTL ? "flex-row-reverse text-right" : ""}`}
                         >
-                          <span className="flex items-center gap-2">
+                          <span
+                            className={`flex items-center gap-2 ${
+                              isRTL ? "flex-row-reverse" : ""
+                            }`}
+                          >
                             <span
                               className={`w-2 h-2 rounded-full ${
                                 status === "PENDING"
@@ -1155,61 +1322,90 @@ export default function ScoutRequestsPage() {
                 </p>
               </div>
             ) : (
-              getFilteredSentRequests().map((request) => (
-                <div
-                  key={request.id}
-                  className={`p-5 rounded-xl transition ${
-                    isDark
-                      ? "bg-[#0A1A44]/40 border border-blue-900/30"
-                      : "bg-white shadow"
-                  }`}
-                >
-                  <div className="flex justify-between items-start gap-4 flex-wrap">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span
-                          className={`text-xs px-2 py-1 rounded-full ${getStatusColor(
-                            request.status,
-                          )}`}
+              getFilteredSentRequests().map((request) => {
+                const playerImage = getFullImageUrl(request.playerImageUrl);
+                const displayStatus = getTranslatedStatus(request.status);
+                return (
+                  <div
+                    key={request.id}
+                    className={`p-5 rounded-xl transition ${
+                      isDark
+                        ? "bg-[#0A1A44]/40 border border-blue-900/30"
+                        : "bg-white shadow"
+                    } ${isRTL ? "text-right" : "text-left"}`}
+                  >
+                    <div
+                      className={`flex justify-between items-start gap-4 flex-wrap ${
+                        isRTL ? "flex-row-reverse" : ""
+                      }`}
+                    >
+                      <div className="flex-1">
+                        <div
+                          className={`flex items-center gap-3 mb-2 ${
+                            isRTL ? "flex-row-reverse" : ""
+                          }`}
                         >
-                          {getStatusLabel(request.status)}
-                        </span>
-                      </div>
-                      <h3 className="font-bold text-lg">
-                        {request.playerName || t("Player")}
-                      </h3>
-                      {request.payload && (
+                          {playerImage && (
+                            <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 border-2 border-yellow-500/30">
+                              <Image
+                                src={playerImage}
+                                alt={request.playerName || "Player"}
+                                width={40}
+                                height={40}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          )}
+                          <span
+                            className={`text-xs px-2 py-1 rounded-full ${getStatusColor(
+                              request.status,
+                            )}`}
+                          >
+                            {displayStatus}
+                          </span>
+                        </div>
+                        <h3 className="font-bold text-lg">
+                          {request.playerName || t("Player")}
+                        </h3>
+                        {request.payload && (
+                          <p
+                            className={`text-sm ${
+                              isDark ? "text-gray-400" : "text-gray-600"
+                            } mt-2 ${isRTL ? "text-right" : "text-left"}`}
+                          >
+                            <MessageSquare size={14} className="inline mr-1" />
+                            {getPayloadMessage(request.payload)}
+                          </p>
+                        )}
                         <p
-                          className={`text-sm ${
-                            isDark ? "text-gray-400" : "text-gray-600"
-                          } mt-2`}
+                          className={`text-xs ${
+                            isDark ? "text-gray-500" : "text-gray-400"
+                          } mt-2 flex items-center gap-1 ${
+                            isRTL ? "flex-row-reverse" : ""
+                          }`}
                         >
-                          <MessageSquare size={14} className="inline mr-1" />
-                          {getPayloadMessage(request.payload)}
+                          <Clock size={12} />
+                          {formatDate(request.created_at)}
                         </p>
-                      )}
-                      <p
-                        className={`text-xs ${
-                          isDark ? "text-gray-500" : "text-gray-400"
-                        } mt-2 flex items-center gap-1`}
+                      </div>
+                      <div
+                        className={`flex gap-2 ${
+                          isRTL ? "flex-row-reverse" : ""
+                        }`}
                       >
-                        <Clock size={12} />
-                        {formatDate(request.created_at)}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      {normalizeStatus(request.status) === "PENDING" && (
-                        <button
-                          onClick={() => handleCancelClick(request.id)}
-                          className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition whitespace-nowrap"
-                        >
-                          {t("Cancel")}
-                        </button>
-                      )}
+                        {normalizeStatus(request.status) === "PENDING" && (
+                          <button
+                            onClick={() => handleCancelClick(request.id)}
+                            className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition whitespace-nowrap"
+                          >
+                            {t("Cancel")}
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         )}

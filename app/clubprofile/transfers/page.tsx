@@ -24,6 +24,7 @@ import { GET_TRANSFERS_BY_CLUB } from "../../graphql/query/transfer.queries";
 import { GET_DEALS_BY_STATUS } from "@/app/graphql/query/deal.queries";
 import { CREATE_TRANSFER_FROM_DEAL } from "../../graphql/mutation/transfer.mutations";
 import BackButton from "@/app/components/BackButton";
+import Image from "next/image";
 
 interface Transfer {
   id: string;
@@ -55,28 +56,91 @@ interface Deal {
   value: number | null;
   status: string;
   created_at: string;
+  playerImageUrl?: string | null;
 }
+
+function getFullImageUrl(url: string | undefined | null): string {
+  if (!url) return "";
+  if (url.startsWith("http")) return url;
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+  return `${API_URL}${url.startsWith("/") ? "" : "/"}${url}`;
+}
+
+const TRANSFER_STATUS_TRANSLATIONS: Record<string, Record<string, string>> = {
+  PENDING: {
+    en: "Pending",
+    ar: "قيد الانتظار",
+    pt: "Pendente",
+    zh: "待处理",
+  },
+  COMPLETED: {
+    en: "Completed",
+    ar: "مكتمل",
+    pt: "Concluído",
+    zh: "已完成",
+  },
+  CANCELLED: {
+    en: "Cancelled",
+    ar: "ملغي",
+    pt: "Cancelado",
+    zh: "已取消",
+  },
+};
+
+const STATUS_TEXT_TO_KEY: Record<string, string> = {};
+Object.entries(TRANSFER_STATUS_TRANSLATIONS).forEach(([key, translations]) => {
+  Object.values(translations).forEach((text) => {
+    STATUS_TEXT_TO_KEY[text.toLowerCase()] = key;
+  });
+});
+
+const normalizeStatus = (status: string): string => {
+  if (!status) return "UNKNOWN";
+  const trimmed = status.trim();
+  const upper = trimmed.toUpperCase();
+  if (["PENDING", "COMPLETED", "CANCELLED"].includes(upper)) {
+    return upper;
+  }
+  const matched = STATUS_TEXT_TO_KEY[trimmed.toLowerCase()];
+  if (matched) return matched;
+  const lower = trimmed.toLowerCase();
+  if (lower.includes("pend") || lower.includes("قيد")) return "PENDING";
+  if (
+    lower.includes("complet") ||
+    lower.includes("مكتمل") ||
+    lower.includes("concluído")
+  )
+    return "COMPLETED";
+  if (
+    lower.includes("cancell") ||
+    lower.includes("ملغي") ||
+    lower.includes("cancelado")
+  )
+    return "CANCELLED";
+  return "UNKNOWN";
+};
 
 export default function ClubTransfersPage() {
   const { theme } = useTheme();
-  const { t } = useTranslate();
+  const { t, lang } = useTranslate();
   const isDark = theme === "dark";
+  const isRTL = lang === "ar";
 
   const [activeTab, setActiveTab] = useState<"create" | "my">("create");
-
-  // Create Transfer State
   const [deals, setDeals] = useState<Deal[]>([]);
   const [selectedDealId, setSelectedDealId] = useState<string>("");
   const [creating, setCreating] = useState(false);
-
-  // My Transfers State
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [filteredTransfers, setFilteredTransfers] = useState<Transfer[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-  // Fetch Accepted Deals for Create Tab
+  const getTranslatedStatus = (status: string): string => {
+    const key = status?.toUpperCase();
+    return TRANSFER_STATUS_TRANSLATIONS[key]?.[lang] || status;
+  };
+
   const fetchAcceptedDeals = useCallback(async () => {
     try {
       const result = await fetchGraphQL<{ dealsByStatus: Deal[] }>(
@@ -92,7 +156,6 @@ export default function ClubTransfersPage() {
     }
   }, [t]);
 
-  // Fetch My Transfers using getTransfersByClub
   const fetchTransfers = useCallback(async () => {
     setLoading(true);
     try {
@@ -103,7 +166,6 @@ export default function ClubTransfersPage() {
         setTransfers(result.data.getTransfersByClub);
         setFilteredTransfers(result.data.getTransfersByClub);
       } else {
-        console.log("No transfers found:", result.data);
         setTransfers([]);
         setFilteredTransfers([]);
       }
@@ -131,7 +193,7 @@ export default function ClubTransfersPage() {
     } else {
       setFilteredTransfers(
         transfers.filter(
-          (transfer) => transfer.status.toUpperCase() === statusFilter,
+          (transfer) => normalizeStatus(transfer.status) === statusFilter,
         ),
       );
     }
@@ -169,37 +231,46 @@ export default function ClubTransfersPage() {
 
   const formatDate = (dateString: string) => {
     try {
-      return new Date(dateString).toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      });
+      return new Date(dateString).toLocaleDateString(
+        lang === "ar"
+          ? "ar-EG"
+          : lang === "pt"
+          ? "pt-PT"
+          : lang === "zh"
+          ? "zh-CN"
+          : "en-US",
+        {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        },
+      );
     } catch {
       return dateString;
     }
   };
 
   const getStatusColor = (status: string) => {
-    const lowerStatus = status.toLowerCase();
-    if (lowerStatus.includes("completed")) {
-      return "text-green-500 bg-green-500/10";
+    const normalized = normalizeStatus(status);
+    switch (normalized) {
+      case "COMPLETED":
+        return "text-green-500 bg-green-500/10";
+      case "PENDING":
+        return "text-yellow-500 bg-yellow-500/10";
+      case "CANCELLED":
+        return "text-red-500 bg-red-500/10";
+      default:
+        return "text-gray-400 bg-gray-500/10";
     }
-    if (lowerStatus.includes("pending")) {
-      return "text-yellow-500 bg-yellow-500/10";
-    }
-    if (lowerStatus.includes("cancelled")) {
-      return "text-red-500 bg-red-500/10";
-    }
-    return "text-gray-400 bg-gray-500/10";
   };
 
   const getStatusIcon = (status: string) => {
-    const lowerStatus = status.toLowerCase();
-    if (lowerStatus.includes("completed"))
+    const normalized = normalizeStatus(status);
+    if (normalized === "COMPLETED")
       return <CheckCircle size={14} className="text-green-500" />;
-    if (lowerStatus.includes("pending"))
+    if (normalized === "PENDING")
       return <Clock size={14} className="text-yellow-500" />;
-    if (lowerStatus.includes("cancelled"))
+    if (normalized === "CANCELLED")
       return <XCircle size={14} className="text-red-500" />;
     return null;
   };
@@ -207,7 +278,7 @@ export default function ClubTransfersPage() {
   const getStatusCount = (status: string) => {
     if (status === "ALL") return transfers.length;
     return transfers.filter(
-      (transfer) => transfer.status.toUpperCase() === status,
+      (transfer) => normalizeStatus(transfer.status) === status,
     ).length;
   };
 
@@ -240,16 +311,24 @@ export default function ClubTransfersPage() {
       className={`min-h-screen py-40 px-6 transition ${
         isDark ? "bg-[#020617] text-white" : "bg-gray-100 text-black"
       }`}
+      dir={isRTL ? "rtl" : "ltr"}
     >
       <div className="max-w-6xl mx-auto">
         <BackButton className="mb-6" />
 
-        <h1 className="text-4xl font-black italic tracking-tighter text-yellow-400 uppercase text-center mb-10">
+        <h1
+          className={`text-4xl font-black italic tracking-tighter text-yellow-400 uppercase text-center mb-10 ${
+            isRTL ? "text-right" : "text-left"
+          }`}
+        >
           {t("Transfers")}
         </h1>
 
-        {/* Tabs */}
-        <div className="flex justify-center gap-4 mb-8">
+        <div
+          className={`flex justify-center gap-4 mb-8 ${
+            isRTL ? "flex-row-reverse" : ""
+          }`}
+        >
           <button
             onClick={() => {
               setActiveTab("create");
@@ -263,7 +342,7 @@ export default function ClubTransfersPage() {
                 : isDark
                 ? "bg-[#0A1A44] text-gray-400 hover:text-white"
                 : "bg-gray-200 text-gray-600 hover:text-black"
-            }`}
+            } ${isRTL ? "flex-row-reverse" : ""}`}
           >
             <Plus size={18} />
             {t("Create Transfer")}
@@ -278,7 +357,7 @@ export default function ClubTransfersPage() {
                 : isDark
                 ? "bg-[#0A1A44] text-gray-400 hover:text-white"
                 : "bg-gray-200 text-gray-600 hover:text-black"
-            }`}
+            } ${isRTL ? "flex-row-reverse" : ""}`}
           >
             <Building2 size={18} />
             {t("Club Transfers")}
@@ -286,7 +365,6 @@ export default function ClubTransfersPage() {
         </div>
 
         {activeTab === "create" ? (
-          // Create Transfer Tab
           <div
             className={`rounded-xl p-6 ${
               isDark
@@ -297,7 +375,7 @@ export default function ClubTransfersPage() {
             <h2
               className={`text-2xl font-bold mb-4 ${
                 isDark ? "text-white" : "text-black"
-              }`}
+              } ${isRTL ? "text-right" : "text-left"}`}
             >
               {t("Create Transfer from Accepted Deal")}
             </h2>
@@ -307,7 +385,7 @@ export default function ClubTransfersPage() {
                 <label
                   className={`block text-sm mb-1 ${
                     isDark ? "text-gray-300" : "text-gray-700"
-                  }`}
+                  } ${isRTL ? "text-right" : "text-left"}`}
                 >
                   {t("Select Accepted Deal")}{" "}
                   <span className="text-red-500">*</span>
@@ -319,7 +397,7 @@ export default function ClubTransfersPage() {
                     isDark
                       ? "bg-[#0b1736] border-[#1e2a5a] text-white focus:border-yellow-400"
                       : "bg-white border-gray-300 text-black focus:border-yellow-400"
-                  }`}
+                  } ${isRTL ? "text-right" : "text-left"}`}
                   required
                 >
                   <option value="">{t("Select a deal")}</option>
@@ -338,21 +416,44 @@ export default function ClubTransfersPage() {
                     isDark
                       ? "bg-[#051139]/50 border border-blue-900/30"
                       : "bg-gray-50 border"
-                  }`}
+                  } ${isRTL ? "text-right" : "text-left"}`}
                 >
                   <h3 className="font-semibold mb-2">{t("Deal Details")}</h3>
                   <div className="space-y-2 text-sm">
-                    <div className="flex items-center gap-2">
+                    <div
+                      className={`flex items-center gap-2 ${
+                        isRTL ? "flex-row-reverse" : ""
+                      }`}
+                    >
+                      {selectedDeal.playerImageUrl && (
+                        <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-yellow-500/30">
+                          <Image
+                            src={getFullImageUrl(selectedDeal.playerImageUrl)}
+                            alt={selectedDeal.playerName}
+                            width={32}
+                            height={32}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
                       <User size={16} className="text-yellow-500" />
                       <span>{selectedDeal.playerName}</span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div
+                      className={`flex items-center gap-2 ${
+                        isRTL ? "flex-row-reverse" : ""
+                      }`}
+                    >
                       <Building2 size={16} className="text-yellow-500" />
                       <span>
                         {selectedDeal.club_name || t("No club specified")}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div
+                      className={`flex items-center gap-2 ${
+                        isRTL ? "flex-row-reverse" : ""
+                      }`}
+                    >
                       <ArrowRight size={16} className="text-green-500" />
                       <span>{selectedDeal.offer_type}</span>
                     </div>
@@ -360,7 +461,9 @@ export default function ClubTransfersPage() {
                 </div>
               )}
 
-              <div className="flex gap-3 pt-4">
+              <div
+                className={`flex gap-3 pt-4 ${isRTL ? "flex-row-reverse" : ""}`}
+              >
                 <button
                   type="button"
                   onClick={() => {
@@ -385,7 +488,7 @@ export default function ClubTransfersPage() {
                     creating || !selectedDealId
                       ? "opacity-50 cursor-not-allowed"
                       : ""
-                  }`}
+                  } ${isRTL ? "flex-row-reverse" : ""}`}
                 >
                   {creating ? (
                     <Loader2 size={20} className="animate-spin" />
@@ -400,10 +503,8 @@ export default function ClubTransfersPage() {
             </form>
           </div>
         ) : (
-          // My Transfers Tab
           <div className="space-y-4">
-            {/* Status Filter Dropdown */}
-            <div className="flex justify-end">
+            <div className={`flex ${isRTL ? "justify-start" : "justify-end"}`}>
               <div className="relative">
                 <button
                   onClick={() => setIsFilterOpen(!isFilterOpen)}
@@ -411,7 +512,7 @@ export default function ClubTransfersPage() {
                     isDark
                       ? "bg-[#0a0f2c] border border-[#1e2a5a] hover:bg-[#1e2a5a]"
                       : "bg-white border border-gray-200 shadow hover:bg-gray-50"
-                  }`}
+                  } ${isRTL ? "flex-row-reverse" : ""}`}
                 >
                   <Filter size={16} className="text-yellow-500" />
                   <span className="text-sm font-medium">
@@ -432,7 +533,9 @@ export default function ClubTransfersPage() {
                       onClick={() => setIsFilterOpen(false)}
                     />
                     <div
-                      className={`absolute top-full right-0 mt-2 w-56 rounded-lg shadow-lg overflow-hidden z-20 ${
+                      className={`absolute top-full ${
+                        isRTL ? "left-0" : "right-0"
+                      } mt-2 w-56 rounded-lg shadow-lg overflow-hidden z-20 ${
                         isDark
                           ? "bg-[#0a0f2c] border border-[#1e2a5a]"
                           : "bg-white border border-gray-200"
@@ -454,9 +557,13 @@ export default function ClubTransfersPage() {
                                 : isDark
                                 ? "hover:bg-[#1e2a5a] text-gray-300"
                                 : "hover:bg-gray-50 text-gray-700"
-                            }`}
+                            } ${isRTL ? "flex-row-reverse text-right" : ""}`}
                           >
-                            <span className="flex items-center gap-2">
+                            <span
+                              className={`flex items-center gap-2 ${
+                                isRTL ? "flex-row-reverse" : ""
+                              }`}
+                            >
                               <span
                                 className={`w-2 h-2 rounded-full ${
                                   status === "COMPLETED"
@@ -516,65 +623,99 @@ export default function ClubTransfersPage() {
                 )}
               </div>
             ) : (
-              filteredTransfers.map((transfer) => (
-                <div
-                  key={transfer.id}
-                  className={`p-4 rounded-xl transition ${
-                    isDark
-                      ? "bg-[#0a1128] border border-[#0f2b63]"
-                      : "bg-white border border-gray-200 shadow"
-                  }`}
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-bold text-lg">
-                          {getPlayerName(transfer)}
-                        </h3>
-                        <span
-                          className={`text-xs px-2 py-1 rounded-full ${getStatusColor(
-                            transfer.status,
-                          )}`}
-                        >
-                          <span className="flex items-center gap-1">
-                            {getStatusIcon(transfer.status)}
-                            {transfer.status}
-                          </span>
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap gap-3 text-sm">
-                        <span className="flex items-center gap-1 text-blue-500">
-                          <Building2 size={14} /> {transfer.from_club}
-                        </span>
-                        <span className="text-gray-400">→</span>
-                        <span className="flex items-center gap-1 text-green-500">
-                          <Building2 size={14} /> {transfer.to_club}
-                        </span>
-                        {transfer.club_name && (
-                          <span className="flex items-center gap-1 text-yellow-500">
-                            <Building2 size={14} /> {transfer.club_name}
-                          </span>
-                        )}
-                        <span className="flex items-center gap-1">
-                          <Calendar size={14} />{" "}
-                          {formatDate(transfer.created_at)}
-                        </span>
-                      </div>
-                      {transfer.notes && (
-                        <p
-                          className={`text-sm mt-2 ${
-                            isDark ? "text-gray-400" : "text-gray-600"
+              filteredTransfers.map((transfer) => {
+                const displayStatus = getTranslatedStatus(transfer.status);
+                const playerImage = transfer.player?.profile_image_url
+                  ? getFullImageUrl(transfer.player.profile_image_url)
+                  : null;
+
+                return (
+                  <div
+                    key={transfer.id}
+                    className={`p-4 rounded-xl transition ${
+                      isDark
+                        ? "bg-[#0a1128] border border-[#0f2b63]"
+                        : "bg-white border border-gray-200 shadow"
+                    } ${isRTL ? "text-right" : "text-left"}`}
+                  >
+                    <div
+                      className={`flex justify-between items-start ${
+                        isRTL ? "flex-row-reverse" : ""
+                      }`}
+                    >
+                      <div className="flex-1">
+                        <div
+                          className={`flex items-center gap-3 mb-2 ${
+                            isRTL ? "flex-row-reverse" : ""
                           }`}
                         >
-                          {transfer.notes.length > 150
-                            ? `${transfer.notes.substring(0, 150)}...`
-                            : transfer.notes}
-                        </p>
-                      )}
+                          {playerImage && (
+                            <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-yellow-500/30">
+                              <Image
+                                src={playerImage}
+                                alt={getPlayerName(transfer)}
+                                width={32}
+                                height={32}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          )}
+                          <h3 className="font-bold text-lg">
+                            {getPlayerName(transfer)}
+                          </h3>
+                          <span
+                            className={`text-xs px-2 py-1 rounded-full ${getStatusColor(
+                              transfer.status,
+                            )}`}
+                          >
+                            <span
+                              className={`flex items-center gap-1 ${
+                                isRTL ? "flex-row-reverse" : ""
+                              }`}
+                            >
+                              {getStatusIcon(transfer.status)}
+                              {displayStatus}
+                            </span>
+                          </span>
+                        </div>
+                        <div
+                          className={`flex flex-wrap gap-3 text-sm ${
+                            isRTL ? "flex-row-reverse" : ""
+                          }`}
+                        >
+                          <span className="flex items-center gap-1 text-blue-500">
+                            <Building2 size={14} /> {transfer.from_club}
+                          </span>
+                          <span className="text-gray-400">→</span>
+                          <span className="flex items-center gap-1 text-green-500">
+                            <Building2 size={14} /> {transfer.to_club}
+                          </span>
+                          {transfer.club_name && (
+                            <span className="flex items-center gap-1 text-yellow-500">
+                              <Building2 size={14} /> {transfer.club_name}
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1">
+                            <Calendar size={14} />{" "}
+                            {formatDate(transfer.created_at)}
+                          </span>
+                        </div>
+                        {transfer.notes && (
+                          <p
+                            className={`text-sm mt-2 ${
+                              isDark ? "text-gray-400" : "text-gray-600"
+                            } ${isRTL ? "text-right" : "text-left"}`}
+                          >
+                            {transfer.notes.length > 150
+                              ? `${transfer.notes.substring(0, 150)}...`
+                              : transfer.notes}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         )}

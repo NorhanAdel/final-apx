@@ -3,8 +3,6 @@
 import {
   Mail,
   Lock,
-  Eye,
-  EyeOff,
   User,
   AlertCircle,
   CheckCircle,
@@ -155,16 +153,6 @@ export default function RegisterForm({
             className="w-full py-2 sm:py-3 bg-transparent outline-none text-white text-sm sm:text-base placeholder:text-gray-400"
             {...register("password")}
           />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="text-blue-900 hover:text-yellow-400 transition"
-          >
-            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-          </button>
-          {isPasswordValid && touchedFields.password && (
-            <CheckCircle size={18} className="text-green-500 ml-2" />
-          )}
         </div>
         {errors.password && touchedFields.password && (
           <p className="text-red-400 text-xs mt-1 flex items-center gap-1">

@@ -57,3 +57,16 @@ export const DELETE_DEAL = `
     deleteDeal(id: $id)
   }
 `;
+
+// Cancel deal by Club (Club only)
+export const CANCEL_DEAL_BY_CLUB = `
+  mutation CancelDealByClub($id: ID!) {
+    cancelDealByClub(id: $id) {
+      id
+      status
+      updated_at
+    }
+  }
+`;
+
+

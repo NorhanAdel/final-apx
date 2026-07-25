@@ -6,8 +6,6 @@ import { useRouter } from "next/navigation";
 import {
   Mail,
   Lock,
-  Eye,
-  EyeOff,
   AlertCircle,
   CheckCircle,
 } from "lucide-react";
@@ -289,13 +287,6 @@ export default function LoginPage() {
                 className="w-full py-2 sm:py-3 bg-transparent outline-none text-white text-sm sm:text-base placeholder:text-gray-400"
                 {...register("password")}
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="text-blue-900 hover:text-yellow-400 transition"
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
             </div>
             {errors.password && touchedFields.password && (
               <p className="text-red-400 text-xs mt-1 flex items-center gap-1">

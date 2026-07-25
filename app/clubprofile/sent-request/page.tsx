@@ -68,6 +68,7 @@ interface SentRequest {
   status: string;
   senderName: string;
   playerName: string;
+  playerImageUrl?: string;
   payload?: string | { message?: string };
   created_at: string;
   updated_at: string;
@@ -92,10 +93,12 @@ interface SentScoutRequest {
 interface CombinedRequest {
   id: string;
   status: string;
+  rawStatus: string;
   created_at: string;
   updated_at: string;
   requestType: "player" | "scout";
   displayName: string;
+  imageUrl?: string;
   message?: string;
 }
 
@@ -133,6 +136,58 @@ interface CancelRequestResponse {
 interface CancelScoutRequestResponse {
   cancelScoutRequest: SentScoutRequest;
 }
+
+const REQUEST_STATUS_TRANSLATIONS: Record<string, Record<string, string>> = {
+  PENDING: {
+    en: "Pending",
+    ar: "قيد الانتظار",
+    pt: "Pendente",
+    zh: "待处理",
+  },
+  ACCEPTED: {
+    en: "Accepted",
+    ar: "مقبول",
+    pt: "Aceito",
+    zh: "已接受",
+  },
+  REJECTED: {
+    en: "Rejected",
+    ar: "مرفوض",
+    pt: "Rejeitado",
+    zh: "已拒绝",
+  },
+  CANCELLED: {
+    en: "Cancelled",
+    ar: "ملغي",
+    pt: "Cancelado",
+    zh: "已取消",
+  },
+};
+
+const STATUS_TEXT_TO_KEY: Record<string, string> = Object.entries(
+  REQUEST_STATUS_TRANSLATIONS,
+).reduce((acc, [key, translations]) => {
+  Object.values(translations).forEach((text) => {
+    acc[text.toLowerCase()] = key;
+  });
+  return acc;
+}, {} as Record<string, string>);
+
+const RAW_STATUS_KEYS = Object.keys(REQUEST_STATUS_TRANSLATIONS);
+
+const normalizeStatus = (status: string): string => {
+  if (!status) return "UNKNOWN";
+  const trimmed = status.trim();
+
+  if (RAW_STATUS_KEYS.includes(trimmed.toUpperCase())) {
+    return trimmed.toUpperCase();
+  }
+
+  const matched = STATUS_TEXT_TO_KEY[trimmed.toLowerCase()];
+  if (matched) return matched;
+
+  return "UNKNOWN";
+};
 
 const CancelConfirmModal = ({
   isOpen,
@@ -220,9 +275,8 @@ const CancelConfirmModal = ({
 export default function ClubRequests() {
   const router = useRouter();
   const { theme } = useTheme();
-  const { t } = useTranslate();
+  const { t, lang } = useTranslate();
   const isDark = theme === "dark";
-
   const [activeTab, setActiveTab] = useState<"send" | "sent">("send");
   const [requestType, setRequestType] = useState<"player" | "scout">("player");
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -250,6 +304,47 @@ export default function ClubRequests() {
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [openTargets, setOpenTargets] = useState(false);
+
+  const getStatusTranslation = (status: string): string => {
+    const key = normalizeStatus(status);
+    switch (key) {
+      case "PENDING":
+        return t("Pending");
+      case "ACCEPTED":
+        return t("Accepted");
+      case "REJECTED":
+        return t("Rejected");
+      case "CANCELLED":
+        return t("Cancelled");
+      default:
+        return status;
+    }
+  };
+
+  const getStatusLabelFilter = (status: string) => {
+    switch (status) {
+      case "ALL":
+        return t("All Statuses");
+      case "PENDING":
+        return t("Pending");
+      case "ACCEPTED":
+        return t("Accepted");
+      case "REJECTED":
+        return t("Rejected");
+      case "CANCELLED":
+        return t("Cancelled");
+      default:
+        return t("All Statuses");
+    }
+  };
+
+  const getStatusCount = (status: string) => {
+    const all = [...sentRequests, ...sentScoutRequests];
+    if (status === "ALL") return all.length;
+    const filterKey = normalizeStatus(status);
+    return all.filter((r) => normalizeStatus(r.status) === filterKey).length;
+  };
+
   const fetchPlayers = useCallback(async () => {
     try {
       const result = await fetchGraphQL<GetAllPlayersResponse>(
@@ -319,11 +414,13 @@ export default function ClubRequests() {
   useEffect(() => {
     const playerRequests: CombinedRequest[] = sentRequests.map((r) => ({
       id: r.id,
-      status: r.status,
+      status: getStatusTranslation(r.status),
+      rawStatus: normalizeStatus(r.status),
       created_at: r.created_at,
       updated_at: r.updated_at,
       requestType: "player" as const,
       displayName: r.playerName || r.senderName,
+      imageUrl: r.playerImageUrl,
       message:
         typeof r.payload === "object" && r.payload !== null
           ? (r.payload as { message?: string }).message
@@ -332,22 +429,21 @@ export default function ClubRequests() {
 
     const scoutRequests: CombinedRequest[] = sentScoutRequests.map((r) => ({
       id: r.id,
-      status: r.status,
+      status: getStatusTranslation(r.status),
+      rawStatus: normalizeStatus(r.status),
       created_at: r.created_at,
       updated_at: r.updated_at,
       requestType: "scout" as const,
       displayName: `${r.scout.first_name} ${r.scout.last_name}`,
+      imageUrl: r.scout.profile_image_url,
       message: r.message,
     }));
 
-    // Merge requests and dedupe by id. If a request exists as both a club offer
-    // and a scout request, prefer the scout entry (overwrites club entry).
     const requestMap = new Map<string, CombinedRequest>();
     for (const pr of playerRequests) {
       requestMap.set(pr.id, pr);
     }
     for (const sr of scoutRequests) {
-      // this will overwrite any club entry with the scout entry for same id
       requestMap.set(sr.id, sr);
     }
     const allRequests = Array.from(requestMap.values()).sort(
@@ -359,10 +455,10 @@ export default function ClubRequests() {
       setFilteredRequests(allRequests);
     } else {
       setFilteredRequests(
-        allRequests.filter((r) => r.status?.toUpperCase() === statusFilter),
+        allRequests.filter((r) => r.rawStatus === statusFilter),
       );
     }
-  }, [statusFilter, sentRequests, sentScoutRequests]);
+  }, [statusFilter, sentRequests, sentScoutRequests, t]);
 
   const handleSendRequest = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -401,9 +497,6 @@ export default function ClubRequests() {
         }
       }
 
-      // =========================
-      // SEND TO PLAYER
-      // =========================
       if (requestType === "player") {
         const result = await fetchGraphQL<SendRequestResponse>(
           SEND_REQUEST_MUTATION,
@@ -421,17 +514,10 @@ export default function ClubRequests() {
         } else if (result.data?.sendRequest) {
           setSelectedTargetId("");
           setDetails("");
-
           await fetchAllData();
-
           toast.success(t("Request sent successfully!"));
         }
-      }
-
-      // =========================
-      // SEND TO SCOUT
-      // =========================
-      else {
+      } else {
         const result = await fetchGraphQL<SendScoutRequestResponse>(
           SEND_SCOUT_REQUEST_MUTATION,
           {
@@ -445,9 +531,7 @@ export default function ClubRequests() {
         } else if (result.data?.sendScoutRequest) {
           setSelectedTargetId("");
           setScoutMessage("");
-
           await fetchAllData();
-
           toast.success(t("Request sent successfully!"));
         }
       }
@@ -458,6 +542,7 @@ export default function ClubRequests() {
       setLoading(false);
     }
   };
+
   const handleCancelClick = (requestId: string, type: "player" | "scout") => {
     setSelectedRequestId(requestId);
     setSelectedRequestTypeVal(type);
@@ -503,7 +588,8 @@ export default function ClubRequests() {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status?.toUpperCase()) {
+    const key = normalizeStatus(status);
+    switch (key) {
       case "PENDING":
         return "text-yellow-500 bg-yellow-500/10";
       case "ACCEPTED":
@@ -517,38 +603,24 @@ export default function ClubRequests() {
     }
   };
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "ALL":
-        return t("All Statuses");
-      case "PENDING":
-        return t("Pending");
-      case "ACCEPTED":
-        return t("Accepted");
-      case "REJECTED":
-        return t("Rejected");
-      case "CANCELLED":
-        return t("Cancelled");
-      default:
-        return t("All Statuses");
-    }
-  };
-
-  const getStatusCount = (status: string) => {
-    const all = [...sentRequests, ...sentScoutRequests];
-    if (status === "ALL") return all.length;
-    return all.filter((r) => r.status?.toUpperCase() === status).length;
-  };
-
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
+    return new Date(dateString).toLocaleDateString(
+      lang === "ar"
+        ? "ar-EG"
+        : lang === "pt"
+        ? "pt-PT"
+        : lang === "zh"
+        ? "zh-CN"
+        : "en-US",
+      {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      },
+    );
   };
 
-  const getFullImageUrl = (url: string) => {
+  const getFullImageUrl = (url: string | undefined | null): string => {
     if (!url) return "";
     if (url.startsWith("http")) return url;
     return `${process.env.NEXT_PUBLIC_API_URL}${url}`;
@@ -626,7 +698,6 @@ export default function ClubRequests() {
 
       <div className="max-w-6xl w-full space-y-8 py-20">
         <BackButton className="mb-6" />
-
         <h1
           className={`text-center text-4xl font-black italic uppercase mb-10 ${
             isDark ? "text-[#FFD700]" : "text-yellow-600"
@@ -735,7 +806,6 @@ export default function ClubRequests() {
                       className="text-[#FFD700]"
                       fill="currentColor"
                     />
-
                     <span>
                       {requestType === "player"
                         ? selectedPlayer
@@ -746,7 +816,6 @@ export default function ClubRequests() {
                         : t("Select Scout")}
                     </span>
                   </div>
-
                   <ChevronDown
                     size={18}
                     className={`transition-transform ${
@@ -779,7 +848,6 @@ export default function ClubRequests() {
                           }`}
                         >
                           <User size={16} />
-
                           <span>
                             {"first_name" in item
                               ? `${item.first_name} ${item.last_name}`
@@ -959,7 +1027,7 @@ export default function ClubRequests() {
                 >
                   <Filter size={16} className="text-yellow-500" />
                   <span className="text-sm font-medium">
-                    {getStatusLabel(statusFilter)}
+                    {getStatusLabelFilter(statusFilter)}
                   </span>
                   <ChevronDown
                     size={16}
@@ -1018,7 +1086,7 @@ export default function ClubRequests() {
                                   : "bg-gray-400"
                               }`}
                             ></span>
-                            {getStatusLabel(status)}
+                            {getStatusLabelFilter(status)}
                           </span>
                           <span className="text-xs px-2 py-0.5 rounded-full bg-gray-500/20">
                             {getStatusCount(status)}
@@ -1055,64 +1123,80 @@ export default function ClubRequests() {
                 </p>
               </div>
             ) : (
-              filteredRequests.map((request) => (
-                <div
-                  key={`${request.id}-${request.requestType}`}
-                  className={`p-5 rounded-xl transition ${
-                    isDark
-                      ? "bg-[#0A1A44]/40 border border-blue-900/30"
-                      : "bg-white shadow"
-                  }`}
-                >
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        {request.requestType === "player" ? (
-                          <Building2 size={16} className="text-green-400" />
-                        ) : (
-                          <Eye size={16} className="text-blue-400" />
+              filteredRequests.map((request) => {
+                const imageUrl = getFullImageUrl(request.imageUrl);
+                return (
+                  <div
+                    key={`${request.id}-${request.requestType}`}
+                    className={`p-5 rounded-xl transition ${
+                      isDark
+                        ? "bg-[#0A1A44]/40 border border-blue-900/30"
+                        : "bg-white shadow"
+                    }`}
+                  >
+                    <div className="flex justify-between items-start gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          {request.requestType === "player" ? (
+                            <Building2 size={16} className="text-green-400" />
+                          ) : (
+                            <Eye size={16} className="text-blue-400" />
+                          )}
+                          <span
+                            className={`text-xs px-2 py-1 rounded-full ${getStatusColor(
+                              request.rawStatus,
+                            )}`}
+                          >
+                            {request.status}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          {imageUrl && (
+                            <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 border-2 border-yellow-500/30">
+                              <Image
+                                src={imageUrl}
+                                alt={request.displayName}
+                                width={40}
+                                height={40}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          )}
+                          <h3 className="font-bold text-lg">
+                            {request.displayName}
+                          </h3>
+                        </div>
+                        {request.message && (
+                          <p
+                            className={`text-sm ${
+                              isDark ? "text-gray-400" : "text-gray-600"
+                            } mt-2 ml-0`}
+                          >
+                            {request.message}
+                          </p>
                         )}
-                        <span
-                          className={`text-xs px-2 py-1 rounded-full ${getStatusColor(
-                            request.status,
-                          )}`}
-                        >
-                          {request.status}
-                        </span>
-                      </div>
-                      <h3 className="font-bold text-lg">
-                        {request.displayName}
-                      </h3>
-                      {request.message && (
                         <p
-                          className={`text-sm ${
-                            isDark ? "text-gray-400" : "text-gray-600"
+                          className={`text-xs ${
+                            isDark ? "text-gray-500" : "text-gray-400"
                           } mt-2`}
                         >
-                          {request.message}
+                          {formatDate(request.created_at)}
                         </p>
+                      </div>
+                      {request.rawStatus === "PENDING" && (
+                        <button
+                          onClick={() =>
+                            handleCancelClick(request.id, request.requestType)
+                          }
+                          className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition whitespace-nowrap"
+                        >
+                          {t("Cancel")}
+                        </button>
                       )}
-                      <p
-                        className={`text-xs ${
-                          isDark ? "text-gray-500" : "text-gray-400"
-                        } mt-2`}
-                      >
-                        {formatDate(request.created_at)}
-                      </p>
                     </div>
-                    {request.status?.toUpperCase() === "PENDING" && (
-                      <button
-                        onClick={() =>
-                          handleCancelClick(request.id, request.requestType)
-                        }
-                        className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition whitespace-nowrap"
-                      >
-                        {t("Cancel")}
-                      </button>
-                    )}
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         )}

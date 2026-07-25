@@ -10,6 +10,7 @@ import {
   Filter,
   ChevronDown,
 } from "lucide-react";
+import Image from "next/image";
 import { useTheme } from "../../context/ThemeContext";
 import useTranslate from "../../hooks/useTranslate";
 import { fetchGraphQL } from "../../lib/fetchGraphQL";
@@ -28,6 +29,7 @@ interface Deal {
   offer_type: string;
   description: string | null;
   club_name: string | null;
+  club_logo_url?: string | null;
   value: number | null;
   commission_rate: number;
   status: string;
@@ -39,13 +41,6 @@ interface Deal {
   senderName: string;
 }
 
-/**
- * The backend returns `status` already translated into the current UI
- * language (e.g. "Pending", "قيد الانتظار", "Pendente", "待处理"). To
- * normalize reliably regardless of the active language, we match against
- * every known translation for each raw status value instead of relying
- * on a single hardcoded language pair.
- */
 type StatusKey = "PENDING" | "ACCEPTED" | "REJECTED" | "EXPIRED";
 
 const STATUS_TRANSLATIONS: Record<StatusKey, string[]> = {
@@ -54,6 +49,13 @@ const STATUS_TRANSLATIONS: Record<StatusKey, string[]> = {
   REJECTED: ["rejected", "مرفوض", "rejeitado", "已拒绝"],
   EXPIRED: ["expired", "منتهي", "منتهية", "expirado", "已过期"],
 };
+
+function getFullImageUrl(url: string | undefined | null): string {
+  if (!url) return "";
+  if (url.startsWith("http")) return url;
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+  return `${API_URL}${url.startsWith("/") ? "" : "/"}${url}`;
+}
 
 export default function DealsPage() {
   const { theme } = useTheme();
@@ -65,7 +67,6 @@ export default function DealsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-  // ✅ توحيد الحالات (بيدعم الأربع لغات)
   const normalizeStatus = (status: string): string => {
     const lower = status.trim().toLowerCase();
 
@@ -103,7 +104,6 @@ export default function DealsPage() {
     fetchDeals();
   }, [fetchDeals]);
 
-  // ✅ تصفية الصفقات حسب الحالة
   useEffect(() => {
     if (statusFilter === "ALL") {
       setFilteredDeals(deals);
@@ -260,7 +260,6 @@ export default function DealsPage() {
           {t("Deals")}
         </h1>
 
-        {/* Status Filter Dropdown */}
         <div className="flex justify-end mb-6">
           <div className="relative">
             <button
@@ -363,6 +362,7 @@ export default function DealsPage() {
             {filteredDeals.map((deal) => {
               const displayName = deal.senderName;
               const clubName = deal.club_name;
+              const clubLogo = getFullImageUrl(deal.club_logo_url);
               const offerTypeIcon = getOfferTypeIcon(deal.offer_type);
 
               return (
@@ -375,11 +375,23 @@ export default function DealsPage() {
                       : "border border-gray-200 bg-white shadow"
                   }`}
                 >
-                  {/* Header */}
                   <div className="flex items-center justify-between flex-wrap gap-3">
                     <div>
-                      <h3 className="font-semibold text-lg">{displayName}</h3>
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="flex items-center gap-3">
+                        {clubLogo && (
+                          <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 border border-yellow-500/30">
+                            <Image
+                              src={clubLogo}
+                              alt={displayName || "Club"}
+                              width={40}
+                              height={40}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
+                        <h3 className="font-semibold text-lg">{displayName}</h3>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1 ml-0">
                         <span className="text-yellow-400 text-sm flex items-center gap-1">
                           <span>{offerTypeIcon}</span>
                           <span>{deal.offer_type}</span>
@@ -402,7 +414,6 @@ export default function DealsPage() {
                     </div>
                   </div>
 
-                  {/* Description */}
                   {deal.description && (
                     <p
                       className={`leading-relaxed text-sm
@@ -412,7 +423,6 @@ export default function DealsPage() {
                     </p>
                   )}
 
-                  {/* Value and Commission */}
                   <div className="flex flex-wrap gap-4 text-sm">
                     {deal.value && (
                       <div className="flex items-center gap-1 text-green-500">
@@ -428,7 +438,6 @@ export default function DealsPage() {
                     </div>
                   </div>
 
-                  {/* Date */}
                   <span
                     className={`text-sm flex items-center gap-1
                     ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}
@@ -442,7 +451,6 @@ export default function DealsPage() {
                     )}
                   </span>
 
-                  {/* Show accept/reject buttons only for pending deals */}
                   {isPending(deal.status) ? (
                     <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto mt-2">
                       <button

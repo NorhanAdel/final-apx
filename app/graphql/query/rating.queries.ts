@@ -51,16 +51,30 @@ export const GET_MY_RATING_FOR_PLAYER = `
     }
   }
 `;
+
 export const GET_PLAYER_RATINGS = `
   query GetPlayerRatings($playerId: ID!) {
     playerRatings(playerId: $playerId) {
       id
       rater_id
+      player_id
       scalability
+      mental_stability
+      soccer_intelligence
+      physical_fitness
       technical_skill
+      tactical_vision
+      republican_influence
       calculated_stars
       notes
       created_at
+      raterFirstName
+      raterLastName
+      raterProfileImageUrl
+      rater {
+        id
+        username
+      }
     }
   }
 `;

@@ -1,9 +1,8 @@
-// app/components/ResetPasswordContent.tsx
 "use client";
 
 import React, { useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Eye, EyeOff, Lock, CheckCircle, AlertCircle } from "lucide-react";
+import { Lock, CheckCircle, AlertCircle } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -132,14 +131,6 @@ export default function ResetPasswordContent() {
                 }`}
                 placeholder={t("Enter your new password")}
               />
-
-              <button
-                type="button"
-                onClick={() => setShowNewPassword(!showNewPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:text-yellow-400 transition"
-              >
-                {showNewPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
             </div>
 
             {/* Password Requirements - like Register */}
@@ -215,14 +206,6 @@ export default function ResetPasswordContent() {
                 }`}
                 placeholder={t("Confirm your new password")}
               />
-
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:text-yellow-400 transition"
-              >
-                {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
             </div>
 
             {errors.confirmPassword && (

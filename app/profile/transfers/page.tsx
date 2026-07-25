@@ -10,6 +10,7 @@ import {
   Filter,
   ChevronDown,
 } from "lucide-react";
+import Image from "next/image";
 import { GET_MY_TRANSFERS } from "@/app/graphql/query/transfer.queries";
 import { toast } from "sonner";
 import { useTheme } from "@/app/context/ThemeContext";
@@ -23,6 +24,7 @@ interface Transfer {
   from_club: string;
   to_club: string;
   club_name: string | null;
+  club_logo_url?: string | null;
   status: string;
   transfer_date: string;
   completed_at: string | null;
@@ -31,7 +33,6 @@ interface Transfer {
   updated_at: string;
 }
 
-// ✅ STATUS_TRANSLATIONS - ترجمات الحالات باللغات الأربع
 const STATUS_TRANSLATIONS: Record<string, Record<string, string>> = {
   PENDING: {
     en: "Pending",
@@ -53,7 +54,13 @@ const STATUS_TRANSLATIONS: Record<string, Record<string, string>> = {
   },
 };
 
-// ✅ دالة لتوحيد الحالة - بترجع المفتاح بغض النظر عن اللغة
+function getFullImageUrl(url: string | undefined | null): string {
+  if (!url) return "";
+  if (url.startsWith("http")) return url;
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+  return `${API_URL}${url.startsWith("/") ? "" : "/"}${url}`;
+}
+
 const getStatusKey = (status: string): string => {
   const lower = status.toLowerCase().trim();
   
@@ -83,7 +90,6 @@ const getStatusKey = (status: string): string => {
   return statusMap[lower] || status.toUpperCase();
 };
 
-// ✅ دالة للتحقق من تطابق الحالة
 const matchesStatus = (status: string, targetKey: string): boolean => {
   const normalized = getStatusKey(status);
   return normalized === targetKey;
@@ -124,7 +130,6 @@ export default function TransfersPage() {
     fetchTransfers();
   }, [fetchTransfers]);
 
-  // ✅ تصفية باستخدام getStatusKey
   useEffect(() => {
     if (statusFilter === "ALL") {
       setFilteredTransfers(transfers);
@@ -148,7 +153,6 @@ export default function TransfersPage() {
     }
   };
 
-  // ✅ دالة لجلب لون الحالة
   const getStatusColor = (status: string) => {
     const key = getStatusKey(status);
     switch (key) {
@@ -163,7 +167,6 @@ export default function TransfersPage() {
     }
   };
 
-  // ✅ دالة لجلب أيقونة الحالة
   const getStatusIcon = (status: string) => {
     const key = getStatusKey(status);
     switch (key) {
@@ -178,7 +181,6 @@ export default function TransfersPage() {
     }
   };
 
-  // ✅ دالة لعرض الحالة بلغة الواجهة الحالية
   const getStatusLabel = (status: string) => {
     const key = getStatusKey(status);
     const translations = STATUS_TRANSLATIONS[key as keyof typeof STATUS_TRANSLATIONS];
@@ -188,7 +190,6 @@ export default function TransfersPage() {
     return status;
   };
 
-  // ✅ دالة لجلب عدد الصفقات لكل حالة
   const getStatusCount = (statusType: string) => {
     if (statusType === "ALL") return transfers.length;
     return transfers.filter((transfer) => {
@@ -196,7 +197,6 @@ export default function TransfersPage() {
     }).length;
   };
 
-  // ✅ رسائل عدم وجود صفقات
   const getNoTransfersMessage = (status: string) => {
     if (status === "ALL") return t("No transfers found");
     if (status === "PENDING") return t("No pending transfers found");
@@ -237,7 +237,6 @@ export default function TransfersPage() {
           {t("My Transfers")}
         </h1>
 
-        {/* Status Filter Dropdown */}
         <div className="flex justify-end mb-6">
           <div className="relative">
             <button
@@ -329,75 +328,103 @@ export default function TransfersPage() {
           </div>
         ) : (
           <div className="flex flex-col gap-6">
-            {filteredTransfers.map((transfer) => (
-              <div
-                key={transfer.id}
-                className={`p-4 sm:p-6 rounded-md transition
-                ${
-                  theme === "dark"
-                    ? "border border-[#0d2a5f] bg-[#020d24]"
-                    : "border border-gray-200 bg-white shadow"
-                }`}
-              >
-                {/* Transfer Timeline */}
-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                  {/* From Club */}
-                  <div className="flex-1 text-center md:text-left">
-                    <p className="text-sm text-gray-400 mb-1">{t("From")}</p>
-                    <p className="font-semibold text-lg">
-                      {transfer.from_club}
-                    </p>
+            {filteredTransfers.map((transfer) => {
+              const clubLogo = getFullImageUrl(transfer.club_logo_url);
+              return (
+                <div
+                  key={transfer.id}
+                  className={`p-4 sm:p-6 rounded-md transition
+                  ${
+                    theme === "dark"
+                      ? "border border-[#0d2a5f] bg-[#020d24]"
+                      : "border border-gray-200 bg-white shadow"
+                  }`}
+                >
+                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div className="flex-1 text-center md:text-left">
+                      <div className="flex items-center justify-center md:justify-start gap-3 mb-1">
+                        {clubLogo && (
+                          <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 border border-yellow-500/30">
+                            <Image
+                              src={clubLogo}
+                              alt={transfer.from_club || "Club"}
+                              width={40}
+                              height={40}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-sm text-gray-400">{t("From")}</p>
+                          <p className="font-semibold text-lg">
+                            {transfer.from_club}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="text-yellow-400">
+                      <ArrowRight size={24} className="mx-auto" />
+                    </div>
+
+                    <div className="flex-1 text-center md:text-right">
+                      <div className="flex items-center justify-center md:justify-end gap-3 mb-1">
+                        {clubLogo && (
+                          <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 border border-yellow-500/30">
+                            <Image
+                              src={clubLogo}
+                              alt={transfer.to_club || "Club"}
+                              width={40}
+                              height={40}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-sm text-gray-400">{t("To")}</p>
+                          <p className="font-semibold text-lg">
+                            {transfer.to_club}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {getStatusIcon(transfer.status)}
+                      <span
+                        className={`text-sm font-medium ${getStatusColor(
+                          transfer.status,
+                        )}`}
+                      >
+                        {getStatusLabel(transfer.status)}
+                      </span>
+                    </div>
                   </div>
 
-                  {/* Arrow Icon */}
-                  <div className="text-yellow-400">
-                    <ArrowRight size={24} className="mx-auto" />
+                  <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-wrap justify-between items-center text-sm">
+                    <div className="flex items-center gap-2 text-gray-400">
+                      <Calendar size={14} />
+                      <span>{t("Transfer Date")}:</span>
+                      <span>{formatDate(transfer.transfer_date)}</span>
+                    </div>
+
+                    {transfer.completed_at && (
+                      <div className="flex items-center gap-2 text-green-500">
+                        <CheckCircle size={14} />
+                        <span>{t("Completed")}:</span>
+                        <span>{formatDate(transfer.completed_at)}</span>
+                      </div>
+                    )}
                   </div>
 
-                  {/* To Club */}
-                  <div className="flex-1 text-center md:text-right">
-                    <p className="text-sm text-gray-400 mb-1">{t("To")}</p>
-                    <p className="font-semibold text-lg">{transfer.to_club}</p>
-                  </div>
-
-                  {/* Status */}
-                  <div className="flex items-center gap-2">
-                    {getStatusIcon(transfer.status)}
-                    <span
-                      className={`text-sm font-medium ${getStatusColor(
-                        transfer.status,
-                      )}`}
-                    >
-                      {getStatusLabel(transfer.status)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Transfer Date */}
-                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-wrap justify-between items-center text-sm">
-                  <div className="flex items-center gap-2 text-gray-400">
-                    <Calendar size={14} />
-                    <span>{t("Transfer Date")}:</span>
-                    <span>{formatDate(transfer.transfer_date)}</span>
-                  </div>
-
-                  {transfer.completed_at && (
-                    <div className="flex items-center gap-2 text-green-500">
-                      <CheckCircle size={14} />
-                      <span>{t("Completed")}:</span>
-                      <span>{formatDate(transfer.completed_at)}</span>
+                  {transfer.notes && (
+                    <div className="mt-3 text-sm text-gray-500 italic">
+                      &quot;{transfer.notes}&quot;
                     </div>
                   )}
                 </div>
-
-                {/* Notes (if any) */}
-                {transfer.notes && (
-                  <div className="mt-3 text-sm text-gray-500 italic">
-                    &quot;{transfer.notes}&quot;
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
