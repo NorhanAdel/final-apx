@@ -898,5 +898,20 @@
   "Player Packages": "باقات اللاعب",
   "Subscribe Now": "اشترك الآن",
   "Photos Remaining": "الصور المتبقية",
-  "Videos Remaining": "الفيديوهات المتبقية"
+  "Videos Remaining": "الفيديوهات المتبقية",
+  "Scale": "المقياس",
+    "Super7 Scale": "مقياس سوبر 7",
+    "Discover player levels based on comprehensive performance metrics. Each level represents a tier of excellence.": "اكتشف مستويات اللاعبين بناءً على مقاييس أداء شاملة. كل مستوى يمثل طبقة من التميز.",
+    "HIGHEST TIER": "أعلى مستوى",
+    "Score Range: 95 — 100": "نطاق النقاط: 95 — 100",
+        "Explore": "استكشف",
+    "Loading scales...": "جاري تحميل المقاييس...",
+    "No levels found": "لم يتم العثور على مستويات",
+    "Score Range": "نطاق النقاط",
+    "pts": "نقطة",
+    "Back to Scales": "العودة إلى المقاييس",
+    "Search players in this level...": "ابحث عن اللاعبين في هذا المستوى...",
+    "No players found in this level": "لم يتم العثور على لاعبين في هذا المستوى",
+    "Try adjusting your search term": "حاول تعديل مصطلح البحث",
+    "View Event": "عرض الحدث"
 }

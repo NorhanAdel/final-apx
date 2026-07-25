@@ -69,6 +69,8 @@ export const GET_PLAYER_AVERAGE_RATINGS = `
   query GetPlayerAverageRatings($playerId: ID!) {
     playerAverageRatings(playerId: $playerId) {
       averageStars
+      averagePercentage
+      percentile
       scalabilityPercent
       mentalStabilityPercent
       soccerIntelligencePercent

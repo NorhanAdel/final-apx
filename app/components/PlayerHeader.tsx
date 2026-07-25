@@ -18,7 +18,9 @@ interface PlayerHeaderProps {
 }
 
 export default function PlayerHeader({ player }: PlayerHeaderProps) {
-  const { t } = useTranslate();
+  const { t, lang } = useTranslate();
+  const isRTL = lang === "ar";
+
   if (!player) return null;
 
   const calculateAge = (birthDate?: string): number => {
@@ -41,13 +43,21 @@ export default function PlayerHeader({ player }: PlayerHeaderProps) {
   const age = player.age || calculateAge(player.date_of_birth);
 
   return (
-    <div className="text-left">
+    <div className={`w-full ${isRTL ? "text-right" : "text-left"}`}>
       <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">
         {player.first_name} {player.last_name}
       </h1>
 
-      <div className="flex flex-wrap items-center gap-4 mt-4">
-        <div className="flex text-yellow-400 gap-0.5">
+      <div
+        className={`flex flex-wrap items-center gap-4 mt-4 ${
+          isRTL ? "flex-row-reverse justify-end" : "justify-start"
+        }`}
+      >
+        <div
+          className={`flex text-yellow-400 gap-0.5 ${
+            isRTL ? "flex-row-reverse" : ""
+          }`}
+        >
           {[...Array(maxStars)].map((_, index) => (
             <Star
               key={index}
@@ -61,13 +71,21 @@ export default function PlayerHeader({ player }: PlayerHeaderProps) {
           ))}
         </div>
 
-        <div className="flex items-center gap-2 text-gray-400">
+        <div
+          className={`flex items-center gap-2 text-gray-400 ${
+            isRTL ? "flex-row-reverse" : ""
+          }`}
+        >
           <MapPin size={16} className="text-yellow-400" />
           <span>{player.country || t("Unknown")}</span>
         </div>
 
         {age > 0 && (
-          <div className="flex items-center gap-2 text-gray-400">
+          <div
+            className={`flex items-center gap-2 text-gray-400 ${
+              isRTL ? "flex-row-reverse" : ""
+            }`}
+          >
             <User size={16} className="text-yellow-400" />
             <span>
               {age} {t("Y")}

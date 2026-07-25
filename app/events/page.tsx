@@ -487,7 +487,7 @@ export default function EventsPage() {
               transition
             "
           >
-            View Event →
+            {t("View Event")} →
           </div>
 
         </div>

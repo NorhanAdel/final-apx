@@ -89,11 +89,11 @@ export default function PersonalInfo({
                 👁️ {player.views_count} {t("views")}
               </span>
             )}
-          {player.super7_level && (
-  <span>
-    🏆 {player.super7_level} {t("level")}
-  </span>
-)}
+            {player.super7_level && (
+              <span>
+                🏆 {player.super7_level} {t("level")}
+              </span>
+            )}
             {player.country && player.city && (
               <span>
                 📍 {player.city}, {player.country}

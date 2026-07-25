@@ -24,9 +24,10 @@ interface ReviewsProps {
 }
 
 export default function Reviews({ playerId }: ReviewsProps) {
-  const { t } = useTranslate();
+  const { t, lang } = useTranslate();
   const { theme } = useTheme();
   const isDark = theme === "dark";
+  const isRTL = lang === "ar";
   const containerRef = useRef<HTMLDivElement>(null);
   const [reviews, setReviews] = useState<Rating[]>([]);
   const [loading, setLoading] = useState(false);
@@ -35,14 +36,12 @@ export default function Reviews({ playerId }: ReviewsProps) {
   useEffect(() => {
     const fetchReviews = async () => {
       if (!playerId) return;
-
       setLoading(true);
       try {
         const result = await fetchGraphQL<{ playerRatings: Rating[] }>(
           GET_PLAYER_RATINGS,
           { playerId },
         );
-
         if (result.data?.playerRatings) {
           setReviews(result.data.playerRatings);
         }
@@ -52,7 +51,6 @@ export default function Reviews({ playerId }: ReviewsProps) {
         setLoading(false);
       }
     };
-
     fetchReviews();
   }, [playerId]);
 
@@ -60,7 +58,7 @@ export default function Reviews({ playerId }: ReviewsProps) {
     if (containerRef.current) {
       const scrollLeft = containerRef.current.scrollLeft;
       const itemWidth = containerRef.current.children[0]?.clientWidth || 260;
-      const newIndex = Math.round(scrollLeft / (itemWidth + 24));
+      const newIndex = Math.round(Math.abs(scrollLeft) / (itemWidth + 24));
       setActiveDot(newIndex);
     }
   };
@@ -72,11 +70,12 @@ export default function Reviews({ playerId }: ReviewsProps) {
     }
   };
 
-  const scroll = (dir: "left" | "right") => {
+  const scroll = (dir: "prev" | "next") => {
     if (containerRef.current) {
       const width = containerRef.current.offsetWidth;
+      const amount = dir === "next" ? width / 1.5 : -width / 1.5;
       containerRef.current.scrollBy({
-        left: dir === "left" ? -width / 1.5 : width / 1.5,
+        left: amount,
         behavior: "smooth",
       });
     }
@@ -97,7 +96,6 @@ export default function Reviews({ playerId }: ReviewsProps) {
 
     return (
       <div className="flex items-center gap-0.5 mt-1">
-        {/* Full stars */}
         {[...Array(fullStars)].map((_, i) => (
           <Star
             key={`full-${i}`}
@@ -106,11 +104,9 @@ export default function Reviews({ playerId }: ReviewsProps) {
             className="text-yellow-400"
           />
         ))}
-
-        {/* Half star */}
         {hasHalfStar && (
           <div className="relative">
-            <Star size={12} className="text-gray-500" />
+            <Star size={12} className="text-gray-300 dark:text-gray-600" />
             <div
               className="absolute inset-0 overflow-hidden"
               style={{ width: "50%" }}
@@ -119,10 +115,12 @@ export default function Reviews({ playerId }: ReviewsProps) {
             </div>
           </div>
         )}
-
-        {/* Empty stars */}
         {[...Array(emptyStars)].map((_, i) => (
-          <Star key={`empty-${i}`} size={12} className="text-gray-500" />
+          <Star
+            key={`empty-${i}`}
+            size={12}
+            className="text-gray-300 dark:text-gray-600"
+          />
         ))}
       </div>
     );
@@ -130,8 +128,12 @@ export default function Reviews({ playerId }: ReviewsProps) {
 
   if (loading) {
     return (
-      <div className="mt-10 md:mt-14">
-        <div className="text-center text-gray-400">
+      <div className="mt-10 md:mt-14" dir={isRTL ? "rtl" : "ltr"}>
+        <div
+          className={`text-center ${
+            isDark ? "text-gray-400" : "text-gray-500"
+          }`}
+        >
           {t("Loading reviews...")}
         </div>
       </div>
@@ -140,7 +142,7 @@ export default function Reviews({ playerId }: ReviewsProps) {
 
   if (reviews.length === 0) {
     return (
-      <div className="mt-10 md:mt-14">
+      <div className="mt-10 md:mt-14" dir={isRTL ? "rtl" : "ltr"}>
         <div
           className={`text-center ${
             isDark ? "text-gray-400" : "text-gray-500"
@@ -152,24 +154,36 @@ export default function Reviews({ playerId }: ReviewsProps) {
     );
   }
 
-  const textColor = isDark ? "text-white" : "text-gray-900";
+  const textColor = isDark ? "text-white" : "text-gray-800";
+  const secondaryTextColor = isDark ? "text-gray-400" : "text-gray-500";
   const dotActiveColor = "bg-yellow-400";
-  const dotInactiveColor = isDark ? "bg-gray-600" : "bg-gray-400";
+  const dotInactiveColor = isDark ? "bg-gray-600" : "bg-gray-300";
+  const cardBg = isDark ? "bg-[#06163a]" : "bg-white";
+  const cardBorder = isDark ? "border-[#102b5c]" : "border-gray-200";
+  const cardShadow = isDark
+    ? "shadow-[0_0_20px_rgba(0,60,255,0.15)]"
+    : "shadow-[0_4px_20px_rgba(0,0,0,0.08)]";
 
   return (
-    <div className="mt-10 md:mt-14 relative">
-      {/* left arrow */}
+    <div
+      className="mt-10 md:mt-14 relative w-full"
+      dir={isRTL ? "rtl" : "ltr"}
+    >
       <button
-        onClick={() => scroll("left")}
-        className="
-          absolute left-1 sm:left-2 md:left-0
+        onClick={() => scroll("prev")}
+        className={`
+          absolute ${
+            isRTL
+              ? "right-1 sm:right-2 md:right-0"
+              : "left-1 sm:left-2 md:left-0"
+          }
           top-1/2 -translate-y-1/2
           z-10
           bg-black/40 hover:bg-black/70
           p-1.5 sm:p-2 md:p-3
           rounded-full
           transition
-        "
+        `}
       >
         <ChevronLeft
           size={18}
@@ -177,18 +191,21 @@ export default function Reviews({ playerId }: ReviewsProps) {
         />
       </button>
 
-      {/* right arrow */}
       <button
-        onClick={() => scroll("right")}
-        className="
-          absolute right-1 sm:right-2 md:right-0
+        onClick={() => scroll("next")}
+        className={`
+          absolute ${
+            isRTL
+              ? "left-1 sm:left-2 md:left-0"
+              : "right-1 sm:right-2 md:right-0"
+          }
           top-1/2 -translate-y-1/2
           z-10
           bg-black/40 hover:bg-black/70
           p-1.5 sm:p-2 md:p-3
           rounded-full
           transition
-        "
+        `}
       >
         <ChevronRight
           size={18}
@@ -200,46 +217,23 @@ export default function Reviews({ playerId }: ReviewsProps) {
         ref={containerRef}
         onWheel={handleWheel}
         onScroll={handleScroll}
-        className="
-          flex gap-4 sm:gap-6 md:gap-8
-          overflow-x-auto
-          no-scrollbar
-          scroll-smooth
-          px-6 sm:px-8 md:px-2
-        "
+        className="flex gap-4 sm:gap-6 md:gap-8 overflow-x-auto no-scrollbar scroll-smooth px-6 sm:px-8 md:px-2"
       >
         {reviews.map((review) => (
           <div
             key={review.id}
-            className="
-              min-w-[220px] sm:min-w-[240px] md:min-w-[260px]
-              bg-[#06163a]
-              border border-[#102b5c]
-              px-4 sm:px-6 md:px-8
-              py-4 sm:py-5
-              rounded-xl
-              flex items-center gap-3 sm:gap-4
-              shadow-[0_0_20px_rgba(0,60,255,0.15)]
-              flex-shrink-0
-            "
+            className={`min-w-[220px] sm:min-w-[240px] md:min-w-[260px] ${cardBg} border ${cardBorder} px-4 sm:px-6 md:px-8 py-4 sm:py-5 rounded-xl flex items-center gap-3 sm:gap-4 ${cardShadow} flex-shrink-0`}
           >
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-yellow-400 flex items-center justify-center text-black font-bold text-sm">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-yellow-400 flex items-center justify-center text-black font-bold text-sm shrink-0">
               {getInitials(review.rater?.first_name, review.rater?.last_name)}
             </div>
-
-            <div>
+            <div className="flex-1">
               <h4 className={`font-semibold text-xs sm:text-sm ${textColor}`}>
                 {review.rater?.first_name} {review.rater?.last_name}
               </h4>
-
               {renderStars(review.calculated_stars)}
-
               {review.notes && (
-                <p
-                  className={`text-xs ${
-                    isDark ? "text-gray-400" : "text-gray-500"
-                  } mt-1 line-clamp-2`}
-                >
+                <p className={`text-xs ${secondaryTextColor} mt-1 line-clamp-2`}>
                   {review.notes}
                 </p>
               )}

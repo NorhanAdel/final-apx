@@ -249,15 +249,6 @@ export default function ReelsPlayer({ videos = [], playerId }: Props) {
           );
         })}
       </div>
-
-      {/* SEND REQUEST */}
-      <button
-        onClick={handleSendRequest}
-        disabled={sending}
-        className="w-full mt-6 py-3 bg-[#0a1a3a] hover:bg-[#11265e] rounded-lg font-semibold disabled:opacity-50 transition"
-      >
-        {sending ? t("Sending...") : t("Send Request")}
-      </button>
     </div>
   );
 }

@@ -19,8 +19,9 @@ interface ClubCareerProps {
 
 export default function ClubCareer({ playerId }: ClubCareerProps) {
   const { theme } = useTheme();
-  const { t } = useTranslate();
+  const { t, lang } = useTranslate();
   const isDark = theme === "dark";
+  const isRTL = lang === "ar";
   const [clubCareer, setClubCareer] = useState<ClubCareerData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +66,7 @@ export default function ClubCareer({ playerId }: ClubCareerProps) {
 
   if (loading) {
     return (
-      <div className="mt-8 text-left">
+      <div className={`mt-8 ${isRTL ? "text-right" : "text-left"}`}>
         <h3 className="text-yellow-400 font-semibold mb-3">
           {t("Club Career")}
         </h3>
@@ -78,7 +79,7 @@ export default function ClubCareer({ playerId }: ClubCareerProps) {
 
   if (error) {
     return (
-      <div className="mt-8 text-left">
+      <div className={`mt-8 ${isRTL ? "text-right" : "text-left"}`}>
         <h3 className="text-yellow-400 font-semibold mb-3">
           {t("Club Career")}
         </h3>
@@ -89,7 +90,7 @@ export default function ClubCareer({ playerId }: ClubCareerProps) {
 
   if (!clubCareer) {
     return (
-      <div className="mt-8 text-left">
+      <div className={`mt-8 ${isRTL ? "text-right" : "text-left"}`}>
         <h3 className="text-yellow-400 font-semibold mb-3">
           {t("Club Career")}
         </h3>
@@ -101,20 +102,47 @@ export default function ClubCareer({ playerId }: ClubCareerProps) {
   }
 
   return (
-    <div className="mt-8 text-left">
+    <div className={`mt-8 ${isRTL ? "text-right" : "text-left"}`}>
       <h3 className="text-yellow-400 font-semibold mb-3">{t("Club Career")}</h3>
-      <ul className="space-y-2 text-sm">
+      <ul className={`space-y-2 text-sm ${isRTL ? "text-right" : "text-left"}`}>
         <li className={textColor}>
-          <strong>{t("Current Club")}:</strong>{" "}
-          {clubCareer.current_club || t("N/A")}
+          {isRTL ? (
+            <>
+              <span>{clubCareer.current_club || t("N/A")}</span>
+              <strong> :{t("Current Club")}</strong>
+            </>
+          ) : (
+            <>
+              <strong>{t("Current Club")}:</strong>
+              <span> {clubCareer.current_club || t("N/A")}</span>
+            </>
+          )}
         </li>
         <li className={textColor}>
-          <strong>{t("Professional Debut")}:</strong>{" "}
-          {formatDate(clubCareer.professional_debut)}
+          {isRTL ? (
+            <>
+              <span>{formatDate(clubCareer.professional_debut)}</span>
+              <strong> :{t("Professional Debut")}</strong>
+            </>
+          ) : (
+            <>
+              <strong>{t("Professional Debut")}:</strong>
+              <span> {formatDate(clubCareer.professional_debut)}</span>
+            </>
+          )}
         </li>
         <li className={textColor}>
-          <strong>{t("Previous Clubs")}:</strong>{" "}
-          {clubCareer.previous_clubs || t("No previous clubs")}
+          {isRTL ? (
+            <>
+              <span>{clubCareer.previous_clubs || t("No previous clubs")}</span>
+              <strong> :{t("Previous Clubs")}</strong>
+            </>
+          ) : (
+            <>
+              <strong>{t("Previous Clubs")}:</strong>
+              <span> {clubCareer.previous_clubs || t("No previous clubs")}</span>
+            </>
+          )}
         </li>
       </ul>
     </div>

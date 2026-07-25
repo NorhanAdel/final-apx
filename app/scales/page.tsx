@@ -37,7 +37,6 @@ export default function ScalesPage() {
           GET_SUPER7_LEVELS,
         );
         if (result.data?.super7Levels) {
-          // Sort descending by level number (S7_7 first)
           const sorted = [...result.data.super7Levels].sort((a, b) => {
             const numA = parseInt(a.level.replace("S7_", ""));
             const numB = parseInt(b.level.replace("S7_", ""));
@@ -68,10 +67,7 @@ export default function ScalesPage() {
           <div className="relative">
             <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-yellow-400" />
             <div className="absolute inset-0 flex items-center justify-center">
-              <Trophy
-                size={20}
-                className="text-yellow-400 animate-pulse"
-              />
+              <Trophy size={20} className="text-yellow-400 animate-pulse" />
             </div>
           </div>
           <p
@@ -92,7 +88,6 @@ export default function ScalesPage() {
       className={`min-h-screen pt-28 pb-16 px-4 sm:px-6 md:px-8 transition-colors ${isDark ? "bg-[#020617]" : "bg-gray-50"}`}
     >
       <div className="max-w-7xl mx-auto">
-        {/* Page Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -107,10 +102,7 @@ export default function ScalesPage() {
           <h1
             className={`text-4xl md:text-5xl font-black uppercase tracking-tight mb-3 ${isDark ? "text-white" : "text-gray-900"}`}
           >
-            <span className="bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 bg-clip-text text-transparent">
-              Super7
-            </span>{" "}
-            {t("Scale")}
+            {t("Super7 Scale")}
           </h1>
           <p
             className={`text-sm md:text-base max-w-2xl mx-auto ${isDark ? "text-gray-400" : "text-gray-500"}`}
@@ -121,7 +113,6 @@ export default function ScalesPage() {
           </p>
         </motion.div>
 
-        {/* Highest Level Hero Card */}
         {highestLevel && (
           <div className="mb-8">
             <ScaleLevelCard
@@ -136,7 +127,6 @@ export default function ScalesPage() {
           </div>
         )}
 
-        {/* Other Levels Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {otherLevels.map((level, index) => (
             <ScaleLevelCard
@@ -152,7 +142,6 @@ export default function ScalesPage() {
           ))}
         </div>
 
-        {/* Empty state */}
         {levels.length === 0 && !loading && (
           <div className="text-center py-20">
             <Layers

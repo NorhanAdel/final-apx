@@ -22,8 +22,9 @@ export default function FavoriteButton({
   onFavoriteChange,
 }: FavoriteButtonProps) {
   const { theme } = useTheme();
-  const { t } = useTranslate();
+  const { t, lang } = useTranslate();
   const isDark = theme === "dark";
+  const isRTL = lang === "ar";
 
   const [isFavorite, setIsFavorite] = useState(false);
   const [favoriteCount, setFavoriteCount] = useState(0);
@@ -78,7 +79,7 @@ export default function FavoriteButton({
     };
 
     fetchFavoriteStatus();
-  }, [currentUserId, playerId]); // Re-fetch when playerId or currentUserId changes
+  }, [currentUserId, playerId]);
 
   const handleToggleFavorite = async () => {
     if (loading) return;
@@ -171,6 +172,7 @@ export default function FavoriteButton({
             : "bg-gray-100 text-gray-600 hover:text-red-500 hover:bg-red-50"
         }
         ${loading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
+        ${isRTL ? "flex-row-reverse" : ""}
       `}
     >
       <Heart

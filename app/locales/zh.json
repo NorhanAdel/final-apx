@@ -903,5 +903,19 @@
   "Player Packages": "玩家套餐",
   "Subscribe Now": "立即订阅",
   "Photos Remaining": "剩余照片",
-  "Videos Remaining": "剩余视频"
+  "Videos Remaining": "剩余视频",
+  "Scale": "等级",
+  "Super7 Scale": "超级7等级",
+  "Discover player levels based on comprehensive performance metrics. Each level represents a tier of excellence.": "基于全面的表现指标发现球员等级。每个等级代表一个卓越层次。",
+  "HIGHEST TIER": "最高等级",
+  "Explore": "探索",
+  "Loading scales...": "正在加载等级...",
+  "No levels found": "未找到等级",
+    "Score Range": "分数范围",
+    "pts": "分",
+    "Back to Scales": "返回等级",
+    "Search players in this level...": "在此等级中搜索球员...",
+    "No players found in this level": "在此等级中未找到球员",
+    "Try adjusting your search term": "尝试调整搜索词",
+    "View Event": "查看活动"
 }

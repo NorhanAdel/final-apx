@@ -28,6 +28,8 @@ interface RatingsProps {
 
 interface AverageRatings {
   averageStars: number;
+  averagePercentage?: number;
+  percentile?: number;
   scalabilityPercent: number;
   mentalStabilityPercent: number;
   soccerIntelligencePercent: number;
@@ -39,9 +41,10 @@ interface AverageRatings {
 }
 
 export default function Ratings({ ratings = [], playerId }: RatingsProps) {
-  const { t } = useTranslate();
+  const { t, lang } = useTranslate();
   const { theme } = useTheme();
   const isDark = theme === "dark";
+  const isRTL = lang === "ar";
   const [averageRatings, setAverageRatings] = useState<AverageRatings | null>(
     null,
   );
@@ -55,6 +58,7 @@ export default function Ratings({ ratings = [], playerId }: RatingsProps) {
         const result = await fetchGraphQL<{
           playerAverageRatings: AverageRatings;
         }>(GET_PLAYER_AVERAGE_RATINGS, { playerId });
+        console.log("📊 Average Ratings Response:", result);
         if (result.data?.playerAverageRatings) {
           setAverageRatings(result.data.playerAverageRatings);
         }
@@ -75,8 +79,8 @@ export default function Ratings({ ratings = [], playerId }: RatingsProps) {
       ? ratings.reduce((sum, r) => sum + (r.calculated_stars || 0), 0) / total
       : 0);
 
-  // Calculate percentile (mock for now - you can replace with actual data)
-  const percentile = 35; // This should come from your API
+  const percentile = averageRatings?.percentile ?? 0;
+
   const ratingStatus =
     avgRating < 3
       ? t("BELOW AVERAGE")
@@ -142,7 +146,7 @@ export default function Ratings({ ratings = [], playerId }: RatingsProps) {
 
   if (loading) {
     return (
-      <div dir="ltr" className="text-left mt-8">
+      <div dir={isRTL ? "rtl" : "ltr"} className={isRTL ? "text-right mt-8" : "text-left mt-8"}>
         <div className="flex justify-center items-center py-12">
           <div className="relative">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-400"></div>
@@ -159,7 +163,7 @@ export default function Ratings({ ratings = [], playerId }: RatingsProps) {
   }
 
   return (
-    <div dir="ltr" className="text-left mt-8">
+    <div dir={isRTL ? "rtl" : "ltr"} className={isRTL ? "text-right mt-8" : "text-left mt-8"}>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -178,11 +182,11 @@ export default function Ratings({ ratings = [], playerId }: RatingsProps) {
         </div>
       </div>
 
-      {/* Main Content - Left Circle + Right Skills */}
+      {/* Main Content - dir="rtl" on the parent flips this automatically, no manual reverse needed */}
       <div className="flex flex-col lg:flex-row gap-8 items-center">
-        {/* Left Side - Circle Rating - MUCH LARGER */}
+        {/* Circle Rating Side */}
         <div className="lg:w-2/5 flex flex-col items-center justify-center">
-          {/* Circular Progress - Enlarged */}
+          {/* Circular Progress */}
           <div className="relative w-72 h-72 mb-6">
             <svg className="w-full h-full transform -rotate-90">
               {/* Outer circle shadow */}
@@ -237,7 +241,7 @@ export default function Ratings({ ratings = [], playerId }: RatingsProps) {
                 {avgRating.toFixed(1)}
               </span>
 
-              {/* Stars row - larger stars */}
+              {/* Stars row */}
               <div className="flex items-center gap-1.5 mt-3 px-0 sm:px-3">
                 {[1, 2, 3, 4, 5, 6, 7].map((star) => (
                   <Star
@@ -259,16 +263,18 @@ export default function Ratings({ ratings = [], playerId }: RatingsProps) {
             </div>
           </div>
 
-          {/* Percentile info */}
-          <div className="text-center mt-2">
-            <p className={`text-base ${secondaryTextColor}`}>
-              {percentile}
-              {t("th Percentile")}
-            </p>
-          </div>
+          {/* Percentile info - dynamic from API */}
+          {percentile > 0 && (
+            <div className="text-center mt-2">
+              <p className={`text-base ${secondaryTextColor}`}>
+                <span className="font-bold text-yellow-400">{percentile}</span>
+                {t("th Percentile")}
+              </p>
+            </div>
+          )}
         </div>
 
-        {/* Right Side - Skills Breakdown - Adjusted width */}
+        {/* Skills Breakdown Side */}
         <div className="lg:w-3/5 w-full px-0 sm:px-4">
           <div className="space-y-4">
             {skills.map((skill, index) => (
@@ -287,7 +293,6 @@ export default function Ratings({ ratings = [], playerId }: RatingsProps) {
                   </span>
                 </div>
 
-                {/* تم إزالة الـ padding في الشاشات الصغيرة */}
                 <div className="px-0 sm:px-2">
                   <div
                     className={`h-2.5 rounded-full overflow-hidden ${

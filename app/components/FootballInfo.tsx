@@ -30,8 +30,9 @@ interface FootballInfoProps {
 
 export default function FootballInfo({ playerId }: FootballInfoProps) {
   const { theme } = useTheme();
-  const { t } = useTranslate();
+  const { t, lang } = useTranslate();
   const isDark = theme === "dark";
+  const isRTL = lang === "ar";
   const [footballInfo, setFootballInfo] = useState<FootballData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -79,7 +80,7 @@ export default function FootballInfo({ playerId }: FootballInfoProps) {
 
   if (loading) {
     return (
-      <div className="mt-8 text-left">
+      <div className={`mt-8 ${isRTL ? "text-right" : "text-left"}`}>
         <h3 className="text-yellow-400 font-semibold mb-3">
           {t("Football Information")}
         </h3>
@@ -92,7 +93,7 @@ export default function FootballInfo({ playerId }: FootballInfoProps) {
 
   if (error) {
     return (
-      <div className="mt-8 text-left">
+      <div className={`mt-8 ${isRTL ? "text-right" : "text-left"}`}>
         <h3 className="text-yellow-400 font-semibold mb-3">
           {t("Football Information")}
         </h3>
@@ -103,7 +104,7 @@ export default function FootballInfo({ playerId }: FootballInfoProps) {
 
   if (!footballInfo) {
     return (
-      <div className="mt-8 text-left">
+      <div className={`mt-8 ${isRTL ? "text-right" : "text-left"}`}>
         <h3 className="text-yellow-400 font-semibold mb-3">
           {t("Football Information")}
         </h3>
@@ -115,36 +116,83 @@ export default function FootballInfo({ playerId }: FootballInfoProps) {
   }
 
   return (
-    <div className="mt-8 text-left">
+    <div className={`mt-8 ${isRTL ? "text-right" : "text-left"}`}>
       <h3 className="text-yellow-400 font-semibold mb-3">
         {t("Football Information")}
       </h3>
-      <ul className="space-y-2 text-sm">
+      <ul className={`space-y-2 text-sm ${isRTL ? "text-right" : "text-left"}`}>
         <li className={textColor}>
-          <strong>{t("Position")}:</strong>{" "}
-          {footballInfo.position?.name || t("N/A")}
+          {isRTL ? (
+            <>
+              <span>{footballInfo.position?.name || t("N/A")}</span>
+              <strong> :{t("Position")}</strong>
+            </>
+          ) : (
+            <>
+              <strong>{t("Position")}:</strong>
+              <span> {footballInfo.position?.name || t("N/A")}</span>
+            </>
+          )}
         </li>
         <li className={textColor}>
-          <strong>{t("Preferred Foot")}:</strong>{" "}
-          {footballInfo.preferred_foot || t("N/A")}
+          {isRTL ? (
+            <>
+              <span>{footballInfo.preferred_foot || t("N/A")}</span>
+              <strong> :{t("Preferred Foot")}</strong>
+            </>
+          ) : (
+            <>
+              <strong>{t("Preferred Foot")}:</strong>
+              <span> {footballInfo.preferred_foot || t("N/A")}</span>
+            </>
+          )}
         </li>
         <li className={textColor}>
-          <strong>{t("Jersey Number")}:</strong>{" "}
-          {footballInfo.jersey_number ?? t("N/A")}
+          {isRTL ? (
+            <>
+              <span>{footballInfo.jersey_number ?? t("N/A")}</span>
+              <strong> :{t("Jersey Number")}</strong>
+            </>
+          ) : (
+            <>
+              <strong>{t("Jersey Number")}:</strong>
+              <span> {footballInfo.jersey_number ?? t("N/A")}</span>
+            </>
+          )}
         </li>
         <li className={textColor}>
-          <strong>{t("Playing Style")}:</strong>{" "}
-          {footballInfo.playing_style || t("N/A")}
+          {isRTL ? (
+            <>
+              <span>{footballInfo.playing_style || t("N/A")}</span>
+              <strong> :{t("Playing Style")}</strong>
+            </>
+          ) : (
+            <>
+              <strong>{t("Playing Style")}:</strong>
+              <span> {footballInfo.playing_style || t("N/A")}</span>
+            </>
+          )}
         </li>
         <li className={textColor}>
-          <strong>{t("Strengths")}:</strong>{" "}
-          {formatStrengths(footballInfo.strengths)}
+          {isRTL ? (
+            <>
+              <span>{formatStrengths(footballInfo.strengths)}</span>
+              <strong> :{t("Strengths")}</strong>
+            </>
+          ) : (
+            <>
+              <strong>{t("Strengths")}:</strong>
+              <span> {formatStrengths(footballInfo.strengths)}</span>
+            </>
+          )}
         </li>
         
         {footballInfo.description && (
-          <li className={textColor}>
+          <li className={`${textColor} ${isRTL ? "text-right" : "text-left"}`}>
             <strong>{t("Description")}:</strong>
-            <p className={`mt-1 ${secondaryTextColor} leading-relaxed`}>
+            <p className={`mt-1 ${secondaryTextColor} leading-relaxed ${
+              isRTL ? "text-right" : "text-left"
+            }`}>
               {footballInfo.description}
             </p>
           </li>

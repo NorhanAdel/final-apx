@@ -94,8 +94,8 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
   const { changeLang, lang: currentLang } = useTranslate();
 
   const activeLang = lang || currentLang || "en";
-
   const activeUser = localUser || user;
+  const isDark = theme === "dark";
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -393,7 +393,11 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
         <div ref={profileRef} className="relative">
           <button
             onClick={() => setProfileOpen(!profileOpen)}
-            className="flex items-center gap-2 px-4 py-2 bg-[#001a4d] border border-[#F0B100] rounded-lg text-[#F0B100] hover:bg-[#002060] transition-colors"
+            className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors ${
+              isDark
+                ? "bg-[#001a4d] border-[#F0B100] text-[#F0B100] hover:bg-[#002060]"
+                : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400"
+            }`}
           >
             {getProfileIcon()}
             <span className="hidden sm:inline max-w-[100px] truncate">
@@ -408,10 +412,18 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="absolute right-0 mt-3 w-56 bg-[#14141c] border border-white/10 rounded-xl z-50 overflow-hidden"
+                className={`absolute right-0 mt-3 w-56 border rounded-xl z-50 overflow-hidden shadow-lg ${
+                  isDark
+                    ? "bg-[#14141c] border-white/10 text-white"
+                    : "bg-white border-gray-200 text-gray-800"
+                }`}
               >
-                <div className="px-4 py-2 border-b border-white/10 bg-white/5">
-                  <span className="text-xs text-yellow-400">
+                <div className={`px-4 py-2 border-b ${
+                  isDark ? "border-white/10 bg-white/5" : "border-gray-200 bg-gray-50"
+                }`}>
+                  <span className={`text-xs ${
+                    isDark ? "text-yellow-400" : "text-yellow-600"
+                  }`}>
                     {translateRole(activeUser.role, activeLang)}
                   </span>
                 </div>
@@ -419,14 +431,21 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                 <Link
                   href={getProfileLink()}
                   onClick={(e) => {
-                    if (requiresSubscription() && !activeUser?.has_active_subscription) {
+                    if (
+                      requiresSubscription() &&
+                      !activeUser?.has_active_subscription
+                    ) {
                       e.preventDefault();
                       router.push(getCheckoutRoute());
                       return;
                     }
                     setProfileOpen(false);
                   }}
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-[#F0B100] hover:text-black transition-colors"
+                  className={`flex items-center gap-3 px-4 py-3 transition-colors ${
+                    isDark
+                      ? "hover:bg-[#F0B100] hover:text-black"
+                      : "hover:bg-yellow-100 hover:text-black"
+                  }`}
                 >
                   {getProfileIcon()}
                   <span>{translate("My Profile", activeLang)}</span>
@@ -434,7 +453,11 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
 
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-3 w-full text-left px-4 py-3 border-t border-white/10 text-red-400 hover:bg-red-500 hover:text-white transition-colors"
+                  className={`flex items-center gap-3 w-full text-left px-4 py-3 border-t transition-colors ${
+                    isDark
+                      ? "border-white/10 text-red-400 hover:bg-red-500 hover:text-white"
+                      : "border-gray-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                  }`}
                 >
                   <LogOut size={18} />
                   <span>{translate("Logout", activeLang)}</span>
@@ -448,11 +471,59 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
 
     return (
       <Link href="/auth/login">
-        <button className="px-5 py-2 bg-[#001a4d] border border-[#F0B100] text-[#F0B100] rounded-lg flex items-center gap-2 hover:bg-[#002060] transition-colors">
+        <button className={`px-5 py-2 border rounded-lg flex items-center gap-2 transition-colors ${
+          isDark
+            ? "bg-[#001a4d] border-[#F0B100] text-[#F0B100] hover:bg-[#002060]"
+            : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400"
+        }`}>
           <LogIn size={16} /> {translate("Login", activeLang)}
         </button>
       </Link>
     );
+  };
+
+  const getNavLinkClass = (linkKey: string) => {
+    if (!mounted) {
+      return "transition-colors font-semibold text-gray-800 hover:text-yellow-600";
+    }
+    return `transition-colors font-semibold ${
+      isDark
+        ? "text-yellow-400 hover:text-yellow-300"
+        : "text-gray-800 hover:text-yellow-600"
+    }`;
+  };
+
+  const getSportsButtonClass = () => {
+    if (!mounted) {
+      return "flex items-center gap-1 transition-colors font-medium text-gray-800 hover:text-yellow-600";
+    }
+    return `flex items-center gap-1 transition-colors font-medium ${
+      isDark
+        ? "text-white hover:text-yellow-400"
+        : "text-gray-800 hover:text-yellow-600"
+    }`;
+  };
+
+  const getThemeButtonClass = () => {
+    if (!mounted) {
+      return "p-2 rounded-lg transition-colors bg-gray-200 hover:bg-gray-300 text-gray-800";
+    }
+    return `p-2 rounded-lg transition-colors ${
+      isDark
+        ? "bg-white/10 hover:bg-white/20 text-white"
+        : "bg-gray-200 hover:bg-gray-300 text-gray-800"
+    }`;
+  };
+
+  const getLangButtonClass = () => {
+    if (!mounted) {
+      return "flex items-center gap-1 transition-colors text-yellow-600 hover:text-yellow-700";
+    }
+    return `flex items-center gap-1 transition-colors ${
+      isDark
+        ? "text-white hover:text-yellow-400"
+        : "text-yellow-600 hover:text-yellow-700"
+    }`;
   };
 
   return (
@@ -460,10 +531,12 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
       className={`fixed w-full z-50 backdrop-blur-md border-b transition-all duration-300
       ${
         scrolled
-          ? theme === "dark"
+          ? isDark
             ? "bg-[#020617]/95 border-white/10"
-            : "bg-white/95 border-black/10"
-          : "bg-transparent"
+            : "bg-white/95 border-gray-200"
+          : isDark
+          ? "bg-transparent border-transparent"
+          : "bg-transparent border-transparent"
       }`}
     >
       <div className="max-w-7xl mx-auto px-6 py-2 flex justify-between items-center">
@@ -476,11 +549,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
             <Link
               key={link.href}
               href={link.href}
-              className={`transition-colors font-semibold ${
-                theme === "dark"
-                  ? "text-yellow-400 hover:text-yellow-300"
-                  : "text-gray-800 hover:text-yellow-600"
-              }`}
+              className={getNavLinkClass(link.key)}
             >
               {translate(link.key, activeLang)}
             </Link>
@@ -489,11 +558,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
           <div ref={sportsRef} className="relative">
             <button
               onClick={() => setSportsOpen(!sportsOpen)}
-              className={`flex items-center gap-1 transition-colors font-medium ${
-                theme === "dark"
-                  ? "text-white hover:text-yellow-400"
-                  : "text-gray-800 hover:text-yellow-600"
-              }`}
+              className={getSportsButtonClass()}
             >
               {currentSport?.name || translate("Sports", activeLang)}
               <ChevronDown size={16} />
@@ -506,7 +571,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   className={`absolute left-0 mt-3 w-52 border rounded-xl z-50 overflow-hidden ${
-                    theme === "dark"
+                    isDark
                       ? "bg-[#14141c] border-white/10 text-white"
                       : "bg-white border-gray-200 text-gray-800 shadow-lg"
                   }`}
@@ -522,7 +587,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                           key={sport.id}
                           href={`/sports/${sport.id}`}
                           className={`flex items-center gap-2 px-4 py-2 transition-colors ${
-                            theme === "dark"
+                            isDark
                               ? "hover:bg-[#F0B100] hover:text-black"
                               : "hover:bg-yellow-100 hover:text-black"
                           }`}
@@ -543,12 +608,10 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
 
           <button
             onClick={toggleTheme}
-            className={`p-2 rounded-lg transition-colors ${
-              theme === "dark" ? "hover:bg-white/10" : "hover:bg-gray-200"
-            }`}
+            className={getThemeButtonClass()}
           >
             {mounted ? (
-              theme === "dark" ? (
+              isDark ? (
                 <Moon size={18} />
               ) : (
                 <Sun size={18} />
@@ -561,11 +624,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
           <div ref={langRef} className="relative">
             <button
               onClick={() => setLangOpen(!langOpen)}
-              className={`flex items-center gap-1 transition-colors ${
-                theme === "dark"
-                  ? "text-white hover:text-yellow-400"
-                  : "text-yellow-600"
-              }`}
+              className={getLangButtonClass()}
             >
               <Globe size={14} />
               {translate(activeLang.toUpperCase(), activeLang)}
@@ -579,7 +638,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   className={`absolute right-0 mt-3 w-40 border rounded-xl z-50 overflow-hidden ${
-                    theme === "dark"
+                    isDark
                       ? "bg-[#14141c] border-white/10 text-white"
                       : "bg-white border-gray-200 text-gray-800 shadow-lg"
                   }`}
@@ -592,7 +651,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                         key={language.code}
                         onClick={() => handleLanguageChange(language.code)}
                         className={`block w-full text-left px-4 py-2 transition-colors ${
-                          theme === "dark"
+                          isDark
                             ? "hover:bg-[#F0B100] hover:text-black"
                             : "hover:bg-yellow-100 hover:text-black"
                         }`}
@@ -608,9 +667,16 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
         </div>
 
         <div className="md:hidden flex items-center gap-3">
-          <button onClick={toggleTheme} className=" text-yellow-600">
+          <button
+            onClick={toggleTheme}
+            className={`p-2 rounded-lg transition-colors ${
+              isDark
+                ? "bg-white/10 hover:bg-white/20 text-white"
+                : "bg-gray-200 hover:bg-gray-300 text-gray-800"
+            }`}
+          >
             {mounted ? (
-              theme === "dark" ? (
+              isDark ? (
                 <Moon size={20} />
               ) : (
                 <Sun size={20} />
@@ -621,11 +687,18 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
           </button>
 
           {!activeUser ? (
-            <Link href="/auth/login" className=" text-yellow-600">
+            <Link href="/auth/login" className={`p-2 rounded-lg transition-colors ${
+              isDark ? "text-yellow-400 hover:bg-white/10" : "text-yellow-600 hover:bg-gray-100"
+            }`}>
               <LogIn size={22} />
             </Link>
           ) : (
-            <button onClick={handleLogout} className=" text-yellow-600">
+            <button 
+              onClick={handleLogout} 
+              className={`p-2 rounded-lg transition-colors ${
+                isDark ? "text-yellow-400 hover:bg-white/10" : "text-yellow-600 hover:bg-gray-100"
+              }`}
+            >
               <LogOut size={22} />
             </button>
           )}
@@ -633,7 +706,11 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
           <button
             id="mobile-menu-button"
             onClick={() => setOpen(!open)}
-            className=" text-yellow-600"
+            className={`p-2 rounded-lg transition-colors ${
+              isDark
+                ? "text-white hover:bg-white/10"
+                : "text-gray-800 hover:bg-gray-200"
+            }`}
           >
             {open ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -648,9 +725,9 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             className={`md:hidden overflow-hidden border-t ${
-              theme === "dark"
-                ? "bg-[#020617] text-yellow-600 border-white/10"
-                : "bg-white text-yellow-600 border-black/10"
+              isDark
+                ? "bg-[#020617] text-white border-white/10"
+                : "bg-white text-gray-800 border-gray-200"
             }`}
           >
             <div className="flex flex-col py-4">
@@ -659,7 +736,11 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                   key={link.href}
                   href={link.href}
                   onClick={() => setOpen(false)}
-                  className="px-6 py-3 text-yellow-600 hover:bg-white/5"
+                  className={`px-6 py-3 transition-colors ${
+                    isDark
+                      ? "text-white hover:bg-white/5"
+                      : "text-gray-800 hover:bg-gray-100"
+                  }`}
                 >
                   {translate(link.key, activeLang)}
                 </Link>
@@ -667,7 +748,11 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
 
               <button
                 onClick={() => setMobileSportsOpen(!mobileSportsOpen)}
-                className="flex justify-between items-center w-full px-6 py-3 hover:bg-white/5"
+                className={`flex justify-between items-center w-full px-6 py-3 transition-colors ${
+                  isDark
+                    ? "text-white hover:bg-white/5"
+                    : "text-gray-800 hover:bg-gray-100"
+                }`}
               >
                 <span>{translate("Sports", activeLang)}</span>
                 <ChevronDown
@@ -687,7 +772,11 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                         key={sport.id}
                         href={`/sports/${sport.id}`}
                         onClick={() => setOpen(false)}
-                        className="flex items-center gap-2 px-6 py-2 hover:bg-white/5"
+                        className={`flex items-center gap-2 px-6 py-2 transition-colors ${
+                          isDark
+                            ? "text-white hover:bg-white/5"
+                            : "text-gray-800 hover:bg-gray-100"
+                        }`}
                       >
                         <Icon size={16} />
                         {sport.name}
@@ -699,7 +788,11 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
 
               <button
                 onClick={() => setMobileLangOpen(!mobileLangOpen)}
-                className="flex justify-between items-center w-full px-6 py-3 hover:bg-white/5"
+                className={`flex justify-between items-center w-full px-6 py-3 transition-colors ${
+                  isDark
+                    ? "text-white hover:bg-white/5"
+                    : "text-gray-800 hover:bg-gray-100"
+                }`}
               >
                 <span className="flex items-center gap-2">
                   <Globe size={14} />
@@ -719,7 +812,11 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                     <button
                       key={language.code}
                       onClick={() => handleLanguageChange(language.code)}
-                      className="block w-full text-left px-6 py-2 hover:bg-white/5"
+                      className={`block w-full text-left px-6 py-2 transition-colors ${
+                        isDark
+                          ? "text-white hover:bg-white/5"
+                          : "text-gray-800 hover:bg-gray-100"
+                      }`}
                     >
                       {translate(language.name, activeLang)}
                     </button>
@@ -728,25 +825,46 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
               )}
 
               {activeUser && (
-                <div className="mt-4 pt-4 border-t border-white/10 px-6">
+                <div
+                  className={`mt-4 pt-4 border-t px-6 ${
+                    isDark
+                      ? "border-white/10"
+                      : "border-gray-200"
+                  }`}
+                >
                   <div className="flex items-center gap-3 mb-3">
-                    {getProfileIcon()}
-                    <span className="font-semibold">{getProfileName()}</span>
+                    <span className={isDark ? "text-white" : "text-gray-800"}>
+                      {getProfileIcon()}
+                    </span>
+                    <span className={`font-semibold ${
+                      isDark ? "text-white" : "text-gray-800"
+                    }`}>
+                      {getProfileName()}
+                    </span>
                   </div>
-                  <div className="text-xs text-yellow-400 mb-2">
+                  <div className={`text-xs mb-2 ${
+                    isDark ? "text-yellow-400" : "text-yellow-600"
+                  }`}>
                     {translateRole(activeUser.role, activeLang)}
                   </div>
                   <Link
                     href={getProfileLink()}
                     onClick={(e) => {
-                      if (requiresSubscription() && !activeUser?.has_active_subscription) {
+                      if (
+                        requiresSubscription() &&
+                        !activeUser?.has_active_subscription
+                      ) {
                         e.preventDefault();
                         router.push(getCheckoutRoute());
                         return;
                       }
                       setOpen(false);
                     }}
-                    className="block w-full text-center px-4 py-2 bg-[#001a4d] border border-[#F0B100] rounded-lg text-[#F0B100] hover:bg-[#002060] transition-colors"
+                    className={`block w-full text-center px-4 py-2 border rounded-lg transition-colors ${
+                      isDark
+                        ? "bg-[#001a4d] border-[#F0B100] text-[#F0B100] hover:bg-[#002060]"
+                        : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400"
+                    }`}
                   >
                     {translate("View Profile", activeLang)}
                   </Link>

@@ -898,5 +898,19 @@
   "Player Packages": "Pacotes do Jogador",
   "Subscribe Now": "Inscrever-se Agora",
   "Photos Remaining": "Fotos Restantes",
-  "Videos Remaining": "Vídeos Restantes"
+  "Videos Remaining": "Vídeos Restantes",
+   "Scale": "Escala",
+    "Super7 Scale": "Escala Super7",
+    "Discover player levels based on comprehensive performance metrics. Each level represents a tier of excellence.": "Descubra níveis de jogadores com base em métricas de desempenho abrangentes. Cada nível representa um patamar de excelência.",
+    "HIGHEST TIER": "NÍVEL MAIS ALTO",
+    "Explore": "Explorar",
+    "Loading scales...": "Carregando escalas...",
+    "No levels found": "Nenhum nível encontrado",
+    "Score Range": "Faixa de Pontuação",
+    "pts": "pts",
+    "Back to Scales": "Voltar para Escalas",
+    "Search players in this level...": "Pesquisar jogadores neste nível...",
+    "No players found in this level": "Nenhum jogador encontrado neste nível",
+    "Try adjusting your search term": "Tente ajustar o termo de pesquisa",
+    "View Event": "Ver Evento"
 }

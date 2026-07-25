@@ -897,5 +897,19 @@
   "Player Packages": "Player Packages",
   "Subscribe Now": "Subscribe Now",
   "Photos Remaining": "Photos Remaining",
-  "Videos Remaining": "Videos Remaining"
+  "Videos Remaining": "Videos Remaining",
+  "Scale": "Scale",
+    "Super7 Scale": "Super7 Scale",
+    "Discover player levels based on comprehensive performance metrics. Each level represents a tier of excellence.": "Discover player levels based on comprehensive performance metrics. Each level represents a tier of excellence.",
+    "HIGHEST TIER": "HIGHEST TIER",
+    "Explore": "Explore",
+    "Loading scales...": "Loading scales...",
+    "No levels found": "No levels found",
+    "Score Range": "Score Range",
+    "pts": "pts",
+    "Back to Scales": "Back to Scales",
+    "Search players in this level...": "Search players in this level...",
+    "No players found in this level": "No players found in this level",
+    "Try adjusting your search term": "Try adjusting your search term",
+    "View Event": "View Event"
 }
