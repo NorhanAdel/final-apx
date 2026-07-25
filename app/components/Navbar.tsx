@@ -396,7 +396,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
             className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors ${
               isDark
                 ? "bg-[#001a4d] border-[#F0B100] text-[#F0B100] hover:bg-[#002060]"
-                : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400"
+                : "bg-white/10 backdrop-blur-sm border-[#F0B100]/50 text-[#F0B100] hover:bg-white/20"
             }`}
           >
             {getProfileIcon()}
@@ -415,14 +415,14 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                 className={`absolute right-0 mt-3 w-56 border rounded-xl z-50 overflow-hidden shadow-lg ${
                   isDark
                     ? "bg-[#14141c] border-white/10 text-white"
-                    : "bg-white border-gray-200 text-gray-800"
+                    : "bg-white/95 backdrop-blur-md border-[#F0B100]/30 text-gray-800"
                 }`}
               >
                 <div className={`px-4 py-2 border-b ${
-                  isDark ? "border-white/10 bg-white/5" : "border-gray-200 bg-gray-50"
+                  isDark ? "border-white/10 bg-white/5" : "border-[#F0B100]/20 bg-[#F0B100]/5"
                 }`}>
                   <span className={`text-xs ${
-                    isDark ? "text-yellow-400" : "text-yellow-600"
+                    isDark ? "text-yellow-400" : "text-[#F0B100]"
                   }`}>
                     {translateRole(activeUser.role, activeLang)}
                   </span>
@@ -444,7 +444,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                   className={`flex items-center gap-3 px-4 py-3 transition-colors ${
                     isDark
                       ? "hover:bg-[#F0B100] hover:text-black"
-                      : "hover:bg-yellow-100 hover:text-black"
+                      : "hover:bg-[#F0B100]/20 hover:text-black"
                   }`}
                 >
                   {getProfileIcon()}
@@ -456,7 +456,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                   className={`flex items-center gap-3 w-full text-left px-4 py-3 border-t transition-colors ${
                     isDark
                       ? "border-white/10 text-red-400 hover:bg-red-500 hover:text-white"
-                      : "border-gray-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                      : "border-[#F0B100]/20 text-red-500 hover:bg-red-50 hover:text-red-700"
                   }`}
                 >
                   <LogOut size={18} />
@@ -474,7 +474,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
         <button className={`px-5 py-2 border rounded-lg flex items-center gap-2 transition-colors ${
           isDark
             ? "bg-[#001a4d] border-[#F0B100] text-[#F0B100] hover:bg-[#002060]"
-            : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400"
+            : "bg-white/10 backdrop-blur-sm border-[#F0B100]/50 text-[#F0B100] hover:bg-white/20"
         }`}>
           <LogIn size={16} /> {translate("Login", activeLang)}
         </button>
@@ -484,23 +484,23 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
 
   const getNavLinkClass = (linkKey: string) => {
     if (!mounted) {
-      return "transition-colors font-semibold text-gray-800 hover:text-yellow-600";
+      return "transition-colors font-semibold text-gray-800 hover:text-[#F0B100]";
     }
     return `transition-colors font-semibold ${
       isDark
         ? "text-yellow-400 hover:text-yellow-300"
-        : "text-gray-800 hover:text-yellow-600"
+        : "text-gray-800 hover:text-[#F0B100]"
     }`;
   };
 
   const getSportsButtonClass = () => {
     if (!mounted) {
-      return "flex items-center gap-1 transition-colors font-medium text-gray-800 hover:text-yellow-600";
+      return "flex items-center gap-1 transition-colors font-medium text-gray-800 hover:text-[#F0B100]";
     }
     return `flex items-center gap-1 transition-colors font-medium ${
       isDark
         ? "text-white hover:text-yellow-400"
-        : "text-gray-800 hover:text-yellow-600"
+        : "text-gray-800 hover:text-[#F0B100]"
     }`;
   };
 
@@ -511,18 +511,18 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
     return `p-2 rounded-lg transition-colors ${
       isDark
         ? "bg-white/10 hover:bg-white/20 text-white"
-        : "bg-gray-200 hover:bg-gray-300 text-gray-800"
+        : "bg-white/10 backdrop-blur-sm hover:bg-white/20 text-gray-800"
     }`;
   };
 
   const getLangButtonClass = () => {
     if (!mounted) {
-      return "flex items-center gap-1 transition-colors text-yellow-600 hover:text-yellow-700";
+      return "flex items-center gap-1 transition-colors text-gray-800 hover:text-[#F0B100]";
     }
     return `flex items-center gap-1 transition-colors ${
       isDark
         ? "text-white hover:text-yellow-400"
-        : "text-yellow-600 hover:text-yellow-700"
+        : "text-gray-800 hover:text-[#F0B100]"
     }`;
   };
 
@@ -533,7 +533,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
         scrolled
           ? isDark
             ? "bg-[#020617]/95 border-white/10"
-            : "bg-white/95 border-gray-200"
+            : "bg-white/95 border-[#F0B100]/30"
           : isDark
           ? "bg-transparent border-transparent"
           : "bg-transparent border-transparent"
@@ -573,7 +573,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                   className={`absolute left-0 mt-3 w-52 border rounded-xl z-50 overflow-hidden ${
                     isDark
                       ? "bg-[#14141c] border-white/10 text-white"
-                      : "bg-white border-gray-200 text-gray-800 shadow-lg"
+                      : "bg-white/95 backdrop-blur-md border-[#F0B100]/30 text-gray-800 shadow-lg"
                   }`}
                 >
                   {sportsLoading ? (
@@ -589,7 +589,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                           className={`flex items-center gap-2 px-4 py-2 transition-colors ${
                             isDark
                               ? "hover:bg-[#F0B100] hover:text-black"
-                              : "hover:bg-yellow-100 hover:text-black"
+                              : "hover:bg-[#F0B100]/20 hover:text-black"
                           }`}
                           onClick={() => setSportsOpen(false)}
                         >
@@ -640,7 +640,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                   className={`absolute right-0 mt-3 w-40 border rounded-xl z-50 overflow-hidden ${
                     isDark
                       ? "bg-[#14141c] border-white/10 text-white"
-                      : "bg-white border-gray-200 text-gray-800 shadow-lg"
+                      : "bg-white/95 backdrop-blur-md border-[#F0B100]/30 text-gray-800 shadow-lg"
                   }`}
                 >
                   {languagesLoading ? (
@@ -653,7 +653,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                         className={`block w-full text-left px-4 py-2 transition-colors ${
                           isDark
                             ? "hover:bg-[#F0B100] hover:text-black"
-                            : "hover:bg-yellow-100 hover:text-black"
+                            : "hover:bg-[#F0B100]/20 hover:text-black"
                         }`}
                       >
                         {translate(language.name, activeLang)}
@@ -672,7 +672,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
             className={`p-2 rounded-lg transition-colors ${
               isDark
                 ? "bg-white/10 hover:bg-white/20 text-white"
-                : "bg-gray-200 hover:bg-gray-300 text-gray-800"
+                : "bg-white/10 backdrop-blur-sm hover:bg-white/20 text-gray-800"
             }`}
           >
             {mounted ? (
@@ -688,7 +688,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
 
           {!activeUser ? (
             <Link href="/auth/login" className={`p-2 rounded-lg transition-colors ${
-              isDark ? "text-yellow-400 hover:bg-white/10" : "text-yellow-600 hover:bg-gray-100"
+              isDark ? "text-yellow-400 hover:bg-white/10" : "text-gray-800 hover:bg-white/10"
             }`}>
               <LogIn size={22} />
             </Link>
@@ -696,7 +696,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
             <button 
               onClick={handleLogout} 
               className={`p-2 rounded-lg transition-colors ${
-                isDark ? "text-yellow-400 hover:bg-white/10" : "text-yellow-600 hover:bg-gray-100"
+                isDark ? "text-yellow-400 hover:bg-white/10" : "text-gray-800 hover:bg-white/10"
               }`}
             >
               <LogOut size={22} />
@@ -709,7 +709,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
             className={`p-2 rounded-lg transition-colors ${
               isDark
                 ? "text-white hover:bg-white/10"
-                : "text-gray-800 hover:bg-gray-200"
+                : "text-gray-800 hover:bg-white/10"
             }`}
           >
             {open ? <X size={24} /> : <Menu size={24} />}
@@ -727,7 +727,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
             className={`md:hidden overflow-hidden border-t ${
               isDark
                 ? "bg-[#020617] text-white border-white/10"
-                : "bg-white text-gray-800 border-gray-200"
+                : "bg-white/95 backdrop-blur-md text-gray-800 border-[#F0B100]/30"
             }`}
           >
             <div className="flex flex-col py-4">
@@ -739,7 +739,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                   className={`px-6 py-3 transition-colors ${
                     isDark
                       ? "text-white hover:bg-white/5"
-                      : "text-gray-800 hover:bg-gray-100"
+                      : "text-gray-800 hover:bg-[#F0B100]/10"
                   }`}
                 >
                   {translate(link.key, activeLang)}
@@ -751,7 +751,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                 className={`flex justify-between items-center w-full px-6 py-3 transition-colors ${
                   isDark
                     ? "text-white hover:bg-white/5"
-                    : "text-gray-800 hover:bg-gray-100"
+                    : "text-gray-800 hover:bg-[#F0B100]/10"
                 }`}
               >
                 <span>{translate("Sports", activeLang)}</span>
@@ -775,7 +775,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                         className={`flex items-center gap-2 px-6 py-2 transition-colors ${
                           isDark
                             ? "text-white hover:bg-white/5"
-                            : "text-gray-800 hover:bg-gray-100"
+                            : "text-gray-800 hover:bg-[#F0B100]/10"
                         }`}
                       >
                         <Icon size={16} />
@@ -791,7 +791,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                 className={`flex justify-between items-center w-full px-6 py-3 transition-colors ${
                   isDark
                     ? "text-white hover:bg-white/5"
-                    : "text-gray-800 hover:bg-gray-100"
+                    : "text-gray-800 hover:bg-[#F0B100]/10"
                 }`}
               >
                 <span className="flex items-center gap-2">
@@ -815,7 +815,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                       className={`block w-full text-left px-6 py-2 transition-colors ${
                         isDark
                           ? "text-white hover:bg-white/5"
-                          : "text-gray-800 hover:bg-gray-100"
+                          : "text-gray-800 hover:bg-[#F0B100]/10"
                       }`}
                     >
                       {translate(language.name, activeLang)}
@@ -829,7 +829,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                   className={`mt-4 pt-4 border-t px-6 ${
                     isDark
                       ? "border-white/10"
-                      : "border-gray-200"
+                      : "border-[#F0B100]/20"
                   }`}
                 >
                   <div className="flex items-center gap-3 mb-3">
@@ -843,7 +843,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                     </span>
                   </div>
                   <div className={`text-xs mb-2 ${
-                    isDark ? "text-yellow-400" : "text-yellow-600"
+                    isDark ? "text-yellow-400" : "text-[#F0B100]"
                   }`}>
                     {translateRole(activeUser.role, activeLang)}
                   </div>
@@ -863,7 +863,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                     className={`block w-full text-center px-4 py-2 border rounded-lg transition-colors ${
                       isDark
                         ? "bg-[#001a4d] border-[#F0B100] text-[#F0B100] hover:bg-[#002060]"
-                        : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400"
+                        : "bg-white/10 backdrop-blur-sm border-[#F0B100]/50 text-[#F0B100] hover:bg-white/20"
                     }`}
                   >
                     {translate("View Profile", activeLang)}
