@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Heart } from "lucide-react";
+import { Heart, Share2, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import useTranslate from "../hooks/useTranslate";
 import { fetchGraphQL } from "../lib/fetchGraphQL";
@@ -45,6 +45,31 @@ export default function ReelsPlayer({ videos = [], playerId }: Props) {
 
   const [loadingLike, setLoadingLike] = useState(false);
   const [sending, setSending] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = async () => {
+    if (!currentVideo) return;
+    const shareUrl = typeof window !== "undefined" ? `${window.location.origin}/reels?id=${currentVideo.id}` : selected;
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({
+          title: currentVideo.title || "Apex Talent Reel",
+          text: t("check_out_reel") || "شاهد هذا الريل على Apex Talent!",
+          url: shareUrl,
+        });
+        toast.success(t("shared_successfully") || "تمت المشاركة بنجاح!");
+        return;
+      } catch (err: any) {
+        if (err?.name === "AbortError") return;
+      }
+    }
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      toast.success(t("link_copied") || "تم نسخ رابط الريل بنجاح!");
+      setTimeout(() => setCopied(false), 2500);
+    }
+  };
 
   const hasSetInitial = useRef(false);
 
@@ -219,17 +244,17 @@ export default function ReelsPlayer({ videos = [], playerId }: Props) {
           />
         )}
 
-        {/* LIKE */}
-        {/* <div className="absolute top-4 right-4 flex items-center gap-2 bg-black/60 px-3 py-1 rounded-full">
-          <Heart
-            onClick={handleLike}
-            className={`cursor-pointer transition ${
-              isLiked ? "text-red-500 fill-red-500" : "text-white"
-            } ${loadingLike ? "opacity-50 pointer-events-none" : ""}`}
-            size={18}
-          />
-          <span className="text-sm">{currentLikes}</span>
-        </div> */}
+        {/* SHARE & LIKE OVERLAY */}
+        <div className="absolute top-4 right-4 flex items-center gap-3 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-gray-700/50 z-10">
+          <button
+            onClick={handleShare}
+            className="flex items-center gap-1.5 text-xs text-white hover:text-yellow-400 transition"
+            title={t("share") || "مشاركة"}
+          >
+            {copied ? <Check size={16} className="text-green-400" /> : <Share2 size={16} />}
+            <span>{copied ? (t("copied") || "تم النسخ") : (t("share") || "مشاركة")}</span>
+          </button>
+        </div>
       </div>
 
       {/* THUMBNAILS */}

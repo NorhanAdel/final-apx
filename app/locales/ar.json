@@ -915,5 +915,20 @@
   "Try adjusting your search term": "حاول تعديل مصطلح البحث",
   "View Event": "عرض الحدث",
   "Player Selected": "تم اختيار اللاعب",
-  "Change": "تغيير"
+  "Change": "تغيير",
+  "share_reel_title": "مشاركة الريل",
+  "copy_reel_link": "رابط الريل",
+  "share_via_any_app": "المشاركة عبر تطبيق آخر...",
+  "share_via_apps_desc": "واتساب، إنستغرام، فيسبوك، تليجرام، وغيرها",
+  "quick_share": "مشاركة سريعة عبر",
+  "copied": "تم النسخ!",
+  "copy": "نسخ",
+  "copied_to_clipboard": "تم نسخ رابط الريل بنجاح!",
+  "failed_to_copy": "فشل نسخ الرابط",
+  "instagram": "إنستغرام",
+  "whatsapp": "واتساب",
+  "telegram": "تليجرام",
+  "facebook": "فيسبوك",
+  "x_platform": "X",
+  "share": "مشاركة"
 }

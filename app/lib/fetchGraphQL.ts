@@ -45,14 +45,58 @@ export const fetchGraphQL = async <T = unknown>(
     }
   }
 
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/graphql`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({
-      query: queryString,
-      variables,
-    }),
-  });
+  const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || "http://72.62.28.146";
+  const apiUrl = rawApiUrl.replace(/\/+$/, "");
 
-  return response.json();
+  try {
+    const response = await fetch(`${apiUrl}/graphql`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        query: queryString,
+        variables,
+      }),
+    });
+
+    if (response.ok) {
+      return await response.json();
+    }
+
+    return {
+      errors: [
+        {
+          message: `Server HTTP ${response.status}: ${response.statusText}`,
+        },
+      ],
+    };
+  } catch (error: any) {
+    // Smart Fallback: If remote API URL failed (e.g. ISP block/offline), try local backend
+    if (!apiUrl.includes("localhost") && !apiUrl.includes("127.0.0.1")) {
+      try {
+        const localResponse = await fetch("http://localhost:3001/graphql", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            query: queryString,
+            variables,
+          }),
+        });
+        if (localResponse.ok) {
+          return await localResponse.json();
+        }
+      } catch {
+        // Ignored fallback error
+      }
+    }
+
+    return {
+      errors: [
+        {
+          message:
+            error?.message ||
+            "Failed to connect to backend server. Please check API URL or server availability.",
+        },
+      ],
+    };
+  }
 };

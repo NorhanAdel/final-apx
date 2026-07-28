@@ -1,23 +1,27 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import {
   Heart,
   MessageCircle,
   Send,
-  MoreHorizontal,
   Volume2,
   VolumeX,
   Reply,
   Edit,
   Trash2,
   X,
+  Share2,
+  Share,
+  Copy,
+  Check,
 } from "lucide-react";
 import { useTheme } from "@/app/context/ThemeContext";
 import { useAuth } from "@/app/context/auth-context";
 import useTranslate from "@/app/hooks/useTranslate";
 import { toast } from "sonner";
+import { fetchGraphQL } from "@/app/lib/fetchGraphQL";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://72.62.28.146";
 
 interface Comment {
@@ -149,6 +153,38 @@ const getFullImageUrl = (url?: string | null): string => {
   return `${API_URL}${url.startsWith("/") ? "" : "/"}${url}`;
 };
 
+// Social Media Icons
+const WhatsAppIcon = () => (
+  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="white">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.298-.018-.459.13-.607.134-.133.297-.347.446-.52.15-.174.2-.298.3-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.61-.916-2.206-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.273.298-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414-.074-.124-.272-.198-.57-.347z"/>
+    <path d="M12 0C5.373 0 0 5.373 0 12c0 2.656.862 5.109 2.318 7.079l-1.392 4.469 4.653-1.386C8.045 22.334 9.956 23 12 23c6.627 0 12-5.373 12-12S18.627 0 12 0zm3.37 16.318c-.149.416-.82.742-1.184.792-.336.047-.769.075-1.443-.322-1.195-.708-2.422-2.075-3.155-2.827-1.187-1.22-1.819-2.326-1.819-3.04 0-.715.353-1.294.77-1.631.16-.13.272-.186.391-.186.119 0 .283.014.403.014.118 0 .307-.049.481.372.104.252.357.923.389.992.032.069.052.149.019.238-.034.09-.053.11-.088.165-.035.055-.07.083-.115.133-.043.05-.078.069-.12.115-.04.046-.08.079-.033.155.047.076.208.345.445.669.477.655 1.054 1.41 1.79 1.879.384.245.845.441 1.324.553.081.019.156.008.215-.048.128-.125.332-.409.422-.55.09-.141.157-.116.267-.07.111.046.512.243.655.322.144.078.27.174.31.272.039.098.039.229-.01.374z"/>
+  </svg>
+);
+
+const InstagramIcon = () => (
+  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="white">
+    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+  </svg>
+);
+
+const TelegramIcon = () => (
+  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="white">
+    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.121l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.128.832.941z"/>
+  </svg>
+);
+
+const FacebookIcon = () => (
+  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="white">
+    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+  </svg>
+);
+
+const XIcon = () => (
+  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="white">
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+  </svg>
+);
+
 export default function ReelsPage() {
   const { theme } = useTheme();
   const { user } = useAuth();
@@ -174,25 +210,51 @@ export default function ReelsPage() {
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const viewsIncremented = useRef<Set<string>>(new Set());
   const [muted, setMuted] = useState(false);
+  const [openShareModal, setOpenShareModal] = useState<string | null>(null);
+  const [copiedReelId, setCopiedReelId] = useState<string | null>(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  const getReelShareUrl = (reelId: string) => {
+    if (typeof window === "undefined") return "";
+    return `${window.location.origin}/reels?id=${reelId}`;
+  };
+
+  const handleNativeShare = async (reel: Reel) => {
+    const shareUrl = getReelShareUrl(reel.id);
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({
+          title: reel.event_type ? `Reel: ${reel.event_type}` : "Apex Talent Reel",
+          text: t("check_out_reel") || "شاهد هذا الريل المميز على Apex Talent!",
+          url: shareUrl,
+        });
+        toast.success(t("shared_successfully") || "تمت المشاركة بنجاح!");
+      } catch (err: any) {
+        if (err?.name !== "AbortError") {
+          console.error("Native share error:", err);
+        }
+      }
+    } else {
+      handleCopyLink(reel);
+    }
+  };
+
+  const handleCopyLink = (reel: Reel) => {
+    const shareUrl = getReelShareUrl(reel.id);
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(shareUrl);
+      setCopiedReelId(reel.id);
+      toast.success(t("link_copied") || "تم نسخ رابط الريل بنجاح!");
+      setTimeout(() => setCopiedReelId(null), 2500);
+    }
+  };
 
   const gqlFetch = async (
     query: string,
     variables?: Record<string, unknown>,
-    withAuth = false,
+    _withAuth = false,
   ) => {
-    const token = localStorage.getItem("token");
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
-    if (withAuth && token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-    const res = await fetch(`${API_URL}/graphql`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ query, variables }),
-    });
-    return res.json();
+    return await fetchGraphQL(query, variables);
   };
 
   useEffect(() => {
@@ -207,6 +269,8 @@ export default function ReelsPage() {
     for (const reel of reelsData) {
       fetchCommentsCount(reel.id);
     }
+
+    setIsInitialLoad(false);
   };
 
   const fetchCommentsCount = async (reelId: string) => {
@@ -226,20 +290,61 @@ export default function ReelsPage() {
   };
 
   useEffect(() => {
+    if (isInitialLoad) return;
     const current = videoRefs.current[currentIndex];
-    if (current) current.play().catch(() => {});
+    if (current) {
+      current.muted = muted;
+      current.volume = muted ? 0 : 1;
+      const playPromise = current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          if (current) {
+            current.muted = true;
+            current.play().catch(() => {});
+          }
+        });
+      }
+    }
     videoRefs.current.forEach((v, i) => {
       if (v && i !== currentIndex) v.pause();
     });
-  }, [currentIndex, reels]);
+  }, [currentIndex, reels, muted, isInitialLoad]);
 
   useEffect(() => {
-    if (reels.length > 0 && currentIndex === 0) {
+    if (reels.length > 0 && !isInitialLoad) {
       setTimeout(() => {
-        videoRefs.current[0]?.play().catch(() => {});
+        const firstVideo = videoRefs.current[0];
+        if (firstVideo) {
+          firstVideo.muted = false;
+          firstVideo.volume = 1;
+          firstVideo.play().catch(() => {});
+          setMuted(false);
+        }
       }, 500);
     }
-  }, [reels]);
+  }, [reels, isInitialLoad]);
+
+  useEffect(() => {
+    const handleFirstUserInteraction = () => {
+      setMuted(false);
+      const current = videoRefs.current[currentIndex];
+      if (current) {
+        current.muted = false;
+        current.volume = 1;
+        current.play().catch(() => {});
+      }
+      window.removeEventListener("click", handleFirstUserInteraction);
+      window.removeEventListener("touchstart", handleFirstUserInteraction);
+    };
+
+    window.addEventListener("click", handleFirstUserInteraction);
+    window.addEventListener("touchstart", handleFirstUserInteraction);
+
+    return () => {
+      window.removeEventListener("click", handleFirstUserInteraction);
+      window.removeEventListener("touchstart", handleFirstUserInteraction);
+    };
+  }, [currentIndex]);
 
   useEffect(() => {
     const reel = reels[currentIndex];
@@ -251,9 +356,7 @@ export default function ReelsPage() {
 
   const toggleSound = () => {
     const newMuted = !muted;
-
     setMuted(newMuted);
-
     videoRefs.current.forEach((video) => {
       if (video) {
         video.muted = newMuted;
@@ -261,6 +364,7 @@ export default function ReelsPage() {
       }
     });
   };
+
   const toggleLike = async (id: string) => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -442,7 +546,7 @@ export default function ReelsPage() {
         return (
           <div
             key={reel.id}
-            className="relative h-screen w-full  max-w-[420px] my-0 mx-auto snap-start"
+            className="relative h-screen w-full max-w-[420px] my-0 mx-auto snap-start"
           >
             <video
               ref={(el) => {
@@ -464,24 +568,29 @@ export default function ReelsPage() {
               </div>
             )}
             <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/80 pointer-events-none" />
+
             <button
               onClick={toggleSound}
-              className="absolute top-28 right-4 z-[999] text-white"
+              className="absolute top-28 right-4 z-[999] text-white hover:text-yellow-400 transition"
             >
-              {muted ? <VolumeX /> : <Volume2 />}
+              {muted ? <VolumeX className="hover:text-yellow-400" /> : <Volume2 className="hover:text-yellow-400" />}
             </button>
 
-            <div className="absolute right-4 bottom-24 flex flex-col gap-6 z-10 text-white">
+            <div className="absolute right-4 bottom-24 flex flex-col gap-6 z-10">
               <button
                 onClick={() => toggleLike(reel.id)}
-                className="flex flex-col items-center"
+                className="flex flex-col items-center group"
               >
                 <Heart
                   size={26}
                   fill={isLiked ? "red" : "none"}
-                  className={isLiked ? "text-red-500" : "text-white"}
+                  className={`transition ${
+                    isLiked ? "text-red-500" : "text-white group-hover:text-yellow-400"
+                  }`}
                 />
-                <span className="text-xs">{reel.likes_count || 0}</span>
+                <span className={`text-xs ${isLiked ? "text-red-500" : "text-white group-hover:text-yellow-400"} transition`}>
+                  {reel.likes_count || 0}
+                </span>
               </button>
 
               <button
@@ -489,21 +598,245 @@ export default function ReelsPage() {
                   setOpenComments(reel.id);
                   fetchComments(reel.id);
                 }}
-                className="flex flex-col items-center"
+                className="flex flex-col items-center group"
               >
-                <MessageCircle size={26} className="text-white" />
-                <span className="text-xs">{commentsCount[reel.id] || 0}</span>
+                <MessageCircle size={26} className="text-white group-hover:text-yellow-400 transition" />
+                <span className="text-xs text-white group-hover:text-yellow-400 transition">
+                  {commentsCount[reel.id] || 0}
+                </span>
               </button>
 
-              <span className="text-xs">👁 {reel.views_count || 0}</span>
-              <MoreHorizontal size={22} />
+              <button
+                onClick={() => setOpenShareModal(reel.id)}
+                className="flex flex-col items-center group"
+              >
+                <Share2 size={26} className="text-white group-hover:text-yellow-400 transition" />
+                <span className="text-xs text-white group-hover:text-yellow-400 transition">
+                </span>
+              </button>
+
+              <div className="flex flex-col items-center group">
+                <span className="text-white group-hover:text-yellow-400 transition text-lg">👁</span>
+                <span className="text-xs text-white group-hover:text-yellow-400 transition">
+                  {reel.views_count || 0}
+                </span>
+              </div>
             </div>
 
+            {openShareModal === reel.id && (
+              <div
+                onClick={() => setOpenShareModal(null)}
+                className={`fixed inset-0 z-[100] backdrop-blur-sm flex items-center justify-center p-4 cursor-pointer ${
+                  isDark ? "bg-black/80" : "bg-white/80"
+                }`}
+              >
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className={`w-full max-w-sm rounded-2xl p-5 shadow-2xl flex flex-col gap-4 transition-all duration-200 cursor-default animate-in fade-in zoom-in-95 ${
+                    isDark
+                      ? "bg-[#0b1329] border border-gray-800 text-white"
+                      : "bg-white border border-gray-200 text-gray-900"
+                  }`}
+                >
+                  <div
+                    className={`flex justify-between items-center border-b pb-3 ${
+                      isDark ? "border-gray-800" : "border-gray-200"
+                    }`}
+                  >
+                    <h3 className="text-base font-semibold flex items-center gap-2 text-yellow-500">
+                      <Share2 size={18} />
+                      {t("share_reel_title")}
+                    </h3>
+                    <button
+                      onClick={() => setOpenShareModal(null)}
+                      className={`rounded-full p-1.5 transition ${
+                        isDark
+                          ? "bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white"
+                          : "bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-black"
+                      }`}
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      handleNativeShare(reel);
+                      setOpenShareModal(null);
+                    }}
+                    className="w-full bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-bold py-2.5 px-4 rounded-xl flex items-center justify-between transition shadow-md"
+                  >
+                    <div className="flex flex-col text-right">
+                      <span className="text-sm font-bold">{t("share_via_any_app")}</span>
+                      <span className="text-[10px] text-black/80 font-normal">{t("share_via_apps_desc")}</span>
+                    </div>
+                    <Share size={18} />
+                  </button>
+
+                  <div className="flex flex-col gap-2">
+                    <span className={`text-xs font-medium ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+                      {t("quick_share")}
+                    </span>
+                    <div className="grid grid-cols-5 gap-1.5 text-center text-xs">
+                      <a
+                        href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
+                          `شاهد هذا الريل على Apex Talent:\n${getReelShareUrl(reel.id)}`
+                        )}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition ${
+                          isDark
+                            ? "bg-green-950/40 hover:bg-green-900/60 border-green-800/40 text-green-400"
+                            : "bg-green-50 hover:bg-green-100 border-green-200 text-green-700"
+                        }`}
+                      >
+                        <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center font-bold text-sm">
+                          <WhatsAppIcon />
+                        </div>
+                        <span className="text-[10px] truncate max-w-full">{t("whatsapp")}</span>
+                      </a>
+
+                      <button
+                        onClick={() => {
+                          handleCopyLink(reel);
+                          toast.info(t("instagram_share_notice") || "تم نسخ رابط الريل! يمكنك لصقه ومشاركته في إنستغرام 📸");
+                          if (typeof window !== "undefined") {
+                            window.open("https://www.instagram.com/", "_blank");
+                          }
+                        }}
+                        className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition ${
+                          isDark
+                            ? "bg-rose-950/40 hover:bg-rose-900/60 border-rose-800/40 text-rose-400"
+                            : "bg-rose-50 hover:bg-rose-100 border-rose-200 text-rose-700"
+                        }`}
+                      >
+                        <div className="w-8 h-8 rounded-full bg-rose-500/20 flex items-center justify-center font-bold text-sm">
+                          <InstagramIcon />
+                        </div>
+                        <span className="text-[10px] truncate max-w-full">{t("instagram")}</span>
+                      </button>
+
+                      <a
+                        href={`https://t.me/share/url?url=${encodeURIComponent(
+                          getReelShareUrl(reel.id)
+                        )}&text=${encodeURIComponent("شاهد هذا الريل على Apex Talent")}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition ${
+                          isDark
+                            ? "bg-blue-950/40 hover:bg-blue-900/60 border-blue-800/40 text-blue-400"
+                            : "bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700"
+                        }`}
+                      >
+                        <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center font-bold text-sm">
+                          <TelegramIcon />
+                        </div>
+                        <span className="text-[10px] truncate max-w-full">{t("telegram")}</span>
+                      </a>
+
+                      <a
+                        href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+                          getReelShareUrl(reel.id)
+                        )}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition ${
+                          isDark
+                            ? "bg-indigo-950/40 hover:bg-indigo-900/60 border-indigo-800/40 text-indigo-400"
+                            : "bg-indigo-50 hover:bg-indigo-100 border-indigo-200 text-indigo-700"
+                        }`}
+                      >
+                        <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center font-bold text-sm">
+                          <FacebookIcon />
+                        </div>
+                        <span className="text-[10px] truncate max-w-full">{t("facebook")}</span>
+                      </a>
+
+                      <a
+                        href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(
+                          getReelShareUrl(reel.id)
+                        )}&text=${encodeURIComponent("شاهد هذا الريل على Apex Talent")}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition ${
+                          isDark
+                            ? "bg-gray-800/70 hover:bg-gray-700 border-gray-700 text-gray-300"
+                            : "bg-gray-100 hover:bg-gray-200 border-gray-300 text-gray-800"
+                        }`}
+                      >
+                        <div className="w-8 h-8 rounded-full bg-gray-700/30 flex items-center justify-center font-bold text-sm">
+                          <XIcon />
+                        </div>
+                        <span className="text-[10px] truncate max-w-full">{t("x_platform")}</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className={`text-xs font-medium ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+                      {t("copy_reel_link")}:
+                    </label>
+                    <div
+                      className={`flex items-center gap-2 border rounded-xl p-1.5 pl-3 ${
+                        isDark
+                          ? "bg-gray-900/90 border-gray-700/80 text-gray-200"
+                          : "bg-gray-50 border-gray-300 text-gray-800"
+                      }`}
+                    >
+                      <input
+                        type="text"
+                        readOnly
+                        value={getReelShareUrl(reel.id)}
+                        className="bg-transparent text-xs flex-1 outline-none select-all text-left dir-ltr"
+                      />
+                      <button
+                        onClick={() => handleCopyLink(reel)}
+                        className="bg-yellow-500 hover:bg-yellow-400 text-black font-semibold text-xs py-1.5 px-3 rounded-lg flex items-center gap-1 transition shrink-0 shadow-sm"
+                      >
+                        {copiedReelId === reel.id ? (
+                          <>
+                            <Check size={14} />
+                            <span>{t("copied")}</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy size={14} />
+                            <span>{t("copy")}</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {openComments === reel.id && (
-              <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center">
-                <div className="w-full max-w-md mx-4 bg-[#0a0a0f] rounded-2xl overflow-hidden shadow-2xl max-h-[80vh] flex flex-col">
-                  <div className="flex justify-between items-center p-4 border-b border-gray-800">
-                    <h3 className="text-white font-semibold">
+              <div
+                onClick={() => {
+                  setOpenComments(null);
+                  setReplyToCommentId(null);
+                  setEditCommentId(null);
+                  setEditReplyId(null);
+                }}
+                className={`fixed inset-0 z-[100] backdrop-blur-sm flex items-center justify-center p-4 cursor-pointer ${
+                  isDark ? "bg-black/80" : "bg-white/80"
+                }`}
+              >
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className={`w-full max-w-md mx-4 rounded-2xl overflow-hidden shadow-2xl max-h-[80vh] flex flex-col cursor-default ${
+                    isDark
+                      ? "bg-[#0b1329] border border-gray-800 text-white"
+                      : "bg-white border border-gray-200 text-gray-900"
+                  }`}
+                >
+                  <div
+                    className={`flex justify-between items-center p-4 border-b ${
+                      isDark ? "border-gray-800" : "border-gray-200"
+                    }`}
+                  >
+                    <h3 className={`font-semibold ${isDark ? "text-white" : "text-gray-900"}`}>
                       {t("comments")}
                     </h3>
                     <button
@@ -513,7 +846,11 @@ export default function ReelsPage() {
                         setEditCommentId(null);
                         setEditReplyId(null);
                       }}
-                      className="bg-gray-800 hover:bg-gray-700 text-white rounded-full p-2 transition"
+                      className={`rounded-full p-2 transition ${
+                        isDark
+                          ? "bg-gray-800 hover:bg-gray-700 text-white"
+                          : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                      }`}
                     >
                       <X size={18} />
                     </button>
@@ -523,7 +860,9 @@ export default function ReelsPage() {
                     {comments[reel.id]?.map((comment) => (
                       <div
                         key={comment.id}
-                        className="bg-gray-800/50 rounded-xl p-3"
+                        className={`rounded-xl p-3 ${
+                          isDark ? "bg-gray-800/50" : "bg-gray-100"
+                        }`}
                       >
                         {editCommentId === comment.id ? (
                           <div className="flex gap-2">
@@ -533,7 +872,11 @@ export default function ReelsPage() {
                               onChange={(e) =>
                                 setEditCommentText(e.target.value)
                               }
-                              className="flex-1 bg-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                              className={`flex-1 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400 ${
+                                isDark
+                                  ? "bg-gray-700 text-white"
+                                  : "bg-white text-gray-900 border border-gray-300"
+                              }`}
                               autoFocus
                             />
                             <button
@@ -545,7 +888,7 @@ export default function ReelsPage() {
                                   false,
                                 )
                               }
-                              className="bg-green-500 text-white px-3 py-2 rounded-lg text-xs font-medium"
+                              className="bg-green-500 text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-green-600 transition"
                             >
                               {t("save")}
                             </button>
@@ -554,7 +897,11 @@ export default function ReelsPage() {
                                 setEditCommentId(null);
                                 setEditCommentText("");
                               }}
-                              className="bg-gray-600 text-white px-3 py-2 rounded-lg text-xs font-medium"
+                              className={`px-3 py-2 rounded-lg text-xs font-medium transition ${
+                                isDark
+                                  ? "bg-gray-600 hover:bg-gray-500 text-white"
+                                  : "bg-gray-200 hover:bg-gray-300 text-gray-700"
+                              }`}
                             >
                               {t("cancel")}
                             </button>
@@ -569,7 +916,9 @@ export default function ReelsPage() {
                               />
                               <div className="flex-1">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-white text-xs font-medium">
+                                  <span className={`text-xs font-medium ${
+                                    isDark ? "text-white" : "text-gray-900"
+                                  }`}>
                                     {comment.user_name || "User"}
                                   </span>
                                   {comment.role_translation && (
@@ -582,7 +931,9 @@ export default function ReelsPage() {
                             </div>
 
                             <div className="flex justify-between items-start">
-                              <p className="text-white text-sm flex-1">
+                              <p className={`text-sm flex-1 ${
+                                isDark ? "text-white" : "text-gray-900"
+                              }`}>
                                 {comment.content}
                               </p>
                               <div className="flex gap-1 ml-2">
@@ -616,7 +967,7 @@ export default function ReelsPage() {
                                         setEditCommentId(comment.id);
                                         setEditCommentText(comment.content);
                                       }}
-                                      className="text-blue-400 p-1"
+                                      className="text-blue-400 p-1 hover:text-blue-300 transition"
                                     >
                                       <Edit size={14} />
                                     </button>
@@ -624,7 +975,7 @@ export default function ReelsPage() {
                                       onClick={() =>
                                         deleteComment(comment.id, reel.id)
                                       }
-                                      className="text-red-500 p-1"
+                                      className="text-red-500 p-1 hover:text-red-400 transition"
                                     >
                                       <Trash2 size={14} />
                                     </button>
@@ -633,7 +984,9 @@ export default function ReelsPage() {
                               </div>
                             </div>
 
-                            <p className="text-gray-500 text-xs mt-1">
+                            <p className={`text-xs mt-1 ${
+                              isDark ? "text-gray-500" : "text-gray-400"
+                            }`}>
                               {new Date(
                                 comment.created_at,
                               ).toLocaleDateString()}
@@ -647,7 +1000,7 @@ export default function ReelsPage() {
                                     : comment.id,
                                 )
                               }
-                              className="text-yellow-400 text-xs mt-2 flex items-center gap-1"
+                              className="text-yellow-400 text-xs mt-2 flex items-center gap-1 hover:text-yellow-300 transition"
                             >
                               <Reply size={12} /> {t("reply")}
                             </button>
@@ -659,14 +1012,18 @@ export default function ReelsPage() {
                                   value={replyText}
                                   onChange={(e) => setReplyText(e.target.value)}
                                   placeholder={t("write_reply")}
-                                  className="flex-1 bg-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                                  className={`flex-1 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400 ${
+                                    isDark
+                                      ? "bg-gray-700 text-white"
+                                      : "bg-white text-gray-900 border border-gray-300"
+                                  }`}
                                   autoFocus
                                 />
                                 <button
                                   onClick={() =>
                                     addComment(reel.id, comment.id)
                                   }
-                                  className="bg-yellow-400 text-black px-3 py-2 rounded-lg text-xs font-medium"
+                                  className="bg-yellow-400 text-black px-3 py-2 rounded-lg text-xs font-medium hover:bg-yellow-300 transition"
                                 >
                                   {t("reply")}
                                 </button>
@@ -674,11 +1031,15 @@ export default function ReelsPage() {
                             )}
 
                             {comment.replies && comment.replies.length > 0 && (
-                              <div className="ml-3 mt-2 space-y-2 border-l-2 border-gray-700 pl-3">
+                              <div className={`ml-3 mt-2 space-y-2 border-l-2 pl-3 ${
+                                isDark ? "border-gray-700" : "border-gray-300"
+                              }`}>
                                 {comment.replies.map((reply) => (
                                   <div
                                     key={reply.id}
-                                    className="bg-gray-800/30 rounded-lg p-2"
+                                    className={`rounded-lg p-2 ${
+                                      isDark ? "bg-gray-800/30" : "bg-gray-50"
+                                    }`}
                                   >
                                     {editReplyId === reply.id ? (
                                       <div className="flex gap-2">
@@ -688,7 +1049,11 @@ export default function ReelsPage() {
                                           onChange={(e) =>
                                             setEditReplyText(e.target.value)
                                           }
-                                          className="flex-1 bg-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none"
+                                          className={`flex-1 rounded-lg px-3 py-2 text-sm focus:outline-none ${
+                                            isDark
+                                              ? "bg-gray-700 text-white"
+                                              : "bg-white text-gray-900 border border-gray-300"
+                                          }`}
                                           autoFocus
                                         />
                                         <button
@@ -700,7 +1065,7 @@ export default function ReelsPage() {
                                               true,
                                             )
                                           }
-                                          className="bg-green-500 text-white px-3 py-2 rounded-lg text-xs font-medium"
+                                          className="bg-green-500 text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-green-600 transition"
                                         >
                                           {t("save")}
                                         </button>
@@ -709,7 +1074,11 @@ export default function ReelsPage() {
                                             setEditReplyId(null);
                                             setEditReplyText("");
                                           }}
-                                          className="bg-gray-600 text-white px-3 py-2 rounded-lg text-xs font-medium"
+                                          className={`px-3 py-2 rounded-lg text-xs font-medium transition ${
+                                            isDark
+                                              ? "bg-gray-600 hover:bg-gray-500 text-white"
+                                              : "bg-gray-200 hover:bg-gray-300 text-gray-700"
+                                          }`}
                                         >
                                           {t("cancel")}
                                         </button>
@@ -723,7 +1092,9 @@ export default function ReelsPage() {
                                             size={20}
                                           />
                                           <div className="flex items-center gap-2">
-                                            <span className="text-white text-xs font-medium">
+                                            <span className={`text-xs font-medium ${
+                                              isDark ? "text-white" : "text-gray-900"
+                                            }`}>
                                               {reply.user_name || "User"}
                                             </span>
                                             {reply.role_translation && (
@@ -734,7 +1105,9 @@ export default function ReelsPage() {
                                           </div>
                                         </div>
                                         <div className="flex justify-between items-start">
-                                          <p className="text-white text-xs flex-1">
+                                          <p className={`text-xs flex-1 ${
+                                            isDark ? "text-white" : "text-gray-900"
+                                          }`}>
                                             {reply.content}
                                           </p>
                                           <div className="flex gap-1">
@@ -774,7 +1147,7 @@ export default function ReelsPage() {
                                                       reply.content,
                                                     );
                                                   }}
-                                                  className="text-blue-400 p-1"
+                                                  className="text-blue-400 p-1 hover:text-blue-300 transition"
                                                 >
                                                   <Edit size={12} />
                                                 </button>
@@ -785,7 +1158,7 @@ export default function ReelsPage() {
                                                       reel.id,
                                                     )
                                                   }
-                                                  className="text-red-500 p-1"
+                                                  className="text-red-500 p-1 hover:text-red-400 transition"
                                                 >
                                                   <Trash2 size={12} />
                                                 </button>
@@ -793,7 +1166,9 @@ export default function ReelsPage() {
                                             )}
                                           </div>
                                         </div>
-                                        <p className="text-gray-500 text-xs mt-1">
+                                        <p className={`text-xs mt-1 ${
+                                          isDark ? "text-gray-500" : "text-gray-400"
+                                        }`}>
                                           {new Date(
                                             reply.created_at,
                                           ).toLocaleDateString()}
@@ -809,23 +1184,31 @@ export default function ReelsPage() {
                       </div>
                     ))}
                     {comments[reel.id]?.length === 0 && (
-                      <p className="text-gray-400 text-center py-8">
+                      <p className={`text-center py-8 ${
+                        isDark ? "text-gray-400" : "text-gray-500"
+                      }`}>
                         {t("no_comments")}
                       </p>
                     )}
                   </div>
 
-                  <div className="p-4 border-t border-gray-800 flex gap-2">
+                  <div className={`p-4 border-t flex gap-2 ${
+                    isDark ? "border-gray-800" : "border-gray-200"
+                  }`}>
                     <input
                       type="text"
                       value={commentText}
                       onChange={(e) => setCommentText(e.target.value)}
                       placeholder={t("add_comment")}
-                      className="flex-1 bg-gray-800 rounded-xl px-4 py-2 text-white placeholder-gray-500 text-sm outline-none focus:ring-1 focus:ring-yellow-400"
+                      className={`flex-1 rounded-xl px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-yellow-400 ${
+                        isDark
+                          ? "bg-gray-800 text-white placeholder-gray-500"
+                          : "bg-gray-100 text-gray-900 placeholder-gray-400"
+                      }`}
                     />
                     <button
                       onClick={() => addComment(reel.id)}
-                      className="bg-yellow-400 text-black px-4 py-2 rounded-xl font-semibold text-sm"
+                      className="bg-yellow-400 text-black px-4 py-2 rounded-xl font-semibold text-sm hover:bg-yellow-300 transition"
                     >
                       <Send size={16} />
                     </button>

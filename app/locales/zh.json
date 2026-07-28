@@ -919,5 +919,20 @@
     "Try adjusting your search term": "尝试调整搜索词",
     "View Event": "查看活动",
     "Player Selected": "已选择球员",
-    "Change": "更改"
+    "Change": "更改",
+    "share_reel_title": "分享 Reel",
+    "copy_reel_link": "Reel 链接",
+    "share_via_any_app": "通过其他应用分享...",
+    "share_via_apps_desc": "WhatsApp、Instagram、Facebook、Telegram 等",
+    "quick_share": "快速分享至",
+    "copied": "已复制！",
+    "copy": "复制",
+    "copied_to_clipboard": "Reel 链接已成功复制！",
+    "failed_to_copy": "复制链接失败",
+    "instagram": "Instagram",
+    "whatsapp": "WhatsApp",
+    "telegram": "Telegram",
+    "facebook": "Facebook",
+    "x_platform": "X",
+    "share": "分享"
 }

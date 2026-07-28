@@ -914,5 +914,20 @@
     "Try adjusting your search term": "Tente ajustar o termo de pesquisa",
     "View Event": "Ver Evento",
     "Player Selected": "Jogador Selecionado",
-    "Change": "Alterar"
+    "Change": "Alterar",
+    "share_reel_title": "Compartilhar Reel",
+    "copy_reel_link": "Link do Reel",
+    "share_via_any_app": "Compartilhar por outro aplicativo...",
+    "share_via_apps_desc": "WhatsApp, Instagram, Facebook, Telegram e mais",
+    "quick_share": "Compartilhamento rápido via",
+    "copied": "Copiado!",
+    "copy": "Copiar",
+    "copied_to_clipboard": "Link do Reel copiado com sucesso!",
+    "failed_to_copy": "Falha ao copiar o link",
+    "instagram": "Instagram",
+    "whatsapp": "WhatsApp",
+    "telegram": "Telegram",
+    "facebook": "Facebook",
+    "x_platform": "X",
+    "share": "Compartilhar"
 }

@@ -913,5 +913,20 @@
   "Try adjusting your search term": "Try adjusting your search term",
   "View Event": "View Event",
   "Player Selected": "Player Selected",
-  "Change": "Change"
+  "Change": "Change",
+  "share_reel_title": "Share Reel",
+  "copy_reel_link": "Reel Link",
+  "share_via_any_app": "Share via other app...",
+  "share_via_apps_desc": "WhatsApp, Instagram, Facebook, Telegram, and more",
+  "quick_share": "Quick share via",
+  "copied": "Copied!",
+  "copy": "Copy",
+  "copied_to_clipboard": "Reel link copied successfully!",
+  "failed_to_copy": "Failed to copy link",
+  "instagram": "Instagram",
+  "whatsapp": "WhatsApp",
+  "telegram": "Telegram",
+  "facebook": "Facebook",
+  "x_platform": "X",
+  "share": "Share"
 }

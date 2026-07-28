@@ -1,4 +1,3 @@
-// Get my transfers (Player)
 export const GET_MY_TRANSFERS = `
   query GetMyTransfers {
     myTransfers {
@@ -7,6 +6,7 @@ export const GET_MY_TRANSFERS = `
       from_club
       to_club
       club_name
+      logo_url
       status
       transfer_date
       completed_at
