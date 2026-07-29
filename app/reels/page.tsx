@@ -21,7 +21,7 @@ import { useTheme } from "@/app/context/ThemeContext";
 import { useAuth } from "@/app/context/auth-context";
 import useTranslate from "@/app/hooks/useTranslate";
 import { toast } from "sonner";
-import { fetchGraphQL } from "@/app/lib/fetchGraphQL";
+import { fetchGraphQL, type FetchGraphQLResponse } from "@/app/lib/fetchGraphQL";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://72.62.28.146";
 
 interface Comment {
@@ -249,12 +249,12 @@ export default function ReelsPage() {
     }
   };
 
-  const gqlFetch = async (
+  const gqlFetch = async <T = any>(
     query: string,
     variables?: Record<string, unknown>,
     _withAuth = false,
-  ) => {
-    return await fetchGraphQL(query, variables);
+  ): Promise<FetchGraphQLResponse<T>> => {
+    return await fetchGraphQL<T>(query, variables);
   };
 
   useEffect(() => {
