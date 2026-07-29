@@ -28,11 +28,11 @@ export default function MainHome() {
   
       <PositionSlider sportId={sportId} />
 
-  <EventsSection sportId={sportId} />
-      <NewestPlayers sportId={sportId}  />
-      <TransfersSection  />
-      <SponsoredAds/>
-      <Investor/>
+      <EventsSection sportId={sportId} />
+      <NewestPlayers sportId={sportId} />
+      <TransfersSection sportId={sportId} />
+      <SponsoredAds />
+      <Investor />
        
     </main>
   );

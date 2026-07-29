@@ -25,7 +25,6 @@ export default function SportsSection({ lang }: { lang: string }) {
   const [visibleCards, setVisibleCards] = useState(4);
   const [loading, setLoading] = useState(false);
 
-  /* ================= RESPONSIVE ================= */
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 1024) setVisibleCards(4);
@@ -38,7 +37,6 @@ export default function SportsSection({ lang }: { lang: string }) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  /* ================= FETCH SPORTS ================= */
   useEffect(() => {
     fetchSports();
   }, [lang]);
@@ -76,7 +74,6 @@ export default function SportsSection({ lang }: { lang: string }) {
     setLoading(false);
   };
 
-  /* ================= NAVIGATION ================= */
   const next = () => {
     if (startIndex + visibleCards < sports.length) {
       setStartIndex((p) => p + 1);
@@ -92,37 +89,42 @@ export default function SportsSection({ lang }: { lang: string }) {
   const visibleSports = sports.slice(startIndex, startIndex + visibleCards);
   const isRTL = lang === "ar";
 
-  /* ================= LOADING ================= */
   if (loading) {
     return (
-      <section className="py-16 text-center">
-        <p>{t("loading")}</p>
+      <section
+        dir={isRTL ? "rtl" : "ltr"}
+        className={`py-16 sm:py-24 ${
+          theme === "dark"
+            ? "bg-[#0f0f0f] text-white"
+            : "bg-gray-100 text-black"
+        }`}
+      >
+        <div className="flex items-center justify-center py-20">
+          <div className="relative inline-flex items-center gap-3">
+            <div className="w-8 h-8 border-4 border-yellow-400/20 border-t-yellow-400 rounded-full animate-spin" />
+            <span className="text-xs font-black text-yellow-400 tracking-widest uppercase">
+              {t("loading")}
+            </span>
+          </div>
+        </div>
       </section>
     );
   }
 
-  /* ================= UI ================= */
   return (
     <section
       dir={isRTL ? "rtl" : "ltr"}
       className={`py-16 sm:py-24 ${
-        theme === "dark"
-          ? "bg-[#0f0f0f] text-white"
-          : "bg-gray-100 text-black"
+        theme === "dark" ? "bg-[#0f0f0f] text-white" : "bg-gray-100 text-black"
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-
-        {/* TITLE */}
         <h2 className="text-center text-3xl sm:text-4xl md:text-5xl font-bold mb-12 text-[#F0B100]">
           {t("Sports")}
         </h2>
 
         <div className="flex flex-col md:flex-row gap-8 items-center">
-
-          {/* SPORTS GRID */}
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 flex-1">
-
             {visibleSports.map((sport) => {
               return (
                 <Link key={sport.id} href={`/sports/${sport.id}`}>
@@ -152,10 +154,8 @@ export default function SportsSection({ lang }: { lang: string }) {
                 </Link>
               );
             })}
-
           </div>
 
-          {/* ARROWS */}
           <div className="flex md:flex-col gap-4 mt-4 md:mt-0">
             <button
               onClick={prev}
@@ -173,7 +173,6 @@ export default function SportsSection({ lang }: { lang: string }) {
               <ChevronDown size={20} />
             </button>
           </div>
-
         </div>
       </div>
     </section>

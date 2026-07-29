@@ -5,6 +5,7 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import { ThemeProvider } from "./context/ThemeContext";
 import { AuthProvider } from "./context/auth-context";
+import RoleGuard from "./components/RoleGuard";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { Toaster } from "sonner";
 import { Cairo } from "next/font/google";
@@ -67,7 +68,9 @@ export default function RootLayout({
 
               <Navbar lang={lang} setLang={changeLang} />
 
-              <main className="min-h-screen">{children}</main>
+              <RoleGuard>
+                <main className="min-h-screen">{children}</main>
+              </RoleGuard>
 
               <Footer lang={lang} />
             </ThemeProvider>

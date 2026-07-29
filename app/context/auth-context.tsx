@@ -1,8 +1,18 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, useRef } from "react";
+import { fetchGraphQL } from "../lib/fetchGraphQL";
+import { LOGOUT_MUTATION } from "../graphql/mutation/auth.mutations";
 
-export type UserRole = "PLAYER" | "CLUB" | "ADMIN" | "SCOUT" | "AGENT";
+export type UserRole =
+  | "PLAYER"
+  | "CLUB"
+  | "ADMIN"
+  | "SCOUT"
+  | "AGENT"
+  | "USER"
+  | "COACH"
+  | "MANAGER";
 
 interface User {
   id: string;
@@ -77,9 +87,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loadUser();
   }, []);
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await fetchGraphQL(LOGOUT_MUTATION);
+    } catch {}
     localStorage.removeItem("token");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("remember_token");
     localStorage.removeItem("user");
+    try {
+      document.cookie =
+        "token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+    } catch {}
     setUser(null);
   };
 

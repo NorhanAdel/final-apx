@@ -1,3 +1,4 @@
+// src/app/transfers/page.tsx
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
@@ -7,8 +8,10 @@ import {
   XCircle,
   Clock,
   ArrowRight,
+  ArrowLeft,
   Filter,
   ChevronDown,
+  Building2,
 } from "lucide-react";
 import Image from "next/image";
 import { GET_MY_TRANSFERS } from "@/app/graphql/query/transfer.queries";
@@ -24,6 +27,7 @@ interface Transfer {
   from_club: string;
   to_club: string;
   club_name: string | null;
+  logo_url?: string | null;
   club_logo_url?: string | null;
   status: string;
   transfer_date: string;
@@ -57,13 +61,13 @@ const STATUS_TRANSLATIONS: Record<string, Record<string, string>> = {
 function getFullImageUrl(url: string | undefined | null): string {
   if (!url) return "";
   if (url.startsWith("http")) return url;
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://albatal.info";
   return `${API_URL}${url.startsWith("/") ? "" : "/"}${url}`;
 }
 
 const getStatusKey = (status: string): string => {
   const lower = status.toLowerCase().trim();
-  
+
   for (const [key, translations] of Object.entries(STATUS_TRANSLATIONS)) {
     for (const [, value] of Object.entries(translations)) {
       if (lower.includes(value.toLowerCase())) {
@@ -71,22 +75,22 @@ const getStatusKey = (status: string): string => {
       }
     }
   }
-  
+
   const statusMap: Record<string, string> = {
-    "pending": "PENDING",
+    pending: "PENDING",
     "قيد الانتظار": "PENDING",
-    "pendente": "PENDING",
-    "待处理": "PENDING",
-    "completed": "COMPLETED",
-    "مكتمل": "COMPLETED",
-    "concluído": "COMPLETED",
-    "已完成": "COMPLETED",
-    "cancelled": "CANCELLED",
-    "ملغي": "CANCELLED",
-    "cancelado": "CANCELLED",
-    "已取消": "CANCELLED",
+    pendente: "PENDING",
+    待处理: "PENDING",
+    completed: "COMPLETED",
+    مكتمل: "COMPLETED",
+    concluído: "COMPLETED",
+    已完成: "COMPLETED",
+    cancelled: "CANCELLED",
+    ملغي: "CANCELLED",
+    cancelado: "CANCELLED",
+    已取消: "CANCELLED",
   };
-  
+
   return statusMap[lower] || status.toUpperCase();
 };
 
@@ -98,6 +102,8 @@ const matchesStatus = (status: string, targetKey: string): boolean => {
 export default function TransfersPage() {
   const { theme } = useTheme();
   const { t, lang } = useTranslate();
+  const isRTL = lang === "ar";
+
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [filteredTransfers, setFilteredTransfers] = useState<Transfer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -183,7 +189,8 @@ export default function TransfersPage() {
 
   const getStatusLabel = (status: string) => {
     const key = getStatusKey(status);
-    const translations = STATUS_TRANSLATIONS[key as keyof typeof STATUS_TRANSLATIONS];
+    const translations =
+      STATUS_TRANSLATIONS[key as keyof typeof STATUS_TRANSLATIONS];
     if (translations && translations[lang]) {
       return translations[lang];
     }
@@ -329,7 +336,9 @@ export default function TransfersPage() {
         ) : (
           <div className="flex flex-col gap-6">
             {filteredTransfers.map((transfer) => {
-              const clubLogo = getFullImageUrl(transfer.club_logo_url);
+              const clubLogo = getFullImageUrl(transfer.logo_url || transfer.club_logo_url);
+              const clubNameText = transfer.club_name || transfer.to_club;
+
               return (
                 <div
                   key={transfer.id}
@@ -340,20 +349,26 @@ export default function TransfersPage() {
                       : "border border-gray-200 bg-white shadow"
                   }`}
                 >
+                  {/* Club Logo & Name Header */}
+                  <div className="flex items-center gap-3 mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
+                    <div className="relative w-8 h-8 rounded-full overflow-hidden shrink-0 border border-yellow-500/30 bg-white/5 flex items-center justify-center">
+                      {clubLogo ? (
+                        <Image
+                          src={clubLogo}
+                          alt={clubNameText}
+                          fill
+                          className="object-cover"
+                        />
+                      ) : (
+                        <Building2 size={14} className="text-yellow-500" />
+                      )}
+                    </div>
+                    <span className="font-bold text-base">{clubNameText}</span>
+                  </div>
+
                   <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                     <div className="flex-1 text-center md:text-left">
                       <div className="flex items-center justify-center md:justify-start gap-3 mb-1">
-                        {clubLogo && (
-                          <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 border border-yellow-500/30">
-                            <Image
-                              src={clubLogo}
-                              alt={transfer.from_club || "Club"}
-                              width={40}
-                              height={40}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        )}
                         <div>
                           <p className="text-sm text-gray-400">{t("From")}</p>
                           <p className="font-semibold text-lg">
@@ -364,22 +379,15 @@ export default function TransfersPage() {
                     </div>
 
                     <div className="text-yellow-400">
-                      <ArrowRight size={24} className="mx-auto" />
+                      {isRTL ? (
+                        <ArrowLeft size={24} className="mx-auto" />
+                      ) : (
+                        <ArrowRight size={24} className="mx-auto" />
+                      )}
                     </div>
 
                     <div className="flex-1 text-center md:text-right">
                       <div className="flex items-center justify-center md:justify-end gap-3 mb-1">
-                        {clubLogo && (
-                          <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 border border-yellow-500/30">
-                            <Image
-                              src={clubLogo}
-                              alt={transfer.to_club || "Club"}
-                              width={40}
-                              height={40}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        )}
                         <div>
                           <p className="text-sm text-gray-400">{t("To")}</p>
                           <p className="font-semibold text-lg">

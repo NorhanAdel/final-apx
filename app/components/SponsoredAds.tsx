@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { Loader2, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { fetchGraphQL } from "@/app/lib/fetchGraphQL";
@@ -21,13 +21,6 @@ interface Ad {
   package_name: string;
 }
 
-const texts = {
-  en: { sponsored: "Sponsored", learnMore: "Learn More", noAds: "No ads available" },
-  ar: { sponsored: "إعلان ممول", learnMore: "اعرف المزيد", noAds: "لا توجد إعلانات حاليا" },
-  pt: { sponsored: "Patrocinado", learnMore: "Saiba Mais", noAds: "Nenhum anúncio disponível" },
-  zh: { sponsored: "赞助广告", learnMore: "了解更多", noAds: "暂无广告" },
-};
-
 export default function BannerAds() {
   const [ads, setAds] = useState<Ad[]>([]);
   const [index, setIndex] = useState(0);
@@ -35,12 +28,10 @@ export default function BannerAds() {
 
   const [stats, setStats] = useState<Record<string, { views: number; clicks: number }>>({});
 
-  const { lang } = useTranslate();
+  const { t, lang } = useTranslate();
   const { theme } = useTheme();
 
   const isDark = theme === "dark";
-
-  const t = texts[lang as keyof typeof texts] || texts.en;
 
   const GET_ADS = `
     query GetAllSponsoredAds {
@@ -100,9 +91,6 @@ export default function BannerAds() {
 
   const ad = ads[index];
 
-  // =========================
-  // FIXED VIEW TRACKING
-  // =========================
   useEffect(() => {
     if (!ad?.id) return;
 
@@ -121,8 +109,15 @@ export default function BannerAds() {
 
   if (loading) {
     return (
-      <div className={`flex items-center justify-center py-24 ${isDark ? "bg-[#020617]" : "bg-[#f5f7fb]"}`}>
-        <Loader2 className="w-10 h-10 animate-spin text-yellow-400" />
+      <div className="mt-14 px-3 sm:px-6 lg:px-10">
+        <div className="flex items-center justify-center py-20">
+          <div className="relative inline-flex items-center gap-3">
+            <div className="w-8 h-8 border-4 border-yellow-400/20 border-t-yellow-400 rounded-full animate-spin" />
+            <span className="text-xs font-black text-yellow-400 tracking-widest uppercase">
+              {t("loading")}
+            </span>
+          </div>
+        </div>
       </div>
     );
   }
@@ -131,7 +126,7 @@ export default function BannerAds() {
     return (
       <div className={`flex items-center justify-center py-24 ${isDark ? "bg-[#020617]" : "bg-[#f5f7fb]"}`}>
         <p className={isDark ? "text-gray-400" : "text-gray-500"}>
-          {t.noAds}
+          {t("no_ads_available")}
         </p>
       </div>
     );
@@ -160,7 +155,6 @@ export default function BannerAds() {
             transition={{ duration: 0.8 }}
             className="relative w-full h-[260px] sm:h-[340px] md:h-[420px] rounded-2xl overflow-hidden border border-white/10 shadow-2xl"
           >
-            {/* MEDIA */}
             {mediaUrl &&
               (isVideo ? (
                 <video
@@ -181,18 +175,16 @@ export default function BannerAds() {
                 />
               ))}
 
-            {/* OVERLAY */}
             <div className={`absolute inset-0 ${
               isDark
                 ? "bg-gradient-to-r from-black/85 via-black/50 to-black/10"
                 : "bg-gradient-to-r from-black/70 via-black/30 to-transparent"
             }`} />
 
-            {/* CONTENT */}
             <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-8 md:px-10 z-10 max-w-2xl">
 
               <span className="bg-yellow-400 text-black w-fit px-3 py-1 text-xs font-bold rounded-full mb-3">
-                {t.sponsored}
+                {t("sponsored")}
               </span>
 
               <h2 className="text-xl sm:text-3xl md:text-4xl font-black text-white">
@@ -209,48 +201,47 @@ export default function BannerAds() {
                 {ad.description}
               </p>
 
-              {/* CTA (SMALL + RESPONSIVE + FIXED CLICK) */}
               {ad.target_url && (
-            <a
-  href={ad.target_url}
-  target="_blank"
-  rel="noopener noreferrer"
-  onClick={async (e) => {
-    e.preventDefault();
+                <a
+                  href={ad.target_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={async (e) => {
+                    e.preventDefault();
 
-    const adId = ad.id;
+                    const adId = ad.id;
 
-    setStats((prev) => ({
-      ...prev,
-      [adId]: {
-        views: prev[adId]?.views || 0,
-        clicks: (prev[adId]?.clicks || 0) + 1,
-      },
-    }));
+                    setStats((prev) => ({
+                      ...prev,
+                      [adId]: {
+                        views: prev[adId]?.views || 0,
+                        clicks: (prev[adId]?.clicks || 0) + 1,
+                      },
+                    }));
 
-    try {
-      await fetchGraphQL(TRACK_CLICK, { adId });
-    } catch (err) {
-      console.error(err);
-    }
+                    try {
+                      await fetchGraphQL(TRACK_CLICK, { adId });
+                    } catch (err) {
+                      console.error(err);
+                    }
 
-    window.open(ad.target_url!, "_blank");
-  }}
-  className="
-    mt-3
-    inline-flex items-center gap-1
-    self-start whitespace-nowrap
-    bg-yellow-400 text-black font-semibold
-    px-2.5 sm:px-3
-    py-1
-    rounded-md
-    text-[10px] sm:text-xs
-    transition hover:bg-yellow-500
-  "
->
-  {t.learnMore}
-  <ExternalLink size={12} />
-</a>
+                    window.open(ad.target_url!, "_blank");
+                  }}
+                  className="
+                    mt-3
+                    inline-flex items-center gap-1
+                    self-start whitespace-nowrap
+                    bg-yellow-400 text-black font-semibold
+                    px-2.5 sm:px-3
+                    py-1
+                    rounded-md
+                    text-[10px] sm:text-xs
+                    transition hover:bg-yellow-500
+                  "
+                >
+                  {t("learn_more")}
+                  <ExternalLink size={12} />
+                </a>
               )}
             </div>
           </motion.div>

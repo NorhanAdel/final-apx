@@ -49,7 +49,6 @@
   "Current Club": "النادي الحالي",
   "Professional Debut": "الظهور الأول",
   "Previous Clubs": "الأندية السابقة",
-
   "hero_description": "Super 7 Bousre هي منصتك للتألق، تساعدك على تطوير موهبتك ومشاركتها مع العالم",
   "discover_more": "اكتشف المزيد",
   "watch_tv": "شاهد القناة",
@@ -930,5 +929,18 @@
   "telegram": "تليجرام",
   "facebook": "فيسبوك",
   "x_platform": "X",
-  "share": "مشاركة"
+  "share": "مشاركة",
+  "access_denied": "تم رفض الوصول",
+  "access_denied_description": "ليس لديك صلاحية لهذا القسم",
+  "checking_permissions": "جاري التحقق من الصلاحيات...",
+  "please_login_first": "يرجى تسجيل الدخول أولاً",
+  "please_login_first_to_access": "يرجى تسجيل الدخول أولاً للوصول لهذه الصفحة",
+  "club": "الأندية",
+  "scout": "الكشافين",
+  "agent": "وكلاء اللاعبين",
+  "coach": "المدربين",
+  "manager": "المدراء",
+  "admin": "المدير العام",
+  "player": "اللاعبين",
+  "position_filter": "فلتر المركز"
 }

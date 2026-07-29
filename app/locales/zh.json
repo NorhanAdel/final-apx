@@ -934,5 +934,18 @@
     "telegram": "Telegram",
     "facebook": "Facebook",
     "x_platform": "X",
-    "share": "分享"
+    "share": "分享",
+    "access_denied": "访问被拒绝",
+  "access_denied_description": "您没有此部分的权限",
+  "checking_permissions": "正在检查权限...",
+  "please_login_first": "请先登录",
+  "please_login_first_to_access": "请先登录以访问此页面",
+  "club": "俱乐部",
+  "scout": "球探",
+  "agent": "球员经纪人",
+  "coach": "教练",
+  "manager": "经理",
+  "admin": "管理员",
+  "player": "球员",
+  "position_filter": "位置筛选"
 }

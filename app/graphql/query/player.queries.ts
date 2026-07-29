@@ -142,8 +142,8 @@ export const GET_PLAYER_PROFILE = `
 
 
 export const GET_ALL_PLAYERS = `
-  query GetAllPlayers($skip: Int, $take: Int, $sortBy: String, $minAge: Int, $maxAge: Int) {
-    getAllPlayers(skip: $skip, take: $take, sortBy: $sortBy, minAge: $minAge, maxAge: $maxAge) {
+  query GetAllPlayers($skip: Int, $take: Int, $sortBy: String, $minAge: Int, $maxAge: Int, $positionId: String) {
+    getAllPlayers(skip: $skip, take: $take, sortBy: $sortBy, minAge: $minAge, maxAge: $maxAge, positionId: $positionId) {
       data {
         id
         first_name
@@ -153,7 +153,13 @@ export const GET_ALL_PLAYERS = `
         date_of_birth
         age
         average_rating
-         super7_score
+        super7_score
+        football_info {
+          position {
+            id
+            name
+          }
+        }
       }
       total
     }
@@ -228,8 +234,8 @@ export const GET_PLAYER_FOOTBALL_INFO = `
 `;
 
 export const SEARCH_PLAYERS = `
-  query SearchPlayers($query: String!, $skip: Int, $take: Int, $sortBy: String, $minAge: Int, $maxAge: Int) {
-    searchPlayers(query: $query, skip: $skip, take: $take, sortBy: $sortBy, minAge: $minAge, maxAge: $maxAge) {
+  query SearchPlayers($query: String!, $skip: Int, $take: Int, $sortBy: String, $minAge: Int, $maxAge: Int, $positionId: String) {
+    searchPlayers(query: $query, skip: $skip, take: $take, sortBy: $sortBy, minAge: $minAge, maxAge: $maxAge, positionId: $positionId) {
       data {
         id
         first_name
@@ -240,6 +246,12 @@ export const SEARCH_PLAYERS = `
         age
         average_rating
         trust_level
+        football_info {
+          position {
+            id
+            name
+          }
+        }
       }
       total
     }

@@ -103,12 +103,15 @@ export default function Investor() {
 
   if (loading) {
     return (
-      <div
-        className={`flex items-center justify-center py-24 ${
-          isDark ? "bg-[#020617]" : "bg-[#f3f4f6]"
-        }`}
-      >
-        <Loader2 className="w-12 h-12 animate-spin text-yellow-400" />
+      <div className="mt-16 px-4 md:px-8">
+        <div className="flex items-center justify-center py-20">
+          <div className="relative inline-flex items-center gap-3">
+            <div className="w-8 h-8 border-4 border-yellow-400/20 border-t-yellow-400 rounded-full animate-spin" />
+            <span className="text-xs font-black text-yellow-400 tracking-widest uppercase">
+              {t("loading")}
+            </span>
+          </div>
+        </div>
       </div>
     );
   }

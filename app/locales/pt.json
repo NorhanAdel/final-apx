@@ -929,5 +929,18 @@
     "telegram": "Telegram",
     "facebook": "Facebook",
     "x_platform": "X",
-    "share": "Compartilhar"
+    "share": "Compartilhar",
+    "access_denied": "Acesso negado",
+  "access_denied_description": "Você não tem permissão para esta seção",
+  "checking_permissions": "Verificando permissões...",
+  "please_login_first": "Por favor, faça login primeiro",
+  "please_login_first_to_access": "Por favor, faça login primeiro para acessar esta página",
+  "club": "Clubes",
+  "scout": "Observadores",
+  "agent": "Agentes de Jogadores",
+  "coach": "Treinadores",
+  "manager": "Gerentes",
+  "admin": "Administrador",
+  "player": "Jogadores",
+  "position_filter": "Filtro de Posição"
 }

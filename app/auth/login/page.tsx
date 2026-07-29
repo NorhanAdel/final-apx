@@ -26,6 +26,8 @@ import useTranslate from "@/app/hooks/useTranslate";
 interface AutoLoginResponse {
   autoLogin: {
     token: string;
+    refreshToken?: string;
+    rememberToken?: string;
     user: {
       id: string;
       email: string;
@@ -67,9 +69,16 @@ export default function LoginPage() {
             { rememberToken },
           );
           if (result.data?.autoLogin) {
-            const { token, user } = result.data.autoLogin;
+            const { token, user, refreshToken, rememberToken: newRememberToken } =
+              result.data.autoLogin;
             localStorage.setItem("token", token);
             localStorage.setItem("user", JSON.stringify(user));
+            if (refreshToken) {
+              localStorage.setItem("refreshToken", refreshToken);
+            }
+            if (newRememberToken) {
+              localStorage.setItem("remember_token", newRememberToken);
+            }
             toast.success(t("Welcome back!"));
             router.push("/");
           } else {

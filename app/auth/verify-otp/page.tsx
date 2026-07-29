@@ -291,7 +291,12 @@ export default function VerifyOtpPage() {
 
     try {
       const result = await fetchGraphQL<{
-        verifyOtp: { token: string; user: User };
+        verifyOtp: {
+          token: string;
+          refreshToken?: string;
+          rememberToken?: string;
+          user: User;
+        };
       }>(VERIFY_OTP_MUTATION, {
         input: {
           email,
@@ -301,12 +306,19 @@ export default function VerifyOtpPage() {
       });
 
       if (result.data?.verifyOtp) {
-        const { token, user } = result.data.verifyOtp;
+        const { token, refreshToken, rememberToken: returnedRememberToken, user } =
+          result.data.verifyOtp;
 
         localStorage.setItem("token", token);
+        if (refreshToken) {
+          localStorage.setItem("refreshToken", refreshToken);
+        }
+        if (returnedRememberToken) {
+          localStorage.setItem("remember_token", returnedRememberToken);
+        }
         try {
           const expires = new Date();
-          expires.setDate(expires.getDate() + 7);
+          expires.setDate(expires.getDate() + (rememberMe ? 30 : 7));
           document.cookie = `token=${token}; Path=/; Expires=${expires.toUTCString()}; SameSite=Lax`;
         } catch {}
         localStorage.setItem("user", JSON.stringify(user));

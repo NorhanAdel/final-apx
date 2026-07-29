@@ -31,17 +31,29 @@ export const AUTO_LOGIN_MUTATION = `
   mutation AutoLogin($rememberToken: String!) {
     autoLogin(rememberToken: $rememberToken) {
       token
-    user {
-  id
-  email
-  role
-  is_verified
-  is_email_verified
-  is_active
-  has_active_subscription
-  created_at
-  updated_at
-}
+      refreshToken
+      rememberToken
+      user {
+        id
+        email
+        role
+        is_verified
+        is_email_verified
+        is_active
+        has_active_subscription
+        created_at
+        updated_at
+      }
+    }
+  }
+`;
+
+// ============= Refresh Token =============
+export const REFRESH_TOKEN_MUTATION = `
+  mutation RefreshToken($input: RefreshTokenInput!) {
+    refreshToken(input: $input) {
+      token
+      refreshToken
     }
   }
 `;
@@ -58,17 +70,19 @@ export const VERIFY_OTP_MUTATION = `
   mutation VerifyOtp($input: VerifyOtpInput!) {
     verifyOtp(input: $input) {
       token
-     user {
-  id
-  email
-  role
-  is_verified
-  is_email_verified
-  is_active
-  has_active_subscription
-  created_at
-  updated_at
-}
+      refreshToken
+      rememberToken
+      user {
+        id
+        email
+        role
+        is_verified
+        is_email_verified
+        is_active
+        has_active_subscription
+        created_at
+        updated_at
+      }
     }
   }
 `;

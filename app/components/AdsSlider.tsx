@@ -24,11 +24,13 @@ export default function AdsCarousel() {
   const { theme } = useTheme();
   const { t, lang } = useTranslate();
   const isDark = theme === "dark";
+  const isRTL = lang === "ar";
 
   const router = useRouter();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const [ads, setAds] = useState<Ad[]>([]);
+  const [loading, setLoading] = useState(true);
   const [active, setActive] = useState(0);
 
   useEffect(() => {
@@ -36,6 +38,7 @@ export default function AdsCarousel() {
   }, [lang]);
 
   const fetchAds = async () => {
+    setLoading(true);
     const query = `
       query {
         activeAds {
@@ -51,7 +54,10 @@ export default function AdsCarousel() {
 
     const res = await fetchGraphQL<{ activeAds: Ad[] }>(query, {});
 
-    if (!res.data?.activeAds) return;
+    if (!res.data?.activeAds) {
+      setLoading(false);
+      return;
+    }
 
     const formatted = res.data.activeAds.map((ad) => ({
       ...ad,
@@ -62,6 +68,7 @@ export default function AdsCarousel() {
 
     setAds(formatted);
     setActive(0);
+    setLoading(false);
   };
 
   const incrementAdViews = async (adId: string) => {
@@ -135,17 +142,33 @@ export default function AdsCarousel() {
   };
 
   const move = (dir: "left" | "right") => {
-    const next =
-      dir === "left"
-        ? Math.max(active - 1, 0)
-        : Math.min(active + 1, ads.length - 1);
+    const goNext = isRTL ? dir === "left" : dir === "right";
+    const next = goNext
+      ? Math.min(active + 1, ads.length - 1)
+      : Math.max(active - 1, 0);
 
     scrollTo(next);
   };
 
+  if (loading) {
+    return (
+      <div className="mt-16 px-4 md:px-8">
+        <div className="flex items-center justify-center py-20">
+          <div className="relative inline-flex items-center gap-3">
+            <div className="w-8 h-8 border-4 border-yellow-400/20 border-t-yellow-400 rounded-full animate-spin" />
+            <span className="text-xs font-black text-yellow-400 tracking-widest uppercase">
+              {t("loading")}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!ads.length) return null;
+
   return (
     <section className="mt-16 px-4 md:px-8">
-      {/* Header */}
       <div className="flex justify-between items-center mb-10">
         <div>
           <h2
@@ -166,31 +189,34 @@ export default function AdsCarousel() {
         </div>
 
         <div className="flex gap-3">
-          <button
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
             onClick={() => move("left")}
-            className={`w-11 h-11 rounded flex items-center justify-center transition-all duration-300 ${
+            className={`w-9 h-9 flex items-center justify-center border rounded-md transition ${
               isDark
-                ? "bg-white/10 hover:bg-white/20 text-white border border-white/10"
-                : "bg-white hover:bg-gray-100 text-black border border-gray-200 shadow-sm"
+                ? "bg-[#0b1120] border-[#1e293b] text-white"
+                : "bg-gray-200 border-gray-300 text-black"
             }`}
           >
-            <ChevronLeft size={18} />
-          </button>
+            {isRTL ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          </motion.button>
 
-          <button
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
             onClick={() => move("right")}
-            className={`w-11 h-11 rounded flex items-center justify-center transition-all duration-300 ${
+            className={`w-9 h-9 flex items-center justify-center border rounded-md transition ${
               isDark
-                ? "bg-white/10 hover:bg-white/20 text-white border border-white/10"
-                : "bg-white hover:bg-gray-100 text-black border border-gray-200 shadow-sm"
+                ? "bg-[#0b1120] border-[#1e293b] text-white"
+                : "bg-gray-200 border-gray-300 text-black"
             }`}
           >
-            <ChevronRight size={18} />
-          </button>
+            {isRTL ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+          </motion.button>
         </div>
       </div>
 
-      {/* Carousel */}
       <div
         ref={scrollRef}
         onScroll={handleScroll}

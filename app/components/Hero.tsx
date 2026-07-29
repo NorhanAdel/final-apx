@@ -94,7 +94,6 @@ export default function Hero() {
     if (playingIndex === index) setPlayingIndex(null);
   };
 
-  // 🔥 دالة لجلب الترجمة حسب الترتيب
   const getHeroTitle = (index: number): string => {
     const titles = ["HERO 1", "HERO 2", "HERO 3"];
     return t(titles[index] || `HERO ${index + 1}`);
@@ -201,7 +200,12 @@ export default function Hero() {
               transition={{ duration: 4, repeat: Infinity }}
               className="relative w-64 sm:w-80 md:w-[420px] h-64 sm:h-80 md:h-[420px]"
             >
-              <Image src="/h.png" alt="player" fill className="object-contain" />
+              <Image
+                src="/h.png"
+                alt="player"
+                fill
+                className="object-contain"
+              />
             </motion.div>
           </div>
         </div>
@@ -209,9 +213,18 @@ export default function Hero() {
         {/* VIDEOS */}
         <div className="py-10 px-4">
           {loading ? (
-            <div className="text-center py-8">Loading...</div>
+            <div className="flex items-center justify-center py-20">
+              <div className="relative inline-flex items-center gap-3">
+                <div className="w-8 h-8 border-4 border-yellow-400/20 border-t-yellow-400 rounded-full animate-spin" />
+                <span className="text-xs font-black text-yellow-400 tracking-widest uppercase">
+                  {t("loading")}
+                </span>
+              </div>
+            </div>
           ) : videos.length === 0 ? (
-            <div className="text-center py-8">No videos</div>
+            <div className="text-center py-8 text-gray-400">
+              {t("no_videos")}
+            </div>
           ) : (
             <Swiper
               spaceBetween={15}
@@ -222,9 +235,7 @@ export default function Hero() {
               }}
             >
               {videos.map((v, i) => (
-                <SwiperSlide key={v.id}>
-                  {VideoCard(v, i)}
-                </SwiperSlide>
+                <SwiperSlide key={v.id}>{VideoCard(v, i)}</SwiperSlide>
               ))}
             </Swiper>
           )}

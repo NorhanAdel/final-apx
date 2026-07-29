@@ -25,7 +25,6 @@ interface Event {
   image_url?: string;
 }
 
- 
 interface EventsSectionProps {
   sportId: string;
 }
@@ -34,49 +33,50 @@ export default function EventsSection({ sportId }: EventsSectionProps) {
   const { theme } = useTheme();
   const { t, lang } = useTranslate();
   const isDark = theme === "dark";
+  const isRTL = lang === "ar";
 
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(false);
 
- useEffect(() => {
-  if (sportId) {
-    fetchEvents();
-  }
-}, [sportId, lang]);
+  useEffect(() => {
+    if (sportId) {
+      fetchEvents();
+    }
+  }, [sportId, lang]);
 
   const fetchEvents = async () => {
     setLoading(true);
     try {
-    const result = await fetchGraphQL<{
-  eventsBySport: Event[];
-}>(
-  GET_EVENTS_BY_SPORT,
-  {
-    sportId,
-    skip: 0,
-    take: 10,
-  }
-);
+      const result = await fetchGraphQL<{
+        eventsBySport: Event[];
+      }>(
+        GET_EVENTS_BY_SPORT,
+        {
+          sportId,
+          skip: 0,
+          take: 10,
+        }
+      );
 
-console.log("EVENTS RESPONSE:", result);
- if (result.data?.eventsBySport) {
-  const formatted = result.data.eventsBySport.map((event) => ({
-    id: event.id,
-    title: event.title,
-    location: event.location || t("Location TBD"),
-    date_start: event.date_start,
-    status: event.status,
-    image_url: event.image_url
-      ? event.image_url.startsWith("http")
-        ? event.image_url
-        : `${process.env.NEXT_PUBLIC_API_URL}${event.image_url}`
-      : "/r1.png",
-  }));
+      console.log("EVENTS RESPONSE:", result);
+      if (result.data?.eventsBySport) {
+        const formatted = result.data.eventsBySport.map((event) => ({
+          id: event.id,
+          title: event.title,
+          location: event.location || t("Location TBD"),
+          date_start: event.date_start,
+          status: event.status,
+          image_url: event.image_url
+            ? event.image_url.startsWith("http")
+              ? event.image_url
+              : `${process.env.NEXT_PUBLIC_API_URL}${event.image_url}`
+            : "/r1.png",
+        }));
 
-  setEvents(formatted);
-} else {
-  setEvents([]);
-}
+        setEvents(formatted);
+      } else {
+        setEvents([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -84,8 +84,15 @@ console.log("EVENTS RESPONSE:", result);
 
   if (loading) {
     return (
-      <div className="mt-14 px-4 text-center text-gray-400">
-        {t("loading")}
+      <div className="mt-16 px-4 md:px-8">
+        <div className="flex items-center justify-center py-20">
+          <div className="relative inline-flex items-center gap-3">
+            <div className="w-8 h-8 border-4 border-yellow-400/20 border-t-yellow-400 rounded-full animate-spin" />
+            <span className="text-xs font-black text-yellow-400 tracking-widest uppercase">
+              {t("loading")}
+            </span>
+          </div>
+        </div>
       </div>
     );
   }
@@ -95,10 +102,9 @@ console.log("EVENTS RESPONSE:", result);
   return (
     <div className="mt-16 px-4 sm:px-6 lg:px-10">
 
-      {/* HEADER */}
       <div className="flex justify-between items-center mb-8">
         <motion.h2
-          initial={{ opacity: 0, x: -30 }}
+          initial={{ opacity: 0, x: isRTL ? 30 : -30 }}
           whileInView={{ opacity: 1, x: 0 }}
           className={`text-2xl sm:text-3xl font-bold tracking-wide ${
             isDark ? "text-white" : "text-[#F0B100]"
@@ -108,19 +114,35 @@ console.log("EVENTS RESPONSE:", result);
         </motion.h2>
 
         <div className="flex gap-2">
-          <button className="prevEvent w-10 h-10 flex items-center justify-center border rounded-xl backdrop-blur-md">
-            <ChevronLeft size={18} />
-          </button>
-          <button className="nextEvent w-10 h-10 flex items-center justify-center border rounded-xl backdrop-blur-md">
-            <ChevronRight size={18} />
-          </button>
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            className={`prevEvent w-9 h-9 flex items-center justify-center border rounded-md transition ${
+              isDark
+                ? "bg-[#0b1120] border-[#1e293b] text-white"
+                : "bg-gray-200 border-gray-300 text-black"
+            }`}
+          >
+            {isRTL ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            className={`nextEvent w-9 h-9 flex items-center justify-center border rounded-md transition ${
+              isDark
+                ? "bg-[#0b1120] border-[#1e293b] text-white"
+                : "bg-gray-200 border-gray-300 text-black"
+            }`}
+          >
+            {isRTL ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+          </motion.button>
         </div>
       </div>
 
-      {/* SWIPER */}
       <Swiper
         modules={[Navigation]}
         navigation={{ nextEl: ".nextEvent", prevEl: ".prevEvent" }}
+        dir={isRTL ? "rtl" : "ltr"}
         spaceBetween={25}
         breakpoints={{
           0: { slidesPerView: 1.1 },
@@ -131,57 +153,48 @@ console.log("EVENTS RESPONSE:", result);
       >
         {events.map((event) => (
           <SwiperSlide key={event.id}>
-          <motion.div
-  initial={{ opacity: 0, y: 40 }}
-  whileInView={{ opacity: 1, y: 0 }}
-  whileHover={{ y: -8 }}
-  transition={{ duration: 0.4 }}
-  className="group relative h-[430px] rounded-[30px] overflow-hidden cursor-pointer"
-  onClick={() => (window.location.href = `/events/${event.id}`)}
->
-  {/* Image */}
-  <Image
-    src={event.image_url!}
-    alt={event.title}
-    fill
-    className="object-cover transition duration-700 group-hover:scale-110"
-  />
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              whileHover={{ y: -8 }}
+              transition={{ duration: 0.4 }}
+              className="group relative h-[430px] rounded-[30px] overflow-hidden cursor-pointer"
+              onClick={() => (window.location.href = `/events/${event.id}`)}
+            >
+              <Image
+                src={event.image_url!}
+                alt={event.title}
+                fill
+                className="object-cover transition duration-700 group-hover:scale-110"
+              />
 
-  {/* Overlay */}
-  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
 
-  {/* Status */}
-  <div className="absolute top-5 left-5 z-20">
-    <div className="px-4 py-2 rounded-full bg-yellow-400 text-black text-xs font-bold shadow-xl">
-      {event.status || "Event"}
-    </div>
-  </div>
+              <div className="absolute top-5 left-5 z-20">
+                <div className="px-4 py-2 rounded-full bg-yellow-400 text-black text-xs font-bold shadow-xl">
+                  {event.status || "Event"}
+                </div>
+              </div>
 
-  {/* Content */}
-  <div className="absolute bottom-0 left-0 right-0 z-20 p-6">
+              <div className="absolute bottom-0 left-0 right-0 z-20 p-6">
+                <div className="inline-flex items-center rounded-full bg-white/10 backdrop-blur-md px-3 py-2 text-sm text-white mb-4">
+                  {event.date_start
+                    ? new Date(event.date_start).toLocaleDateString(lang)
+                    : ""}
+                </div>
 
-    {/* Date */}
-    <div className="inline-flex items-center rounded-full bg-white/10 backdrop-blur-md px-3 py-2 text-sm text-white mb-4">
-      {event.date_start
-        ? new Date(event.date_start).toLocaleDateString(lang)
-        : ""}
-    </div>
+                <h3 className="text-2xl font-bold text-white line-clamp-2 mb-4">
+                  {event.title}
+                </h3>
 
-    {/* Title */}
-    <h3 className="text-2xl font-bold text-white line-clamp-2 mb-4">
-      {event.title}
-    </h3>
-
-    {/* Location */}
-    <div className="inline-flex items-center gap-2 bg-black/30 backdrop-blur-md px-4 py-3 rounded-2xl">
-      <LocateFixed size={15} className="text-yellow-400" />
-      <span className="text-sm text-gray-200 truncate">
-        {event.location}
-      </span>
-    </div>
-
-  </div>
-</motion.div>
+                <div className="inline-flex items-center gap-2 bg-black/30 backdrop-blur-md px-4 py-3 rounded-2xl">
+                  <LocateFixed size={15} className="text-yellow-400" />
+                  <span className="text-sm text-gray-200 truncate">
+                    {event.location}
+                  </span>
+                </div>
+              </div>
+            </motion.div>
           </SwiperSlide>
         ))}
       </Swiper>

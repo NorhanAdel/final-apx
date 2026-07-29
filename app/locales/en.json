@@ -928,5 +928,18 @@
   "telegram": "Telegram",
   "facebook": "Facebook",
   "x_platform": "X",
-  "share": "Share"
+  "share": "Share",
+  "access_denied": "Access denied",
+  "access_denied_description": "You do not have permission for this section",
+  "checking_permissions": "Checking permissions...",
+  "please_login_first": "Please login first",
+  "please_login_first_to_access": "Please login first to access this page",
+  "club": "Clubs",
+  "scout": "Scouts",
+  "agent": "Player Agents",
+  "coach": "Coaches",
+  "manager": "Managers",
+  "admin": "Administrator",
+  "player": "Players",
+  "position_filter": "Position Filter"
 }
