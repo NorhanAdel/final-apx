@@ -53,6 +53,17 @@ interface GoogleLoginResponse {
   };
 }
 
+const loginSchema = z.object({
+  email: z
+    .string()
+    .min(1, "Email is required")
+    .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Please enter a valid email address"),
+  password: z.string().min(1, "Password is required"),
+  rememberMe: z.boolean().default(false),
+});
+
+type LoginFormData = z.infer<typeof loginSchema>;
+
 export default function LoginPage() {
   const router = useRouter();
   const { t } = useTranslate();
@@ -105,26 +116,12 @@ export default function LoginPage() {
     checkRememberToken();
   }, [router, t]);
 
-  const loginSchema = z.object({
-    email: z
-      .string()
-      .min(1, t("Email is required"))
-      .regex(
-        /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-        t("Please enter a valid email address"),
-      ),
-    password: z.string().min(1, t("Password is required")),
-    rememberMe: z.boolean().optional().default(false),
-  });
-
-  type LoginFormData = z.infer<typeof loginSchema>;
-
   const {
     register,
     handleSubmit,
     formState: { errors, touchedFields, isValid },
     watch,
-  } = useForm<LoginFormData>({
+  } = useForm({
     resolver: zodResolver(loginSchema),
     mode: "onChange",
     defaultValues: {

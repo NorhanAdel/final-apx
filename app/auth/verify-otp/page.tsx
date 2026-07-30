@@ -26,6 +26,7 @@ interface User {
   is_verified?: boolean;
   is_email_verified?: boolean;
   is_active?: boolean;
+  has_active_subscription?: boolean;
 }
 
 const GET_PLAYER_PROFILE_EXISTS = `
@@ -219,20 +220,44 @@ export default function VerifyOtpPage() {
     }
   };
 
-  const getRedirectPath = (role: string, hasProfile: boolean): string => {
+  const getRedirectPath = (
+    role: string,
+    hasSubscription: boolean,
+  ): string => {
+    // 1. If user does NOT have an active subscription: redirect to subscription/packages page for their role
+    if (!hasSubscription && role !== "ADMIN" && role !== "USER") {
+      switch (role) {
+        case "PLAYER":
+          return "/profile/participationprime";
+        case "CLUB":
+          return "/clubprofile/participationprime";
+        case "SCOUT":
+          return "/scout/profile/participationprime";
+        case "AGENT":
+          return "/agent/participationprime";
+        case "COACH":
+          return "/profile/participationprime";
+        case "MANAGER":
+          return "/profile/participationprime";
+        default:
+          return "/";
+      }
+    }
+
+    // 2. If user HAS an active subscription: redirect to role profile page
     switch (role) {
       case "PLAYER":
-        return hasProfile ? "/" : "/player/profile";
+        return "/profile/player";
       case "CLUB":
-        return hasProfile ? "/" : "/club/profile";
+        return "/clubprofile";
       case "SCOUT":
-        return hasProfile ? "/" : "/scout/profile";
+        return "/scout";
       case "AGENT":
-        return hasProfile ? "/" : "/agent/profile";
+        return "/agent";
       case "USER":
-        return hasProfile ? "/" : "/";
+        return "/user";
       case "ADMIN":
-        return "/admin/dashboard";
+        return "/admin";
       default:
         return "/";
     }
@@ -340,12 +365,12 @@ export default function VerifyOtpPage() {
 
         toast.success(t("Email verified successfully!"));
 
-        const hasProfile = await checkProfileExists(user.role);
-        const redirectPath = getRedirectPath(user.role, hasProfile);
+        const hasSubscription = !!user.has_active_subscription;
+        const redirectPath = getRedirectPath(user.role, hasSubscription);
 
         console.log("Redirecting to:", redirectPath);
         console.log("User role:", user.role);
-        console.log("Has profile:", hasProfile);
+        console.log("Has subscription:", hasSubscription);
 
         router.replace(redirectPath);
         router.refresh();

@@ -347,10 +347,25 @@ export default function CheckoutPage() {
             : "Payment successful"
         );
 
-        localStorage.removeItem("selectedPackage");
+        const postPaymentRedirect = (role: string) => {
+          switch (role) {
+            case "PLAYER":
+              return "/profile/player";
+            case "CLUB":
+              return "/clubprofile";
+            case "SCOUT":
+              return "/scout";
+            case "AGENT":
+              return "/agent";
+            case "USER":
+              return "/user";
+            default:
+              return "/profile/player";
+          }
+        };
 
         setTimeout(() => {
-          router.push("/profile");
+          router.push(postPaymentRedirect(updatedUser.role));
         }, 2000);
       } else {
         toast.error(

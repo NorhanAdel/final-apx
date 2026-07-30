@@ -87,7 +87,7 @@ export default function FavoriteButton({
     const token = localStorage.getItem("token");
     if (!token) {
       toast.error(t("Please login to add favorites"));
-      window.location.href = "/login";
+      window.location.href = "/auth/login";
       return;
     }
 

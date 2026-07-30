@@ -97,7 +97,6 @@ export default function WriteReview({
     fetchExistingRating();
   }, [playerId]);
 
-  // دالة لحساب عدد النجوم من المهارات - تستقبل skills كمعامل
   const calculateStarsFromSkills = (
     skillsData: Record<SkillKey, boolean>,
   ): number => {
@@ -107,7 +106,6 @@ export default function WriteReview({
   const handleSkillChange = (skill: SkillKey, checked: boolean) => {
     const newSkills = { ...skills, [skill]: checked };
     setSkills(newSkills);
-    // حساب النجوم من المهارات الجديدة مباشرة
     const starsCount = calculateStarsFromSkills(newSkills);
     setSelectedStars(starsCount);
   };
@@ -133,7 +131,6 @@ export default function WriteReview({
   const handleStarClick = (stars: number) => {
     setSelectedStars(stars);
     if (ratingMode === "stars") {
-      // عند استخدام وضع النجوم، يتم تعبئة المهارات تلقائياً حسب عدد النجوم
       const skillKeys = Object.keys(skills) as SkillKey[];
       const newSkills = { ...skills };
       for (let i = 0; i < skillKeys.length; i++) {
@@ -146,7 +143,6 @@ export default function WriteReview({
   const handleModeChange = (mode: "stars" | "skills") => {
     setRatingMode(mode);
     if (mode === "stars" && selectedStars > 0) {
-      // مزامنة المهارات مع النجوم المحددة
       const skillKeys = Object.keys(skills) as SkillKey[];
       const newSkills = { ...skills };
       for (let i = 0; i < skillKeys.length; i++) {
@@ -154,7 +150,6 @@ export default function WriteReview({
       }
       setSkills(newSkills);
     } else if (mode === "skills") {
-      // تحديث النجوم بناءً على المهارات الحالية
       setSelectedStars(calculateStarsFromSkills(skills));
     }
   };
@@ -247,9 +242,13 @@ export default function WriteReview({
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+        <div
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+          onClick={() => setIsModalOpen(false)}
+        >
           <div
             className={`relative ${modalBg} backdrop-blur-xl rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border ${borderColor} shadow-2xl`}
+            onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => setIsModalOpen(false)}
@@ -263,7 +262,6 @@ export default function WriteReview({
                 {existingRating ? t("Edit Rating") : t("Rate Player")}
               </h2>
 
-              {/* Mode Toggle */}
               <div className="flex gap-2 mb-6 p-1 rounded-xl bg-gray-200/20">
                 <button
                   type="button"
@@ -294,7 +292,6 @@ export default function WriteReview({
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Star Rating Preview */}
                 <div className="text-center py-4 rounded-xl bg-yellow-400/10 border border-yellow-400/30">
                   <p className={`text-sm ${textSecondary} mb-2`}>
                     {t("Rating Preview")}:
@@ -317,38 +314,36 @@ export default function WriteReview({
                   </p>
                 </div>
 
-                {/* Stars Selection Mode */}
-              {ratingMode === "stars" && (
-  <div className="text-center py-4 rounded-xl border border-yellow-400/30 px-2 sm:px-4">
-    <p className={`text-sm ${textSecondary} mb-4`}>
-      {t("Click on stars to rate")}:
-    </p>
+                {ratingMode === "stars" && (
+                  <div className="text-center py-4 rounded-xl border border-yellow-400/30 px-2 sm:px-4">
+                    <p className={`text-sm ${textSecondary} mb-4`}>
+                      {t("Click on stars to rate")}:
+                    </p>
 
-    <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
-      {[1, 2, 3, 4, 5, 6, 7].map((star) => (
-        <button
-          key={star}
-          type="button"
-          onClick={() => handleStarClick(star)}
-          onMouseEnter={() => setHoveredStars(star)}
-          onMouseLeave={() => setHoveredStars(0)}
-          className="transition-transform hover:scale-110 focus:outline-none"
-        >
-          <Star
-            size={window.innerWidth < 640 ? 28 : 40}
-            className={`${
-              star <= (hoveredStars || selectedStars)
-                ? "fill-yellow-400 text-yellow-400"
-                : "fill-gray-600 text-gray-600"
-            } transition-all duration-150`}
-          />
-        </button>
-      ))}
-    </div>
-  </div>
-)}
+                    <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+                      {[1, 2, 3, 4, 5, 6, 7].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => handleStarClick(star)}
+                          onMouseEnter={() => setHoveredStars(star)}
+                          onMouseLeave={() => setHoveredStars(0)}
+                          className="transition-transform hover:scale-110 focus:outline-none"
+                        >
+                          <Star
+                            size={window.innerWidth < 640 ? 28 : 40}
+                            className={`${
+                              star <= (hoveredStars || selectedStars)
+                                ? "fill-yellow-400 text-yellow-400"
+                                : "fill-gray-600 text-gray-600"
+                            } transition-all duration-150`}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-                {/* Skills Selection Mode */}
                 {ratingMode === "skills" && (
                   <div>
                     <div className="flex justify-between items-center mb-4">
@@ -406,7 +401,6 @@ export default function WriteReview({
                   </div>
                 )}
 
-                {/* Notes - Optional */}
                 <div>
                   <label
                     className={`block text-sm font-semibold mb-2 ${labelColor}`}
@@ -425,7 +419,6 @@ export default function WriteReview({
                   />
                 </div>
 
-                {/* Buttons */}
                 <div className="flex gap-4 pt-4">
                   <button
                     type="button"
