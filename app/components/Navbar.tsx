@@ -406,7 +406,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
             className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors ${
               isDark
                 ? "bg-[#001a4d] border-[#F0B100] text-[#F0B100] hover:bg-[#002060]"
-                : "bg-white/10 backdrop-blur-sm border-[#F0B100]/50 text-[#F0B100] hover:bg-white/20"
+                : "bg-[#F0B100]/10 backdrop-blur-sm border-[#F0B100] text-[#F0B100] hover:bg-[#F0B100]/20"
             }`}
           >
             {getProfileIcon()}
@@ -440,17 +440,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
 
                 <Link
                   href={getProfileLink()}
-                  onClick={(e) => {
-                    if (
-                      requiresSubscription() &&
-                      !activeUser?.has_active_subscription
-                    ) {
-                      e.preventDefault();
-                      router.push(getCheckoutRoute());
-                      return;
-                    }
-                    setProfileOpen(false);
-                  }}
+                  onClick={() => setProfileOpen(false)}
                   className={`flex items-center gap-3 px-4 py-3 transition-colors ${
                     isDark
                       ? "hover:bg-[#F0B100] hover:text-black"
@@ -484,7 +474,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
         <button className={`px-5 py-2 border rounded-lg flex items-center gap-2 transition-colors ${
           isDark
             ? "bg-[#001a4d] border-[#F0B100] text-[#F0B100] hover:bg-[#002060]"
-            : "bg-white/10 backdrop-blur-sm border-[#F0B100]/50 text-[#F0B100] hover:bg-white/20"
+            : "bg-[#F0B100]/10 backdrop-blur-sm border-[#F0B100] text-[#F0B100] hover:bg-[#F0B100]/20"
         }`}>
           <LogIn size={16} /> {translate("Login", activeLang)}
         </button>
@@ -499,7 +489,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
     return `transition-colors font-semibold ${
       isDark
         ? "text-yellow-400 hover:text-yellow-300"
-        : "text-gray-800 hover:text-[#F0B100]"
+        : "text-gray-700 hover:text-[#F0B100]"
     }`;
   };
 
@@ -510,7 +500,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
     return `flex items-center gap-1 transition-colors font-medium ${
       isDark
         ? "text-white hover:text-yellow-400"
-        : "text-gray-800 hover:text-[#F0B100]"
+        : "text-gray-700 hover:text-[#F0B100]"
     }`;
   };
 
@@ -520,8 +510,8 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
     }
     return `p-2 rounded-lg transition-colors ${
       isDark
-        ? "bg-white/10 hover:bg-white/20 text-white"
-        : "bg-white/10 backdrop-blur-sm hover:bg-white/20 text-gray-800"
+        ? "bg-[#001a4d] border border-[#F0B100] text-[#F0B100] hover:bg-[#002060]"
+        : "bg-[#F0B100]/10 backdrop-blur-sm border border-[#F0B100] text-[#F0B100] hover:bg-[#F0B100]/20"
     }`;
   };
 
@@ -529,10 +519,18 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
     if (!mounted) {
       return "flex items-center gap-1 transition-colors text-gray-800 hover:text-[#F0B100]";
     }
-    return `flex items-center gap-1 transition-colors ${
+    return `flex items-center gap-1 px-3 py-2 border rounded-lg transition-colors ${
       isDark
-        ? "text-white hover:text-yellow-400"
-        : "text-gray-800 hover:text-[#F0B100]"
+        ? "bg-[#001a4d] border-[#F0B100] text-[#F0B100] hover:bg-[#002060]"
+        : "bg-[#F0B100]/10 backdrop-blur-sm border-[#F0B100] text-[#F0B100] hover:bg-[#F0B100]/20"
+    }`;
+  };
+
+  const getMobileMenuButtonClass = () => {
+    return `p-2 rounded-lg transition-colors ${
+      isDark
+        ? "bg-[#001a4d] border border-[#F0B100] text-[#F0B100] hover:bg-[#002060]"
+        : "bg-[#F0B100]/10 backdrop-blur-sm border border-[#F0B100] text-[#F0B100] hover:bg-[#F0B100]/20"
     }`;
   };
 
@@ -681,8 +679,8 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
             onClick={toggleTheme}
             className={`p-2 rounded-lg transition-colors ${
               isDark
-                ? "bg-white/10 hover:bg-white/20 text-white"
-                : "bg-white/10 backdrop-blur-sm hover:bg-white/20 text-gray-800"
+                ? "bg-[#001a4d] border border-[#F0B100] text-[#F0B100] hover:bg-[#002060]"
+                : "bg-[#F0B100]/10 backdrop-blur-sm border border-[#F0B100] text-[#F0B100] hover:bg-[#F0B100]/20"
             }`}
           >
             {mounted ? (
@@ -698,7 +696,9 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
 
           {!activeUser ? (
             <Link href="/auth/login" className={`p-2 rounded-lg transition-colors ${
-              isDark ? "text-yellow-400 hover:bg-white/10" : "text-gray-800 hover:bg-white/10"
+              isDark
+                ? "bg-[#001a4d] border border-[#F0B100] text-[#F0B100] hover:bg-[#002060]"
+                : "bg-[#F0B100]/10 backdrop-blur-sm border border-[#F0B100] text-[#F0B100] hover:bg-[#F0B100]/20"
             }`}>
               <LogIn size={22} />
             </Link>
@@ -706,7 +706,9 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
             <button 
               onClick={handleLogout} 
               className={`p-2 rounded-lg transition-colors ${
-                isDark ? "text-yellow-400 hover:bg-white/10" : "text-gray-800 hover:bg-white/10"
+                isDark
+                  ? "bg-[#001a4d] border border-[#F0B100] text-[#F0B100] hover:bg-[#002060]"
+                  : "bg-transparent text-[#F0B100] hover:bg-[#F0B100]/10"
               }`}
             >
               <LogOut size={22} />
@@ -716,11 +718,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
           <button
             id="mobile-menu-button"
             onClick={() => setOpen(!open)}
-            className={`p-2 rounded-lg transition-colors ${
-              isDark
-                ? "text-white hover:bg-white/10"
-                : "text-gray-800 hover:bg-white/10"
-            }`}
+            className={getMobileMenuButtonClass()}
           >
             {open ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -749,7 +747,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                   className={`px-6 py-3 transition-colors ${
                     isDark
                       ? "text-white hover:bg-white/5"
-                      : "text-gray-800 hover:bg-[#F0B100]/10"
+                      : "text-gray-700 hover:bg-[#F0B100]/10"
                   }`}
                 >
                   {translate(link.key, activeLang)}
@@ -761,7 +759,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                 className={`flex justify-between items-center w-full px-6 py-3 transition-colors ${
                   isDark
                     ? "text-white hover:bg-white/5"
-                    : "text-gray-800 hover:bg-[#F0B100]/10"
+                    : "text-gray-700 hover:bg-[#F0B100]/10"
                 }`}
               >
                 <span>{translate("Sports", activeLang)}</span>
@@ -785,7 +783,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                         className={`flex items-center gap-2 px-6 py-2 transition-colors ${
                           isDark
                             ? "text-white hover:bg-white/5"
-                            : "text-gray-800 hover:bg-[#F0B100]/10"
+                            : "text-gray-700 hover:bg-[#F0B100]/10"
                         }`}
                       >
                         <Icon size={16} />
@@ -801,11 +799,11 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                 className={`flex justify-between items-center w-full px-6 py-3 transition-colors ${
                   isDark
                     ? "text-white hover:bg-white/5"
-                    : "text-gray-800 hover:bg-[#F0B100]/10"
+                    : "text-gray-700 hover:bg-[#F0B100]/10"
                 }`}
               >
                 <span className="flex items-center gap-2">
-                  <Globe size={14} />
+                  <Globe size={14} className="text-[#F0B100]" />
                   {translate("Language", activeLang)}
                 </span>
                 <ChevronDown
@@ -825,7 +823,7 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                       className={`block w-full text-left px-6 py-2 transition-colors ${
                         isDark
                           ? "text-white hover:bg-white/5"
-                          : "text-gray-800 hover:bg-[#F0B100]/10"
+                          : "text-gray-700 hover:bg-[#F0B100]/10"
                       }`}
                     >
                       {translate(language.name, activeLang)}
@@ -843,11 +841,11 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                   }`}
                 >
                   <div className="flex items-center gap-3 mb-3">
-                    <span className={isDark ? "text-white" : "text-gray-800"}>
+                    <span className={isDark ? "text-white" : "text-gray-700"}>
                       {getProfileIcon()}
                     </span>
                     <span className={`font-semibold ${
-                      isDark ? "text-white" : "text-gray-800"
+                      isDark ? "text-white" : "text-gray-700"
                     }`}>
                       {getProfileName()}
                     </span>
@@ -859,21 +857,11 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
                   </div>
                   <Link
                     href={getProfileLink()}
-                    onClick={(e) => {
-                      if (
-                        requiresSubscription() &&
-                        !activeUser?.has_active_subscription
-                      ) {
-                        e.preventDefault();
-                        router.push(getCheckoutRoute());
-                        return;
-                      }
-                      setOpen(false);
-                    }}
+                    onClick={() => setOpen(false)}
                     className={`block w-full text-center px-4 py-2 border rounded-lg transition-colors ${
                       isDark
                         ? "bg-[#001a4d] border-[#F0B100] text-[#F0B100] hover:bg-[#002060]"
-                        : "bg-white/10 backdrop-blur-sm border-[#F0B100]/50 text-[#F0B100] hover:bg-white/20"
+                        : "bg-[#F0B100]/10 backdrop-blur-sm border-[#F0B100] text-[#F0B100] hover:bg-[#F0B100]/20"
                     }`}
                   >
                     {translate("View Profile", activeLang)}

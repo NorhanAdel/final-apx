@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useRef } from "react";
+import { createContext, useContext, useEffect, useState, useRef, useCallback } from "react";
 import { fetchGraphQL } from "../lib/fetchGraphQL";
 import { LOGOUT_MUTATION } from "../graphql/mutation/auth.mutations";
 
@@ -63,29 +63,59 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const storedUser = localStorage.getItem("user");
+  const loadUser = useCallback(() => {
+    try {
+      const token = localStorage.getItem("token");
+      const storedUser = localStorage.getItem("user");
 
-        if (token && storedUser && isMounted.current) {
-          const userData = JSON.parse(storedUser);
-          setUser(userData);
-        }
-      } catch (e) {
-        console.error("Failed to parse user", e);
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-      } finally {
-        if (isMounted.current) {
-          setIsLoading(false);
-        }
+      if (token && storedUser && isMounted.current) {
+        const userData = JSON.parse(storedUser);
+        setUser(userData);
+        try {
+          document.cookie = `token=${token}; Path=/; Max-Age=2592000; SameSite=Lax`;
+        } catch {}
+      } else if (isMounted.current) {
+        setUser(null);
       }
+    } catch (e) {
+      console.error("Failed to parse user", e);
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      if (isMounted.current) setUser(null);
+    } finally {
+      if (isMounted.current) {
+        setIsLoading(false);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    loadUser();
+
+    const handleUserUpdate = () => {
+      loadUser();
     };
 
-    loadUser();
-  }, []);
+    window.addEventListener("storage", handleUserUpdate);
+    window.addEventListener("user-updated", handleUserUpdate);
+
+    return () => {
+      window.removeEventListener("storage", handleUserUpdate);
+      window.removeEventListener("user-updated", handleUserUpdate);
+    };
+  }, [loadUser]);
+
+  const updateSetUser = (newUser: User | null) => {
+    setUser(newUser);
+    if (newUser) {
+      localStorage.setItem("user", JSON.stringify(newUser));
+      window.dispatchEvent(new Event("user-updated"));
+    } else {
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+      window.dispatchEvent(new Event("user-updated"));
+    }
+  };
 
   const logout = async () => {
     try {
@@ -149,7 +179,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         user,
         isLoading,
-        setUser,
+        setUser: updateSetUser,
         logout,
         isAuthenticated: !!user,
         getUserRole,

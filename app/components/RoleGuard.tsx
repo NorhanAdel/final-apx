@@ -80,20 +80,31 @@ export default function RoleGuard({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    let effectiveUser = user;
+    if (!effectiveUser && typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+      const storedUser = localStorage.getItem("user");
+      if (token && storedUser) {
+        try {
+          effectiveUser = JSON.parse(storedUser);
+        } catch {}
+      }
+    }
+
     const matchedRule = ROLE_RULES.find(
       (rule) =>
         pathname === rule.prefix || pathname.startsWith(`${rule.prefix}/`),
     );
 
     if (matchedRule) {
-      if (!user) {
+      if (!effectiveUser) {
         toast.error(t("please_login_first_to_access"));
         setAuthorized(false);
         router.push("/auth/login");
         return;
       }
 
-      const userRole = (user.role || "").toUpperCase();
+      const userRole = (effectiveUser.role || "").toUpperCase();
       if (!matchedRule.allowedRoles.includes(userRole)) {
         const roleName = t(matchedRule.roleKey);
         toast.error(`${t("access_denied_description")} (${roleName})`);
@@ -106,7 +117,7 @@ export default function RoleGuard({ children }: { children: React.ReactNode }) {
         (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
       );
 
-      if (isGeneralProtected && !user) {
+      if (isGeneralProtected && !effectiveUser) {
         toast.error(t("please_login_first"));
         setAuthorized(false);
         router.push("/auth/login");

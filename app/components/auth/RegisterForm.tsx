@@ -6,6 +6,8 @@ import {
   User,
   AlertCircle,
   CheckCircle,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useState } from "react";
 import { UseFormReturn } from "react-hook-form";
@@ -49,7 +51,6 @@ export default function RegisterForm({
   const isUsernameValid = usernameValue && !errors.username;
   const isEmailValid = emailValue && !errors.email;
   const isPasswordValid = passwordValue && !errors.password;
-  const isRoleValid = roleValue && !errors.role;
 
   const roleOptions = [
     { value: "USER", label: t("User") },
@@ -152,7 +153,25 @@ export default function RegisterForm({
             placeholder={t("Create a password")}
             className="w-full py-2 sm:py-3 bg-transparent outline-none text-white text-sm sm:text-base placeholder:text-gray-400"
             {...register("password")}
+            onFocus={() => setShowPassword(true)}
+            onBlur={() => setShowPassword(false)}
           />
+          {passwordValue && passwordValue.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="text-gray-400 hover:text-white transition-colors ml-2 focus:outline-none"
+              aria-label={
+                showPassword ? t("Hide password") : t("Show password")
+              }
+            >
+              {showPassword ? (
+                <EyeOff size={18} className="text-blue-900" />
+              ) : (
+                <Eye size={18} className="text-blue-900" />
+              )}
+            </button>
+          )}
         </div>
         {errors.password && touchedFields.password && (
           <p className="text-red-400 text-xs mt-1 flex items-center gap-1">

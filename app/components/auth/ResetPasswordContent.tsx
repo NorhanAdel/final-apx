@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Lock, CheckCircle, AlertCircle } from "lucide-react";
+import { Lock, CheckCircle, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -10,6 +10,11 @@ import { toast } from "sonner";
 import { RESET_PASSWORD_MUTATION } from "@/app/graphql/mutation/auth.mutations";
 import { fetchGraphQL } from "@/app/lib/fetchGraphQL";
 import useTranslate from "@/app/hooks/useTranslate";
+
+interface ResetPasswordFormData {
+  newPassword: string;
+  confirmPassword: string;
+}
 
 export default function ResetPasswordContent() {
   const router = useRouter();
@@ -47,14 +52,14 @@ export default function ResetPasswordContent() {
     handleSubmit,
     formState: { errors, touchedFields, isValid },
     watch,
-  } = useForm({
+  } = useForm<ResetPasswordFormData>({
     resolver: zodResolver(resetPasswordSchema),
     mode: "onChange",
   });
 
   const newPassword = watch("newPassword");
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: ResetPasswordFormData) => {
     if (!token || !email) {
       toast.error(t("Invalid reset link. Please request a new one."));
       router.push("/auth/forgot-password");
@@ -88,7 +93,6 @@ export default function ResetPasswordContent() {
     }
   };
 
-  // Password validation checks
   const hasMinLength = newPassword?.length >= 8;
   const hasLowercase = /[a-z]/.test(newPassword || "");
   const hasUppercase = /[A-Z]/.test(newPassword || "");
@@ -110,7 +114,6 @@ export default function ResetPasswordContent() {
         </h1>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          {/* NEW PASSWORD */}
           <div>
             <label className="text-white text-sm font-bold block mb-2">
               {t("New Password")}
@@ -122,6 +125,8 @@ export default function ResetPasswordContent() {
               <input
                 type={showNewPassword ? "text" : "password"}
                 {...register("newPassword")}
+                onFocus={() => setShowNewPassword(true)}
+                onBlur={() => setShowNewPassword(false)}
                 className={`w-full bg-[#2d3055]/60 border rounded-xl py-4 px-12 text-white focus:outline-none transition ${
                   errors.newPassword && touchedFields.newPassword
                     ? "border-red-500 ring-2 ring-red-500/20"
@@ -131,9 +136,23 @@ export default function ResetPasswordContent() {
                 }`}
                 placeholder={t("Enter your new password")}
               />
+
+              {newPassword && newPassword.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors focus:outline-none"
+                  aria-label={showNewPassword ? t("Hide password") : t("Show password")}
+                >
+                  {showNewPassword ? (
+                    <EyeOff size={20} className="text-blue-400" />
+                  ) : (
+                    <Eye size={20} className="text-blue-400" />
+                  )}
+                </button>
+              )}
             </div>
 
-            {/* Password Requirements - like Register */}
             {newPassword && newPassword.length > 0 && (
               <div className="mt-3 space-y-1">
                 <div className="flex items-center gap-2">
@@ -182,12 +201,11 @@ export default function ResetPasswordContent() {
             {errors.newPassword && (
               <p className="text-red-400 text-xs mt-2 flex items-center gap-1">
                 <AlertCircle size={12} />
-                {errors.newPassword.message as string}
+                {errors.newPassword.message}
               </p>
             )}
           </div>
 
-          {/* CONFIRM PASSWORD */}
           <div>
             <label className="text-white text-sm font-bold block mb-2">
               {t("Confirm Password")}
@@ -199,6 +217,8 @@ export default function ResetPasswordContent() {
               <input
                 type={showConfirmPassword ? "text" : "password"}
                 {...register("confirmPassword")}
+                onFocus={() => setShowConfirmPassword(true)}
+                onBlur={() => setShowConfirmPassword(false)}
                 className={`w-full bg-[#2d3055]/60 border rounded-xl py-4 px-12 text-white focus:outline-none transition ${
                   errors.confirmPassword && touchedFields.confirmPassword
                     ? "border-red-500 ring-2 ring-red-500/20"
@@ -206,17 +226,31 @@ export default function ResetPasswordContent() {
                 }`}
                 placeholder={t("Confirm your new password")}
               />
+
+              {watch("confirmPassword") && watch("confirmPassword").length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors focus:outline-none"
+                  aria-label={showConfirmPassword ? t("Hide password") : t("Show password")}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff size={20} className="text-blue-400" />
+                  ) : (
+                    <Eye size={20} className="text-blue-400" />
+                  )}
+                </button>
+              )}
             </div>
 
             {errors.confirmPassword && (
               <p className="text-red-400 text-xs mt-2 flex items-center gap-1">
                 <AlertCircle size={12} />
-                {errors.confirmPassword.message as string}
+                {errors.confirmPassword.message}
               </p>
             )}
           </div>
 
-          {/* BUTTON */}
           <button
             disabled={loading || !isValid}
             className={`w-full py-4 bg-[#051139] border-2 border-yellow-500 text-white font-bold uppercase rounded-lg transition-all duration-300 ${

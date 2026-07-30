@@ -8,6 +8,8 @@ import {
   Lock,
   AlertCircle,
   CheckCircle,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -69,10 +71,20 @@ export default function LoginPage() {
             { rememberToken },
           );
           if (result.data?.autoLogin) {
-            const { token, user, refreshToken, rememberToken: newRememberToken } =
-              result.data.autoLogin;
+            const {
+              token,
+              user,
+              refreshToken,
+              rememberToken: newRememberToken,
+            } = result.data.autoLogin;
             localStorage.setItem("token", token);
             localStorage.setItem("user", JSON.stringify(user));
+            try {
+              document.cookie = `token=${token}; Path=/; Max-Age=2592000; SameSite=Lax`;
+              window.dispatchEvent(new Event("user-updated"));
+            } catch {
+              // Cookie setting failed
+            }
             if (refreshToken) {
               localStorage.setItem("refreshToken", refreshToken);
             }
@@ -84,8 +96,8 @@ export default function LoginPage() {
           } else {
             localStorage.removeItem("remember_token");
           }
-        } catch (error) {
-          console.error("Auto login failed:", error);
+        } catch {
+          console.error("Auto login failed");
           localStorage.removeItem("remember_token");
         }
       }
@@ -113,7 +125,7 @@ export default function LoginPage() {
     formState: { errors, touchedFields, isValid },
     watch,
   } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema) as any,
+    resolver: zodResolver(loginSchema),
     mode: "onChange",
     defaultValues: {
       email: "",
@@ -157,8 +169,8 @@ export default function LoginPage() {
         setError(errorMsg);
         toast.error(errorMsg);
       }
-    } catch (err) {
-      console.error("Error:", err);
+    } catch {
+      console.error("Error during login");
       toast.error(t("Login failed. Please check your connection."));
     } finally {
       setLoading(false);
@@ -206,14 +218,14 @@ export default function LoginPage() {
           toast.error(result.errors[0].message);
           setIsGoogleLoading(false);
         }
-      } catch (error) {
-        console.error("Error:", error);
+      } catch {
+        console.error("Error during Google login");
         toast.error(t("Failed to login with Google."));
         setIsGoogleLoading(false);
       }
     },
-    onError: (error) => {
-      console.error("Google login error:", error);
+    onError: () => {
+      console.error("Google login error");
       setIsGoogleLoading(false);
       toast.error(t("Google Sign-In failed. Please try again."));
     },
@@ -295,7 +307,25 @@ export default function LoginPage() {
                 placeholder={t("Enter your password")}
                 className="w-full py-2 sm:py-3 bg-transparent outline-none text-white text-sm sm:text-base placeholder:text-gray-400"
                 {...register("password")}
+                onFocus={() => setShowPassword(true)}
+                onBlur={() => setShowPassword(false)}
               />
+              {passwordValue && passwordValue.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="text-gray-400 hover:text-white transition-colors ml-2 focus:outline-none"
+                  aria-label={
+                    showPassword ? t("Hide password") : t("Show password")
+                  }
+                >
+                  {showPassword ? (
+                    <EyeOff size={18} className="text-blue-900" />
+                  ) : (
+                    <Eye size={18} className="text-blue-900" />
+                  )}
+                </button>
+              )}
             </div>
             {errors.password && touchedFields.password && (
               <p className="text-red-400 text-xs mt-1 flex items-center gap-1">

@@ -127,6 +127,12 @@ export default function VerifyOtpPage() {
     }
   }, [router, timer]);
 
+  useEffect(() => {
+    if (inputRefs.current[0]) {
+      inputRefs.current[0].focus();
+    }
+  }, []);
+
   const extractDigits = (value: string): string => {
     const arabicToEnglish: Record<string, string> = {
       "٠": "0",
@@ -320,8 +326,15 @@ export default function VerifyOtpPage() {
           const expires = new Date();
           expires.setDate(expires.getDate() + (rememberMe ? 30 : 7));
           document.cookie = `token=${token}; Path=/; Expires=${expires.toUTCString()}; SameSite=Lax`;
-        } catch {}
+        } catch {
+          // Cookie setting failed
+        }
         localStorage.setItem("user", JSON.stringify(user));
+        try {
+          window.dispatchEvent(new Event("user-updated"));
+        } catch {
+          // Event dispatch failed
+        }
         localStorage.removeItem("pending_email");
         localStorage.removeItem("remember_me");
 
@@ -432,7 +445,7 @@ export default function VerifyOtpPage() {
             <button
               type="submit"
               disabled={loading || otpValues.join("").length < 6}
-              className="w-full py-2.5 sm:py-3 bg-[#0b2a6b] text-white rounded-xl border-l-4 border-r-4 border-yellow-400 font-semibolid hover:opacity-90 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-2.5 sm:py-3 bg-[#0b2a6b] text-white rounded-xl border-l-4 border-r-4 border-yellow-400 font-semibold hover:opacity-90 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? t("Verifying...") : t("Verify OTP")}
             </button>
