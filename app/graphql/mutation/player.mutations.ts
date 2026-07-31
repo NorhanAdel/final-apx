@@ -75,7 +75,6 @@ export const UPDATE_FOOTBALL_INFO = `
     }
   }
 `;
-
 export const UPDATE_PLAYER_CLUB_CAREER = `
   mutation UpdatePlayerClubCareer($input: UpdatePlayerClubCareerInput!) {
     updatePlayerClubCareer(input: $input) {

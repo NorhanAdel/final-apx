@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Star, Trophy, MapPin, User } from "lucide-react";
 import { useTheme } from "@/app/context/ThemeContext";
 import useTranslate from "@/app/hooks/useTranslate";
+import AgeCategoryBadge from "./AgeCategoryBadge";
 
 interface PlayerCardProps {
   name: string;
@@ -14,6 +15,8 @@ interface PlayerCardProps {
   country: string;
   super7Score: number;
   position: string;
+  dateOfBirth?: string | Date | null;
+  ageCategoryName?: string | null;
 }
 
 export const PlayerCard = ({
@@ -24,6 +27,8 @@ export const PlayerCard = ({
   country,
   age,
   super7Score,
+  dateOfBirth,
+  ageCategoryName,
 }: PlayerCardProps) => {
   const { theme } = useTheme();
   const { t } = useTranslate();
@@ -78,6 +83,13 @@ export const PlayerCard = ({
             ))}
           </div>
         </div>
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          <AgeCategoryBadge
+            dateOfBirth={dateOfBirth}
+            ageCategoryName={ageCategoryName}
+          />
+        </div>
+
         <div
           className={`flex items-center justify-between text-[10px] font-bold italic ${textSecondary}`}
         >

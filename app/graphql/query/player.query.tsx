@@ -26,6 +26,16 @@ export const GET_PLAYER_CLUB_CAREER = `
   }
 `;
 
+// Professional Debut Options
+export const GET_PROFESSIONAL_DEBUT_OPTIONS = `
+  query GetProfessionalDebutOptions($lang: String) {
+    getProfessionalDebutOptions(lang: $lang) {
+      value
+      label
+    }
+  }
+`;
+
 // Player Media
 export const GET_MY_VIDEOS = gql`
   query MyVideos {
@@ -144,6 +154,46 @@ export const GET_PLAYER_PROFILE = `
           last_name
         }
       }
+    }
+  }
+`;
+
+export const GET_MY_FOOTBALL_INFO = `
+  query GetMyFootballInfo {
+    myFootballInfo {
+      id
+      player_id
+      position {
+        id
+        name
+      }
+      preferred_foot
+      jersey_number
+      playing_style
+      strengths
+      market_value
+      created_at
+      updated_at
+    }
+  }
+`;
+
+// Skill Level Options (dropdown for playing_style)
+export const GET_SKILL_LEVEL_OPTIONS = `
+  query GetSkillLevelOptions($lang: String) {
+    getSkillLevelOptions(lang: $lang) {
+      value
+      label
+    }
+  }
+`;
+
+// Professional Goals Options (multi-select dropdown for strengths)
+export const GET_GOAL_OPTIONS = `
+  query GetGoalOptions($lang: String) {
+    getGoalOptions(lang: $lang) {
+      value
+      label
     }
   }
 `;

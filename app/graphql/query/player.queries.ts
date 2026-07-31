@@ -23,6 +23,16 @@ export const GET_PLAYER_CLUB_CAREER = `
   }
 `;
 
+// Professional Debut Options
+export const GET_PROFESSIONAL_DEBUT_OPTIONS = `
+  query GetProfessionalDebutOptions($lang: String) {
+    getProfessionalDebutOptions(lang: $lang) {
+      value
+      label
+    }
+  }
+`;
+
 // Player Media
 export const GET_MY_VIDEOS = `
   query MyVideos {
@@ -98,6 +108,8 @@ export const GET_PLAYER_PROFILE = `
      
       views_count
       age
+      age_category_code
+      age_category_name
       super7_level  
       super7_score
       average_rating
@@ -152,6 +164,8 @@ export const GET_ALL_PLAYERS = `
         nationality
         date_of_birth
         age
+        age_category_code
+        age_category_name
         average_rating
         super7_score
         football_info {
@@ -182,6 +196,8 @@ export const GET_MY_PLAYER_PROFILE = `
       weight_kg
       date_of_birth
       age
+      age_category_code
+      age_category_name
       average_rating
       profile_image_url
       verification_doc_url
@@ -212,15 +228,46 @@ export const GET_MY_FOOTBALL_INFO = `
   }
 `;
 
+// Skill Level Options (dropdown for playing_style)
+export const GET_SKILL_LEVEL_OPTIONS = `
+  query GetSkillLevelOptions($lang: String) {
+    getSkillLevelOptions(lang: $lang) {
+      value
+      label
+    }
+  }
+`;
+
+// Professional Goals Options (multi-select dropdown for strengths)
+export const GET_GOAL_OPTIONS = `
+  query GetGoalOptions($lang: String) {
+    getGoalOptions(lang: $lang) {
+      value
+      label
+    }
+  }
+`;
+
 export const GET_PLAYER_FOOTBALL_INFO = `
   query GetPlayerFootballInfo($playerId: String!) {
     playerFootballInfo(playerId: $playerId) {
       id
       player_id
+      sport_id
+      position_id
+      sport {
+        id
+        name
+      }
       position {
         id
         name
         category
+        sport_id
+        sport {
+          id
+          name
+        }
       }
       preferred_foot
       jersey_number

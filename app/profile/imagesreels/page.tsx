@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, ChangeEvent, useEffect } from "react";
+import React, { useState, ChangeEvent, useEffect } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, User, Trophy, Briefcase, ShieldCheck, Image as ImageIcon } from "lucide-react";
 
 import { useTheme } from "../../context/ThemeContext";
 import useTranslate from "../../hooks/useTranslate";
@@ -19,7 +19,6 @@ import {
   TOGGLE_REEL_STATUS,
 } from "@/app/graphql/mutation/player.mutations";
 
-import { StepIndicator } from "./components/StepIndicator";
 import { UploadLimits } from "./components/UploadLimits";
 import { BuyExtraButtons } from "./components/BuyExtraButtons";
 import { PhotoSection } from "./components/PhotoSection";
@@ -64,6 +63,40 @@ function getFullUrl(url: string): string {
   if (url.startsWith("http") || url.startsWith("blob:")) return url;
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
   return `${API_URL}${url.startsWith("/") ? "" : "/"}${url}`;
+}
+
+function Step({
+  icon,
+  active,
+  isDark,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  active?: boolean;
+  isDark: boolean;
+  onClick?: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`w-14 h-14 rounded-full flex items-center justify-center transition-all cursor-pointer hover:scale-110 ${
+        active
+          ? "bg-yellow-500 text-black shadow-[0_0_20px_rgba(234,179,8,0.4)]"
+          : isDark
+          ? "bg-[#0f1c3d] text-gray-400 hover:bg-[#1a2a4d]"
+          : "bg-gray-200 text-gray-500 hover:bg-gray-300"
+      }`}
+    >
+      {icon}
+    </button>
+  );
+}
+
+function Line({ isDark }: { isDark: boolean }) {
+  return (
+    <div className={`w-16 h-[2px] ${isDark ? "bg-gray-500" : "bg-gray-300"}`} />
+  );
 }
 
 export default function ImagesReels() {
@@ -249,7 +282,6 @@ export default function ImagesReels() {
         toast.error(result.errors[0].message);
         return;
       }
-      // Update local state optimistically
       setVideos((prev) =>
         prev.map((v) =>
           v.id === videoId ? { ...v, is_reel: !v.is_reel } : v,
@@ -323,16 +355,26 @@ export default function ImagesReels() {
 
   return (
     <div
-      className={`min-h-screen py-32 px-6 ${
+      className={`min-h-screen py-30 px-6 ${
         isDark ? "bg-[#020617] text-white" : "bg-gray-50 text-black"
       }`}
     >
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-4xl font-black text-center text-yellow-400 mb-14">
+        <h1 className="text-4xl font-black text-center text-yellow-400 mb-10">
           {t("Images & Videos")}
         </h1>
 
-        <StepIndicator currentStep={4} isDark={isDark} t={t} />
+        <div className="flex items-center justify-center gap-6 mb-12">
+          <Step icon={<User size={22} />} isDark={isDark} onClick={() => router.push('/profile')} />
+          <Line isDark={isDark} />
+          <Step icon={<Trophy size={22} />} isDark={isDark} onClick={() => router.push('/profile/football')} />
+          <Line isDark={isDark} />
+          <Step icon={<Briefcase size={22} />} isDark={isDark} onClick={() => router.push('/profile/clubcareer')} />
+          <Line isDark={isDark} />
+          <Step icon={<ShieldCheck size={22} />} isDark={isDark} onClick={() => router.push('/profile/legal-status')} />
+          <Line isDark={isDark} />
+          <Step active icon={<ImageIcon size={22} />} isDark={isDark} onClick={() => router.push('/profile/imagesreels')} />
+        </div>
 
         <UploadLimits limits={limits} isDark={isDark} t={t} />
 
@@ -376,7 +418,6 @@ export default function ImagesReels() {
           t={t}
         />
 
-        {/* Submit Buttons */}
         <div className="flex justify-between mt-14">
           <button
             onClick={() => router.back()}
@@ -402,7 +443,6 @@ export default function ImagesReels() {
         </div>
       </div>
 
-      {/* Loading Overlay */}
       {(isUploading || isPurchasing) && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
           <Loader2 className="animate-spin text-yellow-400 w-14 h-14" />

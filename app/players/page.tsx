@@ -24,6 +24,7 @@ interface PlayerData {
   nationality?: string;
   date_of_birth?: string;
   age?: number;
+  age_category_name?: string;
   average_rating?: number;
   super7_score?: number;
   football_info?: {
@@ -42,6 +43,8 @@ interface FormattedPlayer {
   position: string;
   country: string;
   age: number;
+  dateOfBirth?: string;
+  ageCategoryName?: string;
   super7Score: number;
 }
 
@@ -176,6 +179,8 @@ function PlayersContent() {
           position: p.football_info?.position?.name || "Player",
           country: p.nationality || "Unknown",
           age: p.age || 0,
+          dateOfBirth: p.date_of_birth,
+          ageCategoryName: p.age_category_name,
           super7Score: p.super7_score || 0,
         };
       });

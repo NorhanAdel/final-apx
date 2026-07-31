@@ -95,41 +95,33 @@ export default function Reviews({ playerId }: ReviewsProps) {
     }
   };
 
-  const getInitials = (firstName?: string, lastName?: string) => {
-    return (
-      `${firstName?.charAt(0) || ""}${
-        lastName?.charAt(0) || ""
-      }`.toUpperCase() || "U"
-    );
-  };
-
   const getRaterName = (review: Rating) => {
-    // ✅ الأولوية للـ rater المضمن
-    if (review.rater) {
-      const firstName = review.rater.first_name || "";
-      const lastName = review.rater.last_name || "";
-      if (firstName && lastName) return `${firstName} ${lastName}`;
-      if (firstName) return firstName;
-      if (lastName) return lastName;
-      return review.rater.username || t("Unknown");
-    }
-    
-    // ✅ استخدام الحقول المنفصلة
-    const firstName = review.raterFirstName || "";
-    const lastName = review.raterLastName || "";
+    const firstName =
+      review.raterFirstName?.trim() || review.rater?.first_name?.trim() || "";
+    const lastName =
+      review.raterLastName?.trim() || review.rater?.last_name?.trim() || "";
+
     if (firstName && lastName) return `${firstName} ${lastName}`;
     if (firstName) return firstName;
     if (lastName) return lastName;
+
+    if (review.rater?.username) return review.rater.username;
+
     return t("Unknown");
   };
 
   const getRaterImage = (review: Rating) => {
-    // ✅ الأولوية للـ rater المضمن
-    if (review.rater?.profile_image_url) {
-      return getFullImageUrl(review.rater.profile_image_url);
+    const url = review.raterProfileImageUrl || review.rater?.profile_image_url;
+    return getFullImageUrl(url);
+  };
+
+  const getInitials = (name: string) => {
+    if (!name || name === t("Unknown")) return "U";
+    const parts = name.trim().split(" ");
+    if (parts.length >= 2) {
+      return `${parts[0].charAt(0)}${parts[1].charAt(0)}`.toUpperCase();
     }
-    // ✅ استخدام الحقل المنفصل
-    return getFullImageUrl(review.raterProfileImageUrl);
+    return name.slice(0, 2).toUpperCase();
   };
 
   const renderStars = (stars: number) => {
@@ -265,10 +257,7 @@ export default function Reviews({ playerId }: ReviewsProps) {
         {reviews.map((review) => {
           const raterName = getRaterName(review);
           const raterImage = getRaterImage(review);
-          const initials = getInitials(
-            review.rater?.first_name || review.raterFirstName,
-            review.rater?.last_name || review.raterLastName,
-          );
+          const initials = getInitials(raterName);
 
           return (
             <div

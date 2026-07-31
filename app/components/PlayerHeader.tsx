@@ -2,6 +2,7 @@
 
 import { Star, MapPin, User } from "lucide-react";
 import useTranslate from "@/app/hooks/useTranslate";
+import AgeCategoryBadge from "./AgeCategoryBadge";
 
 interface Player {
   id: string;
@@ -11,6 +12,7 @@ interface Player {
   age?: number;
   date_of_birth?: string;
   average_rating?: number;
+  age_category_name?: string;
 }
 
 interface PlayerHeaderProps {
@@ -44,9 +46,16 @@ export default function PlayerHeader({ player }: PlayerHeaderProps) {
 
   return (
     <div className={`w-full ${isRTL ? "text-right" : "text-left"}`}>
-      <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">
-        {player.first_name} {player.last_name}
-      </h1>
+      <div className="flex flex-wrap items-center gap-3">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">
+          {player.first_name} {player.last_name}
+        </h1>
+        <AgeCategoryBadge
+          dateOfBirth={player.date_of_birth}
+          ageCategoryName={player.age_category_name}
+          lang={lang}
+        />
+      </div>
 
       <div
         className={`flex flex-wrap items-center gap-4 mt-4 ${

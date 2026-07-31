@@ -9,7 +9,7 @@ import useTranslate from "@/app/hooks/useTranslate";
 interface ClubCareerData {
   id: string;
   current_club?: string | null;
-  professional_debut?: string | Date | null;
+  professional_debut?: string | null;
   previous_clubs?: string | null;
 }
 
@@ -52,13 +52,17 @@ export default function ClubCareer({ playerId }: ClubCareerProps) {
     fetchClubCareer();
   }, [playerId, t]);
 
-  const formatDate = (dateString?: string | Date | null) => {
-    if (!dateString) return t("N/A");
-    try {
-      return new Date(dateString).toLocaleDateString();
-    } catch {
-      return t("N/A");
-    }
+  const formatProfessionalDebut = (debut?: string | null) => {
+    if (!debut) return t("N/A");
+    
+    const debutMap: Record<string, string> = {
+      "LESS_THAN_1": t("Less than a year"),
+      "1_TO_3": t("1-3 years"),
+      "4_TO_7": t("4-7 years"),
+      "MORE_THAN_7": t("More than 7 years"),
+    };
+
+    return debutMap[debut] || debut;
   };
 
   const textColor = isDark ? "text-gray-300" : "text-gray-700";
@@ -107,10 +111,10 @@ export default function ClubCareer({ playerId }: ClubCareerProps) {
       <ul className={`space-y-2 text-sm ${isRTL ? "text-right" : "text-left"}`}>
         <li className={textColor}>
           {isRTL ? (
-            <>
-              <span>{clubCareer.current_club || t("N/A")}</span>
-              <strong> :{t("Current Club")}</strong>
-            </>
+            <span>
+              <strong>{t("Current Club")}: </strong>
+              {clubCareer.current_club || t("N/A")}
+            </span>
           ) : (
             <>
               <strong>{t("Current Club")}:</strong>
@@ -120,23 +124,23 @@ export default function ClubCareer({ playerId }: ClubCareerProps) {
         </li>
         <li className={textColor}>
           {isRTL ? (
-            <>
-              <span>{formatDate(clubCareer.professional_debut)}</span>
-              <strong> :{t("Professional Debut")}</strong>
-            </>
+            <span>
+              <strong>{t("Years of Experience")}: </strong>
+              {formatProfessionalDebut(clubCareer.professional_debut)}
+            </span>
           ) : (
             <>
-              <strong>{t("Professional Debut")}:</strong>
-              <span> {formatDate(clubCareer.professional_debut)}</span>
+              <strong>{t("Years of Experience")}:</strong>
+              <span> {formatProfessionalDebut(clubCareer.professional_debut)}</span>
             </>
           )}
         </li>
         <li className={textColor}>
           {isRTL ? (
-            <>
-              <span>{clubCareer.previous_clubs || t("No previous clubs")}</span>
-              <strong> :{t("Previous Clubs")}</strong>
-            </>
+            <span>
+              <strong>{t("Previous Clubs")}: </strong>
+              {clubCareer.previous_clubs || t("No previous clubs")}
+            </span>
           ) : (
             <>
               <strong>{t("Previous Clubs")}:</strong>

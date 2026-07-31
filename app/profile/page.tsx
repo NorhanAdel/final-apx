@@ -12,6 +12,7 @@ import {
   Weight,
   Trophy,
   Users,
+  ShieldCheck,
   Camera,
   ChevronRight,
   ChevronLeft,
@@ -169,7 +170,6 @@ export default function ProfilePage() {
     null,
   );
 
-  // Separate date fields
   const [birthDay, setBirthDay] = useState("");
   const [birthMonth, setBirthMonth] = useState("");
   const [birthYear, setBirthYear] = useState("");
@@ -189,7 +189,6 @@ export default function ProfilePage() {
     bio: "",
   });
 
-  // Update date_of_birth from separate fields
   useEffect(() => {
     if (birthYear && birthMonth && birthDay) {
       const formattedDate = `${birthYear}-${birthMonth.padStart(
@@ -216,7 +215,6 @@ export default function ProfilePage() {
       if (result.data?.myPlayerProfile) {
         const p = result.data.myPlayerProfile;
 
-        // Parse date of birth
         const dob = p.date_of_birth?.split("T")[0] || "";
         const [year, month, day] = dob.split("-");
 
@@ -320,48 +318,42 @@ export default function ProfilePage() {
       verificationFile !== null
     );
   };
+
   const getErrorMessage = (result: any) => {
     if (!result) return "Unknown error";
-
     if (result?.errors?.length) {
       return result.errors[0]?.message || "Error occurred";
     }
-
     if (result?.message) {
       return result.message;
     }
-
     return "Something went wrong";
   };
+
   const getFriendlyError = (message: string, lang: string) => {
     if (!message) {
       return lang === "ar" ? "حدث خطأ ما" : "Something went wrong";
     }
-
     const msg = message.toLowerCase();
-
     if (msg.includes("email")) {
       return lang === "ar"
         ? "البريد الإلكتروني غير صحيح أو مستخدم"
         : "Email is invalid or already used";
     }
-
     if (msg.includes("phone")) {
       return lang === "ar" ? "رقم الهاتف غير صحيح" : "Phone number is invalid";
     }
-
     if (msg.includes("unauthorized")) {
       return lang === "ar" ? "يجب تسجيل الدخول أولاً" : "You must login first";
     }
-
     if (msg.includes("required")) {
       return lang === "ar"
         ? "من فضلك املأ جميع البيانات المطلوبة"
         : "Please fill all required fields";
     }
-
     return message;
   };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
@@ -488,7 +480,6 @@ export default function ProfilePage() {
         (prev) => ({ ...prev, ...updatedData } as PlayerFormData),
       );
 
-      // Reset file states
       setProfileImageFile(null);
       setVerificationFile(null);
 
@@ -510,7 +501,7 @@ export default function ProfilePage() {
   if (pageLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-yellow-400">Loading...</div>
+        <div className="text-yellow-400">{t("loading")}</div>
       </div>
     );
   }
@@ -522,7 +513,7 @@ export default function ProfilePage() {
 
   return (
     <div
-      className={`min-h-screen py-40 pt-32 transition ${
+      className={`min-h-screen py-30 pt-30 transition ${
         isDark ? "bg-[#020b1c] text-white" : "bg-gray-50 text-black"
       }`}
     >
@@ -531,17 +522,18 @@ export default function ProfilePage() {
           {t("Personal Information")}
         </h1>
 
-        <div className="flex items-center justify-center gap-6 mb-10">
-          <Step icon={<User />} active isDark={isDark} />
+        <div className="flex items-center justify-center gap-4 sm:gap-6 mb-10 overflow-x-auto pb-2">
+          <Step icon={<User size={20} />} active isDark={isDark} onClick={() => router.push('/profile')} />
           <Line isDark={isDark} />
-          <Step icon={<Trophy />} isDark={isDark} />
+          <Step icon={<Trophy size={20} />} isDark={isDark} onClick={() => router.push('/profile/football')} />
           <Line isDark={isDark} />
-          <Step icon={<Users />} isDark={isDark} />
+          <Step icon={<Users size={20} />} isDark={isDark} onClick={() => router.push('/profile/clubcareer')} />
           <Line isDark={isDark} />
-          <Step icon={<Camera />} isDark={isDark} />
+          <Step icon={<ShieldCheck size={20} />} isDark={isDark} onClick={() => router.push('/profile/legal-status')} />
+          <Line isDark={isDark} />
+          <Step icon={<Camera size={20} />} isDark={isDark} onClick={() => router.push('/profile/imagesreels')} />
         </div>
 
-        {/* Profile Image Upload */}
         <div className="mb-12">
           <label
             className={`relative flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-2xl cursor-pointer transition-all group ${
@@ -635,7 +627,6 @@ export default function ProfilePage() {
             inputStyle={inputStyle}
           />
 
-          {/* Date of Birth - Separated Fields */}
           <div className="space-y-2">
             <label
               className={`block text-sm mb-2 ${
@@ -778,7 +769,6 @@ export default function ProfilePage() {
             inputStyle={inputStyle}
           />
 
-          {/* Bio Field - Full Width */}
           <div className="md:col-span-2">
             <Textarea
               label={t("Bio")}
@@ -791,7 +781,6 @@ export default function ProfilePage() {
             />
           </div>
 
-          {/* Verification Document - Optional (without X button) */}
           <div className="md:col-span-2">
             <label
               className={`block text-sm mb-2 ${
@@ -880,29 +869,33 @@ function Step({
   icon,
   active,
   isDark,
+  onClick,
 }: {
   icon: React.ReactNode;
   active?: boolean;
   isDark: boolean;
+  onClick?: () => void;
 }) {
   return (
-    <div
-      className={`w-12 h-12 rounded-full flex items-center justify-center transition ${
+    <button
+      type="button"
+      onClick={onClick}
+      className={`w-12 h-12 rounded-full flex items-center justify-center transition cursor-pointer hover:scale-110 ${
         active
-          ? "bg-yellow-400 text-black"
+          ? "bg-yellow-400 text-black shadow-[0_0_20px_rgba(250,204,21,0.4)]"
           : isDark
-          ? "bg-gray-700 text-gray-300"
-          : "bg-gray-200 text-gray-500"
+          ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+          : "bg-gray-200 text-gray-500 hover:bg-gray-300"
       }`}
     >
       {icon}
-    </div>
+    </button>
   );
 }
 
 function Line({ isDark }: { isDark: boolean }) {
   return (
-    <div className={`w-10 h-[2px] ${isDark ? "bg-gray-500" : "bg-gray-300"}`} />
+    <div className={`w-8 sm:w-10 h-[2px] ${isDark ? "bg-gray-500" : "bg-gray-300"}`} />
   );
 }
 

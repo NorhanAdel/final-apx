@@ -14,6 +14,7 @@ import {
   User,
   Users,
   Trophy,
+  ShieldCheck,
   Image as ImageIcon,
   ChevronRight,
   ChevronLeft,
@@ -31,7 +32,11 @@ import {
 import { toast } from "sonner";
 import { fetchGraphQL } from "../../lib/fetchGraphQL";
 import useTranslate from "../../hooks/useTranslate";
-import { GET_MY_FOOTBALL_INFO } from "@/app/graphql/query/player.queries";
+import {
+  GET_MY_FOOTBALL_INFO,
+  GET_SKILL_LEVEL_OPTIONS,
+  GET_GOAL_OPTIONS,
+} from "@/app/graphql/query/player.queries";
 import {
   CREATE_FOOTBALL_INFO,
   UPDATE_FOOTBALL_INFO,
@@ -56,13 +61,21 @@ interface Position {
   };
 }
 
+interface OptionItem {
+  value: string;
+  label: string;
+}
+
 interface FootballInfoData {
   id: string;
+  sport_id?: string;
+  position_id?: string;
+  sport?: { id: string; name: string } | null;
   position: (Position & { sport_id?: string }) | null;
   preferred_foot: string;
   jersey_number: number;
   playing_style: string;
-  strengths: string;
+  strengths: string[];
   market_value: number;
 }
 
@@ -72,8 +85,8 @@ interface FormData {
   positionId: string;
   preferred_foot: string;
   jersey_number: string;
-  playing_style: string;
-  strengths: string;
+  skill_level: string;
+  professional_goals: string[];
   market_value: string;
 }
 
@@ -87,6 +100,8 @@ export default function FootballInformation() {
   const [sports, setSports] = useState<Sport[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
   const [positionsLoading, setPositionsLoading] = useState(false);
+  const [skillLevelOptions, setSkillLevelOptions] = useState<OptionItem[]>([]);
+  const [goalOptions, setGoalOptions] = useState<OptionItem[]>([]);
   const [existingInfo, setExistingInfo] = useState<FootballInfoData | null>(
     null,
   );
@@ -99,8 +114,8 @@ export default function FootballInformation() {
     positionId: "",
     preferred_foot: "RIGHT",
     jersey_number: "",
-    playing_style: "",
-    strengths: "",
+    skill_level: "",
+    professional_goals: [],
     market_value: "",
   });
 
@@ -117,6 +132,58 @@ export default function FootballInformation() {
     }
   }, []);
 
+  const fetchSkillLevelOptions = useCallback(async () => {
+    try {
+      const result = await fetchGraphQL<{
+        getSkillLevelOptions: OptionItem[];
+      }>(GET_SKILL_LEVEL_OPTIONS, { lang });
+      if (result.data?.getSkillLevelOptions) {
+        setSkillLevelOptions(result.data.getSkillLevelOptions);
+      }
+    } catch (err) {
+      console.error("Error fetching skill level options:", err);
+    }
+  }, [lang]);
+
+  const fetchGoalOptions = useCallback(async () => {
+    try {
+      const result = await fetchGraphQL<{ getGoalOptions: OptionItem[] }>(
+        GET_GOAL_OPTIONS,
+        { lang },
+      );
+      if (result.data?.getGoalOptions) {
+        setGoalOptions(result.data.getGoalOptions);
+      }
+    } catch (err) {
+      console.error("Error fetching goal options:", err);
+    }
+  }, [lang]);
+
+  const normalizeFoot = (foot?: string | null): string => {
+    if (!foot) return "RIGHT";
+    const trimmed = foot.trim();
+    const upper = trimmed.toUpperCase();
+    if (
+      upper.includes("LEFT") ||
+      trimmed.includes("يسر") ||
+      trimmed === "يسرى" ||
+      trimmed === "Esquerda"
+    ) {
+      return "LEFT";
+    }
+    if (
+      upper.includes("BOTH") ||
+      trimmed.includes("كلتا") ||
+      trimmed.includes("قدمين") ||
+      trimmed === "كلتاهما" ||
+      trimmed === "كلا القدمين" ||
+      trimmed === "Ambas"
+    ) {
+      return "BOTH";
+    }
+    return "RIGHT";
+  };
+
   const fetchFootballInfo = useCallback(async () => {
     try {
       const result = await fetchGraphQL<{ myFootballInfo: FootballInfoData }>(
@@ -127,16 +194,20 @@ export default function FootballInformation() {
         setExistingInfo(info);
 
         const existingSportId =
-          info.position?.sport_id || info.position?.sport?.id || "";
+          info.sport_id ||
+          info.sport?.id ||
+          info.position?.sport_id ||
+          info.position?.sport?.id ||
+          "";
 
         const loaded: FormData = {
           id: info.id,
           selectedSportId: existingSportId,
-          positionId: info.position?.id || "",
-          preferred_foot: info.preferred_foot || "RIGHT",
+          positionId: info.position_id || info.position?.id || "",
+          preferred_foot: normalizeFoot(info.preferred_foot),
           jersey_number: info.jersey_number?.toString() || "",
-          playing_style: info.playing_style || "",
-          strengths: info.strengths || "",
+          skill_level: info.playing_style || "",
+          professional_goals: info.strengths || [],
           market_value: info.market_value?.toString() || "",
         };
         setIsRestoringExisting(true);
@@ -149,10 +220,15 @@ export default function FootballInformation() {
   }, []);
 
   useEffect(() => {
-    Promise.all([fetchSports(), fetchFootballInfo()]).finally(() => {
+    Promise.all([
+      fetchSports(),
+      fetchFootballInfo(),
+      fetchSkillLevelOptions(),
+      fetchGoalOptions(),
+    ]).finally(() => {
       setPageLoading(false);
     });
-  }, [fetchSports, fetchFootballInfo, lang]);
+  }, [fetchSports, fetchFootballInfo, fetchSkillLevelOptions, fetchGoalOptions, lang]);
 
   useEffect(() => {
     if (!formData.selectedSportId) {
@@ -228,8 +304,9 @@ export default function FootballInformation() {
       formData.positionId === originalFormData.positionId &&
       formData.preferred_foot === originalFormData.preferred_foot &&
       formData.jersey_number === originalFormData.jersey_number &&
-      formData.playing_style === originalFormData.playing_style &&
-      formData.strengths === originalFormData.strengths &&
+      formData.skill_level === originalFormData.skill_level &&
+      formData.professional_goals.length === originalFormData.professional_goals.length &&
+      formData.professional_goals.every((v) => originalFormData.professional_goals.includes(v)) &&
       formData.market_value === originalFormData.market_value
     );
   }, [formData, originalFormData]);
@@ -242,19 +319,17 @@ export default function FootballInformation() {
       return;
     }
 
-    setLoading(true);
-
     if (!formData.selectedSportId) {
       toast.error(t("Please select a sport"));
-      setLoading(false);
       return;
     }
 
     if (!formData.positionId) {
       toast.error(t("Please select a position"));
-      setLoading(false);
       return;
     }
+
+    setLoading(true);
 
     const isUpdate = !!existingInfo?.id;
     const mutation = isUpdate ? UPDATE_FOOTBALL_INFO : CREATE_FOOTBALL_INFO;
@@ -264,20 +339,12 @@ export default function FootballInformation() {
       position_id: formData.positionId,
       preferred_foot: formData.preferred_foot,
       jersey_number: parseInt(formData.jersey_number) || 0,
-      playing_style: formData.playing_style,
-      strengths: formData.strengths,
+      playing_style: formData.skill_level || undefined,
+      strengths: formData.professional_goals,
       market_value: parseFloat(formData.market_value) || 0,
     };
 
-    let variables;
-    if (isUpdate) {
-      variables = {
-        id: existingInfo.id,
-        input: input,
-      };
-    } else {
-      variables = { input };
-    }
+    const variables = { input };
 
     try {
       const result = await fetchGraphQL(mutation, variables);
@@ -311,7 +378,7 @@ export default function FootballInformation() {
 
   return (
     <div
-      className={`min-h-screen py-40 flex items-center justify-center transition
+      className={`min-h-screen py-30 flex items-center justify-center transition
       ${isDark ? "bg-[#020617] text-white" : "bg-gray-50 text-black"}`}
     >
       <div className="w-full max-w-6xl px-6">
@@ -323,13 +390,15 @@ export default function FootballInformation() {
         </h1>
 
         <div className="flex justify-center items-center gap-6 mb-10">
-          <Step icon={<User />} active isDark={isDark} />
+          <Step icon={<User />} isDark={isDark} onClick={() => router.push('/profile')} />
           <Line isDark={isDark} />
-          <Step icon={<Trophy />} isDark={isDark} />
+          <Step icon={<Trophy />} active isDark={isDark} onClick={() => router.push('/profile/football')} />
           <Line isDark={isDark} />
-          <Step icon={<Users />} isDark={isDark} />
+          <Step icon={<Users />} isDark={isDark} onClick={() => router.push('/profile/clubcareer')} />
           <Line isDark={isDark} />
-          <Step icon={<ImageIcon />} isDark={isDark} />
+          <Step icon={<ShieldCheck />} isDark={isDark} onClick={() => router.push('/profile/legal-status')} />
+          <Line isDark={isDark} />
+          <Step icon={<ImageIcon />} isDark={isDark} onClick={() => router.push('/profile/imagesreels')} />
         </div>
 
         <form onSubmit={handleSubmit} className="grid md:grid-cols-2 gap-6">
@@ -398,24 +467,21 @@ export default function FootballInformation() {
             placeholder={t("Enter jersey number")}
           />
 
-          <Input
-            label={t("Playing Style")}
-            name="playing_style"
-            value={formData.playing_style}
+          <Select
+            label={t("Skill Level")}
+            name="skill_level"
+            value={formData.skill_level}
             onChange={handleChange}
             icon={<Swords size={18} />}
             isDark={isDark}
-            placeholder={t("Enter playing style")}
-          />
-
-          <Input
-            label={t("Strengths")}
-            name="strengths"
-            value={formData.strengths}
-            onChange={handleChange}
-            icon={<Zap size={18} />}
-            isDark={isDark}
-            placeholder={t("Enter your strengths")}
+            options={skillLevelOptions.map((o) => ({
+              label: o.label,
+              value: o.value,
+            }))}
+            placeholder={t("Select your skill level")}
+            searchPlaceholder={t("Search...")}
+            noOptionsText={t("No options found")}
+            t={t}
           />
 
           <Input
@@ -428,6 +494,35 @@ export default function FootballInformation() {
             isDark={isDark}
             placeholder={t("Enter market value")}
           />
+
+          <div>
+            <Select
+              label={t("Professional Goals")}
+              name="professional_goals"
+              value={formData.professional_goals.join(",")}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === "") {
+                  setFormData((prev) => ({ ...prev, professional_goals: [] }));
+                } else {
+                  setFormData((prev) => ({
+                    ...prev,
+                    professional_goals: value.split(",").filter(Boolean),
+                  }));
+                }
+              }}
+              icon={<Zap size={18} />}
+              isDark={isDark}
+              options={goalOptions.map((o) => ({
+                label: o.label,
+                value: o.value,
+              }))}
+              placeholder={t("Select professional goals")}
+              searchPlaceholder={t("Search goals...")}
+              noOptionsText={t("No options found")}
+              t={t}
+            />
+          </div>
 
           <div className="md:col-span-2 flex justify-between mt-10">
             <button
@@ -461,23 +556,27 @@ function Step({
   icon,
   active,
   isDark,
+  onClick,
 }: {
   icon: React.ReactNode;
   active?: boolean;
   isDark: boolean;
+  onClick?: () => void;
 }) {
   return (
-    <div
-      className={`w-12 h-12 rounded-full flex items-center justify-center transition ${
+    <button
+      type="button"
+      onClick={onClick}
+      className={`w-12 h-12 rounded-full flex items-center justify-center transition cursor-pointer hover:scale-110 ${
         active
-          ? "bg-yellow-400 text-black"
+          ? "bg-yellow-400 text-black shadow-[0_0_20px_rgba(250,204,21,0.4)]"
           : isDark
-          ? "bg-gray-700 text-gray-300"
-          : "bg-gray-200 text-gray-500"
+          ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+          : "bg-gray-200 text-gray-500 hover:bg-gray-300"
       }`}
     >
       {icon}
-    </div>
+    </button>
   );
 }
 
@@ -579,7 +678,6 @@ function Select({
   isLoading,
   searchPlaceholder = "Search...",
   noOptionsText = "No options found",
-  t,
 }: {
   label: string;
   icon: React.ReactNode;

@@ -10,8 +10,9 @@ import React, {
 import {
   User,
   Trophy,
-  Users,
-  Image as ImageIcon,
+  Briefcase,
+  ShieldCheck,
+  Camera,
   ChevronRight,
   ChevronLeft,
   Loader2,
@@ -22,12 +23,20 @@ import { toast } from "sonner";
 import { fetchGraphQL } from "../../lib/fetchGraphQL";
 import useTranslate from "../../hooks/useTranslate";
 import { UPDATE_PLAYER_CLUB_CAREER } from "@/app/graphql/mutation/player.mutations";
-import { GET_MY_CLUB_CAREER } from "@/app/graphql/query/player.queries";
+import {
+  GET_MY_CLUB_CAREER,
+  GET_PROFESSIONAL_DEBUT_OPTIONS,
+} from "@/app/graphql/query/player.queries";
 
 interface ClubCareerFormData {
   current_club: string;
   professional_debut: string;
   previous_clubs: string;
+}
+
+interface ProfessionalDebutOption {
+  value: string;
+  label: string;
 }
 
 export default function ClubCareer() {
@@ -45,6 +54,23 @@ export default function ClubCareer() {
     professional_debut: "",
     previous_clubs: "",
   });
+  const [professionalDebutOptions, setProfessionalDebutOptions] = useState<
+    ProfessionalDebutOption[]
+  >([]);
+
+  const fetchProfessionalDebutOptions = useCallback(async () => {
+    try {
+      const result = await fetchGraphQL<{
+        getProfessionalDebutOptions: ProfessionalDebutOption[];
+      }>(GET_PROFESSIONAL_DEBUT_OPTIONS, { lang });
+
+      if (result.data?.getProfessionalDebutOptions) {
+        setProfessionalDebutOptions(result.data.getProfessionalDebutOptions);
+      }
+    } catch (err) {
+      console.error("Failed to fetch professional debut options:", err);
+    }
+  }, [lang]);
 
   const fetchCareerData = useCallback(async () => {
     setFetching(true);
@@ -69,14 +95,14 @@ export default function ClubCareer() {
     } finally {
       setFetching(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
-    fetchCareerData();
-  }, [lang, fetchCareerData]);
+    Promise.all([fetchCareerData(), fetchProfessionalDebutOptions()]);
+  }, [lang, fetchCareerData, fetchProfessionalDebutOptions]);
 
   const handleChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -98,12 +124,12 @@ export default function ClubCareer() {
       !formData.previous_clubs;
 
     if (isFormEmpty) {
-      router.push("/profile/imagesreels");
+      router.push("/profile/legal-status");
       return;
     }
 
     if (!isNewData && !hasChanged) {
-      router.push("/profile/imagesreels");
+      router.push("/profile/legal-status");
       return;
     }
 
@@ -119,7 +145,7 @@ export default function ClubCareer() {
       } else {
         await fetchCareerData();
         toast.success(t("Saved successfully"));
-        router.push("/profile/imagesreels");
+        router.push("/profile/legal-status");
       }
     } catch (err) {
       console.error("Submit error:", err);
@@ -149,22 +175,45 @@ export default function ClubCareer() {
   return (
     <div
       className={`min-h-screen py-30 transition ${
-        isDark ? "bg-[#020617] text-white" : "bg-gray-50 text-black"
+        isDark ? "bg-[#020617]" : "bg-gray-50 text-black"
       }`}
     >
-      <div className="relative w-full max-w-6xl mx-auto px-6 py-14">
+      <div className="relative w-full max-w-6xl mx-auto px-6">
         <h1 className="text-center text-3xl font-bold text-yellow-400 mb-10">
           {t("Club Career")}
         </h1>
 
         <div className="flex items-center justify-center gap-6 mb-12">
-          <Step icon={<User size={22} />} isDark={isDark} />
+          <Step
+            icon={<User size={22} />}
+            isDark={isDark}
+            onClick={() => router.push("/profile")}
+          />
           <Line isDark={isDark} />
-          <Step icon={<Trophy size={22} />} isDark={isDark} />
+          <Step
+            icon={<Trophy size={22} />}
+            isDark={isDark}
+            onClick={() => router.push("/profile/football")}
+          />
           <Line isDark={isDark} />
-          <Step active icon={<Users size={22} />} isDark={isDark} />
+          <Step
+            active
+            icon={<Briefcase size={22} />}
+            isDark={isDark}
+            onClick={() => router.push("/profile/clubcareer")}
+          />
           <Line isDark={isDark} />
-          <Step icon={<ImageIcon size={22} />} isDark={isDark} />
+          <Step
+            icon={<ShieldCheck size={22} />}
+            isDark={isDark}
+            onClick={() => router.push("/profile/legal-status")}
+          />
+          <Line isDark={isDark} />
+          <Step
+            icon={<Camera size={22} />}
+            isDark={isDark}
+            onClick={() => router.push("/profile/imagesreels")}
+          />
         </div>
 
         <form onSubmit={handleSubmit} className="grid md:grid-cols-2 gap-6">
@@ -177,15 +226,32 @@ export default function ClubCareer() {
             isDark={isDark}
           />
 
-          <Input
-            label={t("Professional Debut")}
-            name="professional_debut"
-            value={formData.professional_debut}
-            onChange={handleChange}
-            placeholder={t("e.g. 2020 at Youth Academy")}
-            type="text"
-            isDark={isDark}
-          />
+          <div>
+            <label
+              className={`text-sm block mb-2 ${
+                isDark ? "text-gray-300" : "text-gray-700"
+              }`}
+            >
+              {t("Years of Experience")}
+            </label>
+            <select
+              name="professional_debut"
+              value={formData.professional_debut}
+              onChange={handleChange}
+              className={`w-full rounded-xl px-4 py-3 outline-none transition appearance-none ${
+                isDark
+                  ? "bg-[#0b1736] border border-[#1e2d5a] focus:border-yellow-400 text-white placeholder-gray-500"
+                  : "bg-white border border-gray-300 focus:border-yellow-400 text-black placeholder-gray-400"
+              }`}
+            >
+              <option value="">{t("Select years of experience")}</option>
+              {professionalDebutOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
 
           <div className="md:col-span-2">
             <label
@@ -231,7 +297,8 @@ export default function ClubCareer() {
                   : "bg-gray-200 border-x border-yellow-400 hover:bg-gray-300 text-yellow-600"
               } disabled:opacity-50`}
             >
-              {loading ? t("Saving...") : t("Next")} <ChevronRight size={20} />
+              {loading ? t("Saving...") : t("Next")}{" "}
+              <ChevronRight size={20} />
             </button>
           </div>
         </form>
@@ -244,23 +311,27 @@ function Step({
   icon,
   active,
   isDark,
+  onClick,
 }: {
   icon: React.ReactNode;
   active?: boolean;
   isDark: boolean;
+  onClick?: () => void;
 }) {
   return (
-    <div
-      className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${
+    <button
+      type="button"
+      onClick={onClick}
+      className={`w-14 h-14 rounded-full flex items-center justify-center transition-all cursor-pointer hover:scale-110 ${
         active
-          ? "bg-yellow-500 text-black shadow-[0_0_15px_rgba(234,179,8,0.4)]"
+          ? "bg-yellow-500 text-black shadow-[0_0_20px_rgba(234,179,8,0.4)]"
           : isDark
-          ? "bg-[#0f1c3d] text-gray-400"
-          : "bg-gray-200 text-gray-500"
+          ? "bg-[#0f1c3d] text-gray-400 hover:bg-[#1a2a4d]"
+          : "bg-gray-200 text-gray-500 hover:bg-gray-300"
       }`}
     >
       {icon}
-    </div>
+    </button>
   );
 }
 

@@ -3,6 +3,7 @@
 import React from "react";
 import { useTheme } from "@/app/context/ThemeContext";
 import useTranslate from "@/app/hooks/useTranslate";
+import AgeCategoryBadge from "./AgeCategoryBadge";
 
 interface Player {
   first_name: string;
@@ -19,6 +20,11 @@ interface Player {
   bio?: string | null;
   super7_level?: string | null;
   views_count?: number | null;
+  contract_status_info?: {
+    contract_status_label?: string | null;
+    has_official_agent?: boolean;
+    official_agent_name?: string | null;
+  } | null;
 }
 
 interface PersonalInfoProps {
@@ -31,7 +37,7 @@ export default function PersonalInfo({
   showContact = false,
 }: PersonalInfoProps) {
   const { theme } = useTheme();
-  const { t } = useTranslate();
+  const { t, lang } = useTranslate();
   const isDark = theme === "dark";
 
   if (!player) return null;
@@ -65,7 +71,6 @@ export default function PersonalInfo({
 
   return (
     <div className="mt-6 space-y-6">
-      {/* Bio & Stats Section */}
       {(player.bio ||
         (player.views_count ?? 0) > 0 ||
         player.super7_level ||
@@ -103,7 +108,6 @@ export default function PersonalInfo({
         </div>
       )}
 
-      {/* Personal Information */}
       <div>
         <h3 className="text-yellow-400 font-semibold mb-3">
           {t("Personal Information")}
@@ -119,6 +123,10 @@ export default function PersonalInfo({
           </li>
           <li className={textColor}>
             <strong>{t("Age")}:</strong> {displayAge ?? t("N/A")}
+          </li>
+          <li className={`flex items-center gap-2 ${textColor}`}>
+            <strong>{t("Age Category")}:</strong>{" "}
+            <AgeCategoryBadge dateOfBirth={player.date_of_birth} lang={lang} />
           </li>
           <li className={textColor}>
             <strong>{t("Place of Birth")}:</strong>{" "}
@@ -138,6 +146,19 @@ export default function PersonalInfo({
             <strong>{t("Weight")}:</strong>{" "}
             {player.weight_kg ? `${player.weight_kg} kg` : t("N/A")}
           </li>
+          {player.contract_status_info?.contract_status_label && (
+            <li className={textColor}>
+              <strong>{t("Contract Status")}:</strong>{" "}
+              <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold bg-yellow-400/20 text-yellow-400 border border-yellow-400/30 ml-1">
+                {player.contract_status_info.contract_status_label}
+              </span>
+            </li>
+          )}
+          {player.contract_status_info?.has_official_agent && player.contract_status_info?.official_agent_name && (
+            <li className={textColor}>
+              <strong>{t("Official Agent")}:</strong> {player.contract_status_info.official_agent_name}
+            </li>
+          )}
           {showContact && (
             <li className={textColor}>
               <strong>{t("Email")}:</strong> {player.email_address || t("N/A")}
