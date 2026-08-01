@@ -214,7 +214,12 @@ export default function ImagesReels() {
     }
   };
 
-  const handleVideoUpload = async (file: File, title: string) => {
+  const handleVideoUpload = async (
+    file: File,
+    title: string,
+    videoType: string,
+    durationSeconds?: number
+  ) => {
     if ((limits?.remaining_videos || 0) <= 0) {
       toast.error(t("Video limit reached. Please purchase extra videos."));
       return;
@@ -226,9 +231,9 @@ export default function ImagesReels() {
         file,
         input: {
           title: title || "Highlight",
-          type: "HIGHLIGHT",
+          type: videoType || "HIGHLIGHT",
           sport_id: selectedSportId,
-          duration_seconds: 30,
+          duration_seconds: durationSeconds || 30,
           create_reel: false,
         },
       });
@@ -273,10 +278,11 @@ export default function ImagesReels() {
     }
   };
 
-  const handleToggleReel = async (videoId: string) => {
+  const handleToggleReel = async (videoId: string, eventType?: string) => {
     try {
       const result: any = await fetchGraphQL(TOGGLE_REEL_STATUS, {
         id: videoId,
+        eventType,
       });
       if (result.errors) {
         toast.error(result.errors[0].message);

@@ -19,11 +19,6 @@ const ROLE_RULES: RoleRouteRule[] = [
     roleKey: "club",
   },
   {
-    prefix: "/club",
-    allowedRoles: ["CLUB", "ADMIN"],
-    roleKey: "club",
-  },
-  {
     prefix: "/scout",
     allowedRoles: ["SCOUT", "ADMIN"],
     roleKey: "scout",
@@ -47,16 +42,6 @@ const ROLE_RULES: RoleRouteRule[] = [
     prefix: "/user",
     allowedRoles: ["USER", "ADMIN"],
     roleKey: "user",
-  },
-  {
-    prefix: "/admin",
-    allowedRoles: ["ADMIN"],
-    roleKey: "admin",
-  },
-  {
-    prefix: "/player",
-    allowedRoles: ["PLAYER", "ADMIN"],
-    roleKey: "player",
   },
   {
     prefix: "/profile/player",

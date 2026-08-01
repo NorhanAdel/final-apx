@@ -111,8 +111,8 @@ export const UPLOAD_VIDEO = gql`
 `;
 
 export const TOGGLE_REEL_STATUS = `
-  mutation ToggleReel($id: String!) {
-    toggleVideoReelStatus(videoId: $id) {
+  mutation ToggleReel($id: String!, $eventType: String) {
+    toggleVideoReelStatus(videoId: $id, eventType: $eventType) {
       is_reel
     }
   }

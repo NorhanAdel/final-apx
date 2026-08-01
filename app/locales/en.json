@@ -996,5 +996,13 @@
   "Less than a year": "Less than a year",
   "1-3 years": "1-3 years",
   "4-7 years": "4-7 years",
-  "More than 7 years": "More than 7 years"
+  "More than 7 years": "More than 7 years",
+  "Video duration must be at least 30 seconds.": "Video duration must be at least 30 seconds.",
+  "Video duration cannot exceed 3 minutes.": "Video duration cannot exceed 3 minutes.",
+  "sponsored": "Sponsored",
+  "shared_successfully": "Shared successfully!",
+  "Select Reel Event Type": "Select Reel Event Type",
+  "Reel Event Type": "Reel Event Type",
+  "Share as Reel": "Share as Reel",
+  "Video Type": "Video Type"
 }

@@ -16,12 +16,16 @@ import {
   Share,
   Copy,
   Check,
+  Tag,
 } from "lucide-react";
 import { useTheme } from "@/app/context/ThemeContext";
 import { useAuth } from "@/app/context/auth-context";
 import useTranslate from "@/app/hooks/useTranslate";
 import { toast } from "sonner";
-import { fetchGraphQL, type FetchGraphQLResponse } from "@/app/lib/fetchGraphQL";
+import {
+  fetchGraphQL,
+  type FetchGraphQLResponse,
+} from "@/app/lib/fetchGraphQL";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://72.62.28.146";
 
 interface Comment {
@@ -156,32 +160,32 @@ const getFullImageUrl = (url?: string | null): string => {
 // Social Media Icons
 const WhatsAppIcon = () => (
   <svg className="w-5 h-5" viewBox="0 0 24 24" fill="white">
-    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.298-.018-.459.13-.607.134-.133.297-.347.446-.52.15-.174.2-.298.3-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.61-.916-2.206-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.273.298-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414-.074-.124-.272-.198-.57-.347z"/>
-    <path d="M12 0C5.373 0 0 5.373 0 12c0 2.656.862 5.109 2.318 7.079l-1.392 4.469 4.653-1.386C8.045 22.334 9.956 23 12 23c6.627 0 12-5.373 12-12S18.627 0 12 0zm3.37 16.318c-.149.416-.82.742-1.184.792-.336.047-.769.075-1.443-.322-1.195-.708-2.422-2.075-3.155-2.827-1.187-1.22-1.819-2.326-1.819-3.04 0-.715.353-1.294.77-1.631.16-.13.272-.186.391-.186.119 0 .283.014.403.014.118 0 .307-.049.481.372.104.252.357.923.389.992.032.069.052.149.019.238-.034.09-.053.11-.088.165-.035.055-.07.083-.115.133-.043.05-.078.069-.12.115-.04.046-.08.079-.033.155.047.076.208.345.445.669.477.655 1.054 1.41 1.79 1.879.384.245.845.441 1.324.553.081.019.156.008.215-.048.128-.125.332-.409.422-.55.09-.141.157-.116.267-.07.111.046.512.243.655.322.144.078.27.174.31.272.039.098.039.229-.01.374z"/>
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.298-.018-.459.13-.607.134-.133.297-.347.446-.52.15-.174.2-.298.3-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.61-.916-2.206-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.273.298-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414-.074-.124-.272-.198-.57-.347z" />
+    <path d="M12 0C5.373 0 0 5.373 0 12c0 2.656.862 5.109 2.318 7.079l-1.392 4.469 4.653-1.386C8.045 22.334 9.956 23 12 23c6.627 0 12-5.373 12-12S18.627 0 12 0zm3.37 16.318c-.149.416-.82.742-1.184.792-.336.047-.769.075-1.443-.322-1.195-.708-2.422-2.075-3.155-2.827-1.187-1.22-1.819-2.326-1.819-3.04 0-.715.353-1.294.77-1.631.16-.13.272-.186.391-.186.119 0 .283.014.403.014.118 0 .307-.049.481.372.104.252.357.923.389.992.032.069.052.149.019.238-.034.09-.053.11-.088.165-.035.055-.07.083-.115.133-.043.05-.078.069-.12.115-.04.046-.08.079-.033.155.047.076.208.345.445.669.477.655 1.054 1.41 1.79 1.879.384.245.845.441 1.324.553.081.019.156.008.215-.048.128-.125.332-.409.422-.55.09-.141.157-.116.267-.07.111.046.512.243.655.322.144.078.27.174.31.272.039.098.039.229-.01.374z" />
   </svg>
 );
 
 const InstagramIcon = () => (
   <svg className="w-5 h-5" viewBox="0 0 24 24" fill="white">
-    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
   </svg>
 );
 
 const TelegramIcon = () => (
   <svg className="w-5 h-5" viewBox="0 0 24 24" fill="white">
-    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.121l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.128.832.941z"/>
+    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.121l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.128.832.941z" />
   </svg>
 );
 
 const FacebookIcon = () => (
   <svg className="w-5 h-5" viewBox="0 0 24 24" fill="white">
-    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
   </svg>
 );
 
 const XIcon = () => (
   <svg className="w-5 h-5" viewBox="0 0 24 24" fill="white">
-    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
   </svg>
 );
 
@@ -190,6 +194,7 @@ export default function ReelsPage() {
   const { user } = useAuth();
   const { t, lang } = useTranslate();
   const isDark = theme === "dark";
+  const isRTL = lang === "ar";
 
   const [reels, setReels] = useState<Reel[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -214,6 +219,52 @@ export default function ReelsPage() {
   const [copiedReelId, setCopiedReelId] = useState<string | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
+  const formatReelEventType = (type?: string) => {
+    if (!type) return null;
+    const eventMap: Record<
+      string,
+      { ar: string; en: string; pt: string; zh: string }
+    > = {
+      GOAL: { ar: "⚽ هدف", en: "⚽ Goal", pt: "⚽ Gol", zh: "⚽ 进球" },
+      ASSIST: {
+        ar: "🅰️ صناعة هدف",
+        en: "🅰️ Assist",
+        pt: "🅰️ Assistência",
+        zh: "🅰️ 助攻",
+      },
+      TACKLE: {
+        ar: "🛡️ قطع كرة",
+        en: "🛡️ Tackle",
+        pt: "🛡️ Desarme",
+        zh: "🛡️ 抢断",
+      },
+      DRIBBLE: {
+        ar: "⚡ مراوغة",
+        en: "⚡ Dribble",
+        pt: "⚡ Drible",
+        zh: "⚡ 过人",
+      },
+      HIGHLIGHT: {
+        ar: "🌟 لقطة مميزة",
+        en: "🌟 Highlight",
+        pt: "🌟 Destaque",
+        zh: "🌟 精彩",
+      },
+      OTHER: { ar: "📌 آخر", en: "📌 Other", pt: "📌 Outro", zh: "📌 其他" },
+    };
+
+    const key = type.toUpperCase();
+    const normalizedLang = (lang || "ar").toLowerCase();
+    const langKey = ["ar", "en", "pt", "zh"].includes(normalizedLang)
+      ? (normalizedLang as "ar" | "en" | "pt" | "zh")
+      : "ar";
+
+    if (eventMap[key]) {
+      return eventMap[key][langKey];
+    }
+    return type;
+  };
+
   const getReelShareUrl = (reelId: string) => {
     if (typeof window === "undefined") return "";
     return `${window.location.origin}/reels?id=${reelId}`;
@@ -224,7 +275,9 @@ export default function ReelsPage() {
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
         await navigator.share({
-          title: reel.event_type ? `Reel: ${reel.event_type}` : "Apex Talent Reel",
+          title: reel.event_type
+            ? `Reel: ${reel.event_type}`
+            : "Apex Talent Reel",
           text: t("check_out_reel") || "شاهد هذا الريل المميز على Apex Talent!",
           url: shareUrl,
         });
@@ -249,7 +302,7 @@ export default function ReelsPage() {
     }
   };
 
-  const gqlFetch = async <T = any>(
+  const gqlFetch = async <T = any,>(
     query: string,
     variables?: Record<string, unknown>,
     _withAuth = false,
@@ -569,14 +622,37 @@ export default function ReelsPage() {
             )}
             <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/80 pointer-events-none" />
 
+            {/* Reel Event Type Badge - Position based on RTL */}
+            {reel.event_type && (
+              <div
+                className={`absolute top-28 z-20 flex items-center gap-1.5 bg-black/60 backdrop-blur-md border border-yellow-400/50 text-yellow-400 text-xs font-bold px-3 py-1.5 rounded-full shadow-lg pointer-events-none ${
+                  isRTL ? "right-4" : "left-4"
+                }`}
+              >
+                <Tag size={13} className="text-yellow-400" />
+                <span>{formatReelEventType(reel.event_type)}</span>
+              </div>
+            )}
+
             <button
               onClick={toggleSound}
-              className="absolute top-28 right-4 z-[999] text-white hover:text-yellow-400 transition"
+              className={`absolute top-28 z-[999] text-white hover:text-yellow-400 transition ${
+                isRTL ? "left-4" : "right-4"
+              }`}
             >
-              {muted ? <VolumeX className="hover:text-yellow-400" /> : <Volume2 className="hover:text-yellow-400" />}
+              {muted ? (
+                <VolumeX className="hover:text-yellow-400" />
+              ) : (
+                <Volume2 className="hover:text-yellow-400" />
+              )}
             </button>
 
-            <div className="absolute right-4 bottom-24 flex flex-col gap-6 z-10">
+            {/* Action Buttons - Position based on RTL */}
+            <div
+              className={`absolute bottom-24 flex flex-col gap-6 z-10 ${
+                isRTL ? "left-4" : "right-4"
+              }`}
+            >
               <button
                 onClick={() => toggleLike(reel.id)}
                 className="flex flex-col items-center group"
@@ -585,10 +661,18 @@ export default function ReelsPage() {
                   size={26}
                   fill={isLiked ? "red" : "none"}
                   className={`transition ${
-                    isLiked ? "text-red-500" : "text-white group-hover:text-yellow-400"
+                    isLiked
+                      ? "text-red-500"
+                      : "text-white group-hover:text-yellow-400"
                   }`}
                 />
-                <span className={`text-xs ${isLiked ? "text-red-500" : "text-white group-hover:text-yellow-400"} transition`}>
+                <span
+                  className={`text-xs ${
+                    isLiked
+                      ? "text-red-500"
+                      : "text-white group-hover:text-yellow-400"
+                  } transition`}
+                >
                   {reel.likes_count || 0}
                 </span>
               </button>
@@ -600,7 +684,10 @@ export default function ReelsPage() {
                 }}
                 className="flex flex-col items-center group"
               >
-                <MessageCircle size={26} className="text-white group-hover:text-yellow-400 transition" />
+                <MessageCircle
+                  size={26}
+                  className="text-white group-hover:text-yellow-400 transition"
+                />
                 <span className="text-xs text-white group-hover:text-yellow-400 transition">
                   {commentsCount[reel.id] || 0}
                 </span>
@@ -610,13 +697,17 @@ export default function ReelsPage() {
                 onClick={() => setOpenShareModal(reel.id)}
                 className="flex flex-col items-center group"
               >
-                <Share2 size={26} className="text-white group-hover:text-yellow-400 transition" />
-                <span className="text-xs text-white group-hover:text-yellow-400 transition">
-                </span>
+                <Share2
+                  size={26}
+                  className="text-white group-hover:text-yellow-400 transition"
+                />
+                <span className="text-xs text-white group-hover:text-yellow-400 transition"></span>
               </button>
 
               <div className="flex flex-col items-center group">
-                <span className="text-white group-hover:text-yellow-400 transition text-lg">👁</span>
+                <span className="text-white group-hover:text-yellow-400 transition text-lg">
+                  👁
+                </span>
                 <span className="text-xs text-white group-hover:text-yellow-400 transition">
                   {reel.views_count || 0}
                 </span>
@@ -667,20 +758,30 @@ export default function ReelsPage() {
                     className="w-full bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-bold py-2.5 px-4 rounded-xl flex items-center justify-between transition shadow-md"
                   >
                     <div className="flex flex-col text-right">
-                      <span className="text-sm font-bold">{t("share_via_any_app")}</span>
-                      <span className="text-[10px] text-black/80 font-normal">{t("share_via_apps_desc")}</span>
+                      <span className="text-sm font-bold">
+                        {t("share_via_any_app")}
+                      </span>
+                      <span className="text-[10px] text-black/80 font-normal">
+                        {t("share_via_apps_desc")}
+                      </span>
                     </div>
                     <Share size={18} />
                   </button>
 
                   <div className="flex flex-col gap-2">
-                    <span className={`text-xs font-medium ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+                    <span
+                      className={`text-xs font-medium ${
+                        isDark ? "text-gray-400" : "text-gray-500"
+                      }`}
+                    >
                       {t("quick_share")}
                     </span>
                     <div className="grid grid-cols-5 gap-1.5 text-center text-xs">
                       <a
                         href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
-                          `شاهد هذا الريل على Apex Talent:\n${getReelShareUrl(reel.id)}`
+                          `شاهد هذا الريل على Apex Talent:\n${getReelShareUrl(
+                            reel.id,
+                          )}`,
                         )}`}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -693,13 +794,18 @@ export default function ReelsPage() {
                         <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center font-bold text-sm">
                           <WhatsAppIcon />
                         </div>
-                        <span className="text-[10px] truncate max-w-full">{t("whatsapp")}</span>
+                        <span className="text-[10px] truncate max-w-full">
+                          {t("whatsapp")}
+                        </span>
                       </a>
 
                       <button
                         onClick={() => {
                           handleCopyLink(reel);
-                          toast.info(t("instagram_share_notice") || "تم نسخ رابط الريل! يمكنك لصقه ومشاركته في إنستغرام 📸");
+                          toast.info(
+                            t("instagram_share_notice") ||
+                              "تم نسخ رابط الريل! يمكنك لصقه ومشاركته في إنستغرام 📸",
+                          );
                           if (typeof window !== "undefined") {
                             window.open("https://www.instagram.com/", "_blank");
                           }
@@ -713,13 +819,17 @@ export default function ReelsPage() {
                         <div className="w-8 h-8 rounded-full bg-rose-500/20 flex items-center justify-center font-bold text-sm">
                           <InstagramIcon />
                         </div>
-                        <span className="text-[10px] truncate max-w-full">{t("instagram")}</span>
+                        <span className="text-[10px] truncate max-w-full">
+                          {t("instagram")}
+                        </span>
                       </button>
 
                       <a
                         href={`https://t.me/share/url?url=${encodeURIComponent(
-                          getReelShareUrl(reel.id)
-                        )}&text=${encodeURIComponent("شاهد هذا الريل على Apex Talent")}`}
+                          getReelShareUrl(reel.id),
+                        )}&text=${encodeURIComponent(
+                          "شاهد هذا الريل على Apex Talent",
+                        )}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition ${
@@ -731,12 +841,14 @@ export default function ReelsPage() {
                         <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center font-bold text-sm">
                           <TelegramIcon />
                         </div>
-                        <span className="text-[10px] truncate max-w-full">{t("telegram")}</span>
+                        <span className="text-[10px] truncate max-w-full">
+                          {t("telegram")}
+                        </span>
                       </a>
 
                       <a
                         href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-                          getReelShareUrl(reel.id)
+                          getReelShareUrl(reel.id),
                         )}`}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -749,13 +861,17 @@ export default function ReelsPage() {
                         <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center font-bold text-sm">
                           <FacebookIcon />
                         </div>
-                        <span className="text-[10px] truncate max-w-full">{t("facebook")}</span>
+                        <span className="text-[10px] truncate max-w-full">
+                          {t("facebook")}
+                        </span>
                       </a>
 
                       <a
                         href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(
-                          getReelShareUrl(reel.id)
-                        )}&text=${encodeURIComponent("شاهد هذا الريل على Apex Talent")}`}
+                          getReelShareUrl(reel.id),
+                        )}&text=${encodeURIComponent(
+                          "شاهد هذا الريل على Apex Talent",
+                        )}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition ${
@@ -767,13 +883,19 @@ export default function ReelsPage() {
                         <div className="w-8 h-8 rounded-full bg-gray-700/30 flex items-center justify-center font-bold text-sm">
                           <XIcon />
                         </div>
-                        <span className="text-[10px] truncate max-w-full">{t("x_platform")}</span>
+                        <span className="text-[10px] truncate max-w-full">
+                          {t("x_platform")}
+                        </span>
                       </a>
                     </div>
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className={`text-xs font-medium ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+                    <label
+                      className={`text-xs font-medium ${
+                        isDark ? "text-gray-400" : "text-gray-600"
+                      }`}
+                    >
                       {t("copy_reel_link")}:
                     </label>
                     <div
@@ -836,7 +958,11 @@ export default function ReelsPage() {
                       isDark ? "border-gray-800" : "border-gray-200"
                     }`}
                   >
-                    <h3 className={`font-semibold ${isDark ? "text-white" : "text-gray-900"}`}>
+                    <h3
+                      className={`font-semibold ${
+                        isDark ? "text-white" : "text-gray-900"
+                      }`}
+                    >
                       {t("comments")}
                     </h3>
                     <button
@@ -916,9 +1042,11 @@ export default function ReelsPage() {
                               />
                               <div className="flex-1">
                                 <div className="flex items-center gap-2">
-                                  <span className={`text-xs font-medium ${
-                                    isDark ? "text-white" : "text-gray-900"
-                                  }`}>
+                                  <span
+                                    className={`text-xs font-medium ${
+                                      isDark ? "text-white" : "text-gray-900"
+                                    }`}
+                                  >
                                     {comment.user_name || "User"}
                                   </span>
                                   {comment.role_translation && (
@@ -931,9 +1059,11 @@ export default function ReelsPage() {
                             </div>
 
                             <div className="flex justify-between items-start">
-                              <p className={`text-sm flex-1 ${
-                                isDark ? "text-white" : "text-gray-900"
-                              }`}>
+                              <p
+                                className={`text-sm flex-1 ${
+                                  isDark ? "text-white" : "text-gray-900"
+                                }`}
+                              >
                                 {comment.content}
                               </p>
                               <div className="flex gap-1 ml-2">
@@ -984,9 +1114,11 @@ export default function ReelsPage() {
                               </div>
                             </div>
 
-                            <p className={`text-xs mt-1 ${
-                              isDark ? "text-gray-500" : "text-gray-400"
-                            }`}>
+                            <p
+                              className={`text-xs mt-1 ${
+                                isDark ? "text-gray-500" : "text-gray-400"
+                              }`}
+                            >
                               {new Date(
                                 comment.created_at,
                               ).toLocaleDateString()}
@@ -1031,9 +1163,11 @@ export default function ReelsPage() {
                             )}
 
                             {comment.replies && comment.replies.length > 0 && (
-                              <div className={`ml-3 mt-2 space-y-2 border-l-2 pl-3 ${
-                                isDark ? "border-gray-700" : "border-gray-300"
-                              }`}>
+                              <div
+                                className={`ml-3 mt-2 space-y-2 border-l-2 pl-3 ${
+                                  isDark ? "border-gray-700" : "border-gray-300"
+                                }`}
+                              >
                                 {comment.replies.map((reply) => (
                                   <div
                                     key={reply.id}
@@ -1092,9 +1226,13 @@ export default function ReelsPage() {
                                             size={20}
                                           />
                                           <div className="flex items-center gap-2">
-                                            <span className={`text-xs font-medium ${
-                                              isDark ? "text-white" : "text-gray-900"
-                                            }`}>
+                                            <span
+                                              className={`text-xs font-medium ${
+                                                isDark
+                                                  ? "text-white"
+                                                  : "text-gray-900"
+                                              }`}
+                                            >
                                               {reply.user_name || "User"}
                                             </span>
                                             {reply.role_translation && (
@@ -1105,9 +1243,13 @@ export default function ReelsPage() {
                                           </div>
                                         </div>
                                         <div className="flex justify-between items-start">
-                                          <p className={`text-xs flex-1 ${
-                                            isDark ? "text-white" : "text-gray-900"
-                                          }`}>
+                                          <p
+                                            className={`text-xs flex-1 ${
+                                              isDark
+                                                ? "text-white"
+                                                : "text-gray-900"
+                                            }`}
+                                          >
                                             {reply.content}
                                           </p>
                                           <div className="flex gap-1">
@@ -1166,9 +1308,13 @@ export default function ReelsPage() {
                                             )}
                                           </div>
                                         </div>
-                                        <p className={`text-xs mt-1 ${
-                                          isDark ? "text-gray-500" : "text-gray-400"
-                                        }`}>
+                                        <p
+                                          className={`text-xs mt-1 ${
+                                            isDark
+                                              ? "text-gray-500"
+                                              : "text-gray-400"
+                                          }`}
+                                        >
                                           {new Date(
                                             reply.created_at,
                                           ).toLocaleDateString()}
@@ -1184,17 +1330,21 @@ export default function ReelsPage() {
                       </div>
                     ))}
                     {comments[reel.id]?.length === 0 && (
-                      <p className={`text-center py-8 ${
-                        isDark ? "text-gray-400" : "text-gray-500"
-                      }`}>
+                      <p
+                        className={`text-center py-8 ${
+                          isDark ? "text-gray-400" : "text-gray-500"
+                        }`}
+                      >
                         {t("no_comments")}
                       </p>
                     )}
                   </div>
 
-                  <div className={`p-4 border-t flex gap-2 ${
-                    isDark ? "border-gray-800" : "border-gray-200"
-                  }`}>
+                  <div
+                    className={`p-4 border-t flex gap-2 ${
+                      isDark ? "border-gray-800" : "border-gray-200"
+                    }`}
+                  >
                     <input
                       type="text"
                       value={commentText}

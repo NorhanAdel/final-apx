@@ -19,6 +19,14 @@ import {
 } from "lucide-react";
 import { ChangeEvent, useRef, useState, useEffect, useCallback } from "react";
 
+import { fetchGraphQL } from "@/app/lib/fetchGraphQL";
+import {
+  GET_VIDEO_TYPE_OPTIONS,
+  GET_REEL_EVENT_TYPE_OPTIONS,
+} from "@/app/graphql/query/player.queries";
+import useTranslate from "@/app/hooks/useTranslate";
+import { toast } from "sonner";
+
 interface Sport {
   id: string;
   name: string;
@@ -42,10 +50,15 @@ interface Props {
   isUploading: boolean;
   isDark: boolean;
   onSportChange: (id: string) => void;
-  onUpload: (file: File, title: string) => void;
+  onUpload: (
+    file: File,
+    title: string,
+    videoType: string,
+    durationSeconds?: number,
+  ) => void;
   onDelete: (id: string) => void;
   onSetMainVideo: (url: string) => void;
-  onToggleReel: (videoId: string) => void;
+  onToggleReel: (videoId: string, eventType?: string) => void;
   getFullUrl: (url: string) => string;
   t: (key: string) => string;
 }
@@ -72,6 +85,7 @@ export function VideoSection({
   getFullUrl,
   t,
 }: Props) {
+  const { lang } = useTranslate();
   const videoRef = useRef<HTMLVideoElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -80,13 +94,60 @@ export function VideoSection({
   const [isMuted, setIsMuted] = useState(false);
   const [showOverlay, setShowOverlay] = useState(true);
   const [isLooping, setIsLooping] = useState(false);
+  const isRTL = lang === "ar";
 
-  // Upload modal state
+  const [videoTypeOptions, setVideoTypeOptions] = useState<
+    { value: string; label: string }[]
+  >([]);
+  const [reelEventTypeOptions, setReelEventTypeOptions] = useState<
+    { value: string; label: string }[]
+  >([]);
+  const [selectedVideoType, setSelectedVideoType] =
+    useState<string>("HIGHLIGHT");
+  const [reelModalVideoId, setReelModalVideoId] = useState<string | null>(null);
+  const [selectedReelEventType, setSelectedReelEventType] =
+    useState<string>("GOAL");
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadTitle, setUploadTitle] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const fetchOptions = async () => {
+      try {
+        const [vRes, rRes]: [any, any] = await Promise.all([
+          fetchGraphQL(GET_VIDEO_TYPE_OPTIONS, { lang }),
+          fetchGraphQL(GET_REEL_EVENT_TYPE_OPTIONS, { lang }),
+        ]);
+
+        if (vRes?.data?.getVideoTypeOptions) {
+          setVideoTypeOptions(vRes.data.getVideoTypeOptions);
+        }
+        if (rRes?.data?.getReelEventTypeOptions) {
+          setReelEventTypeOptions(rRes.data.getReelEventTypeOptions);
+        }
+      } catch (err) {
+        console.error("Error fetching video/reel options:", err);
+      }
+    };
+    fetchOptions();
+  }, [lang]);
+
+  const defaultVideoTypeOptions = [
+    { value: "HIGHLIGHT", label: t("ملخص مهارات (Highlight)") },
+    { value: "FULL_MATCH", label: t("مباراة كاملة (Full Match)") },
+    { value: "TRAINING", label: t("تدريبات وتسديدات (Training)") },
+  ];
+
+  const defaultReelEventTypeOptions = [
+    { value: "GOAL", label: t("هدف (Goal)") },
+    { value: "ASSIST", label: t("صناعة هدف (Assist)") },
+    { value: "TACKLE", label: t("قطع كرة / افتراض (Tackle)") },
+    { value: "DRIBBLE", label: t("مراوغة (Dribble)") },
+    { value: "HIGHLIGHT", label: t("لقطة مميزة (Highlight)") },
+    { value: "OTHER", label: t("حدث آخر (Other)") },
+  ];
 
   const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -96,15 +157,57 @@ export function VideoSection({
     }
   };
 
-  const handleUploadSubmit = () => {
+  const validateVideoDurationFrontend = (file: File): Promise<number> => {
+    return new Promise((resolve) => {
+      const video = document.createElement("video");
+      video.preload = "metadata";
+      video.onloadedmetadata = () => {
+        URL.revokeObjectURL(video.src);
+        resolve(video.duration);
+      };
+      video.onerror = () => {
+        resolve(0);
+      };
+      video.src = URL.createObjectURL(file);
+    });
+  };
+
+  const handleUploadSubmit = async () => {
     if (!selectedFile) return;
-    onUpload(selectedFile, uploadTitle);
-    setShowUploadModal(false);
-    setUploadTitle("");
-    setSelectedFile(null);
-    if (filePreview) URL.revokeObjectURL(filePreview);
-    setFilePreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+
+    try {
+      const durationSeconds = await validateVideoDurationFrontend(selectedFile);
+      if (durationSeconds > 0) {
+        if (durationSeconds < 30) {
+          toast.error(t("Video duration must be at least 30 seconds."));
+          return;
+        }
+        if (durationSeconds > 180) {
+          toast.error(t("Video duration cannot exceed 3 minutes."));
+          return;
+        }
+      }
+      onUpload(
+        selectedFile,
+        uploadTitle,
+        selectedVideoType,
+        durationSeconds > 0 ? Math.round(durationSeconds) : 30,
+      );
+      setShowUploadModal(false);
+      setUploadTitle("");
+      setSelectedFile(null);
+      if (filePreview) URL.revokeObjectURL(filePreview);
+      setFilePreview(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    } catch {
+      onUpload(selectedFile, uploadTitle, selectedVideoType, 30);
+      setShowUploadModal(false);
+      setUploadTitle("");
+      setSelectedFile(null);
+      if (filePreview) URL.revokeObjectURL(filePreview);
+      setFilePreview(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
   const handleCloseModal = () => {
@@ -118,7 +221,6 @@ export function VideoSection({
 
   const activeVideo = videos.find((v) => v.video_url === mainVideo);
 
-  // Reset state when video source changes
   useEffect(() => {
     setIsPlaying(false);
     setCurrentTime(0);
@@ -206,8 +308,7 @@ export function VideoSection({
 
   return (
     <>
-      {/* Sport Selection */}
-      <div className="mb-6 relative w-64">
+      <div className={`mb-6 relative ${isRTL ? "w-full md:w-64" : "w-64"}`}>
         <select
           value={selectedSportId}
           onChange={(e) => onSportChange(e.target.value)}
@@ -216,6 +317,7 @@ export function VideoSection({
               ? "bg-[#0b1736] border border-[#1e2d5a] text-white"
               : "bg-white border border-gray-300 text-black"
           }`}
+          style={{ direction: isRTL ? "rtl" : "ltr" }}
         >
           {sports.map((s) => (
             <option key={s.id} value={s.id}>
@@ -225,11 +327,12 @@ export function VideoSection({
         </select>
         <ChevronDown
           size={16}
-          className="absolute right-3 top-4 text-gray-400 pointer-events-none"
+          className={`absolute top-4 text-gray-400 pointer-events-none ${
+            isRTL ? "left-3" : "right-3"
+          }`}
         />
       </div>
 
-      {/* Main Video Player */}
       <div
         className={`relative w-full rounded-2xl overflow-hidden mb-8 border ${
           isDark
@@ -254,7 +357,6 @@ export function VideoSection({
               playsInline
             />
 
-            {/* Play overlay */}
             {showOverlay && (
               <div
                 className="absolute inset-0 flex items-center justify-center cursor-pointer bg-black/20"
@@ -266,25 +368,30 @@ export function VideoSection({
               </div>
             )}
 
-            {/* Title overlay at bottom */}
             {activeVideo && showOverlay && (
-              <div className="absolute bottom-14 left-0 right-0 px-5 pb-2 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-16 pointer-events-none">
+              <div
+                className={`absolute bottom-14 left-0 right-0 px-5 pb-2 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-16 pointer-events-none ${
+                  isRTL ? "text-right" : "text-left"
+                }`}
+              >
                 <h3 className="text-white font-bold text-base truncate">
                   {activeVideo.title || t("Untitled Video")}
                 </h3>
               </div>
             )}
 
-            {/* Timestamp badge */}
             {showOverlay && (
-              <div className="absolute bottom-16 right-5 pointer-events-none">
+              <div
+                className={`absolute bottom-16 pointer-events-none ${
+                  isRTL ? "left-5" : "right-5"
+                }`}
+              >
                 <span className="text-yellow-400 text-xs font-mono font-medium">
                   {formatTime(currentTime)} / {formatTime(duration)}
                 </span>
               </div>
             )}
 
-            {/* Progress bar */}
             <div
               ref={progressRef}
               className="absolute bottom-10 left-0 right-0 h-1 cursor-pointer group"
@@ -299,20 +406,17 @@ export function VideoSection({
                 className="absolute top-0 left-0 h-full bg-yellow-400 transition-all duration-100"
                 style={{ width: `${progressPercent}%` }}
               />
-              {/* Scrubber dot */}
               <div
                 className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-yellow-400 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
                 style={{ left: `${progressPercent}%`, marginLeft: "-6px" }}
               />
             </div>
 
-            {/* Custom controls bar */}
             <div
               className={`absolute bottom-0 left-0 right-0 h-10 flex items-center justify-between px-4 ${
                 isDark ? "bg-[#0a0e1a]/90" : "bg-gray-900/90"
               }`}
             >
-              {/* Left controls */}
               <div className="flex items-center gap-3">
                 <button
                   onClick={togglePlay}
@@ -338,7 +442,6 @@ export function VideoSection({
                 </span>
               </div>
 
-              {/* Right controls */}
               <div className="flex items-center gap-3">
                 <button
                   onClick={toggleMute}
@@ -349,7 +452,9 @@ export function VideoSection({
                 <button
                   onClick={toggleLoop}
                   className={`transition-colors ${
-                    isLooping ? "text-yellow-400" : "text-white hover:text-yellow-400"
+                    isLooping
+                      ? "text-yellow-400"
+                      : "text-white hover:text-yellow-400"
                   }`}
                 >
                   <Repeat size={14} />
@@ -376,13 +481,14 @@ export function VideoSection({
         )}
       </div>
 
-      {/* Video Thumbnails Strip */}
-      <div className="flex gap-5 mb-10 overflow-x-auto pb-4 scrollbar-thin">
+      <div className="flex gap-5 mb-10 overflow-x-auto pb-4 scrollbar-thin px-2">
         {videos.map((v) => {
           const isActive = mainVideo === v.video_url;
           return (
-            <div key={v.id} className="shrink-0 flex flex-col items-center">
-              {/* Thumbnail */}
+            <div
+              key={v.id}
+              className="shrink-0 flex flex-col items-center mt-2"
+            >
               <div
                 className={`relative group rounded-xl overflow-hidden cursor-pointer transition-all duration-300 ${
                   isActive
@@ -399,7 +505,6 @@ export function VideoSection({
                   preload="metadata"
                 />
 
-                {/* Play overlay on thumbnail */}
                 <div className="absolute inset-0 bg-black/30 flex items-center justify-center group-hover:bg-black/40 transition-colors">
                   <div
                     className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 ${
@@ -418,7 +523,6 @@ export function VideoSection({
                   </div>
                 </div>
 
-                {/* Delete button */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -429,7 +533,6 @@ export function VideoSection({
                   <X size={10} />
                 </button>
 
-                {/* Duration badge */}
                 {v.duration_seconds && v.duration_seconds > 0 && (
                   <div className="absolute bottom-1.5 right-1.5 bg-black/70 text-white text-[10px] font-mono px-1.5 py-0.5 rounded">
                     {formatTime(v.duration_seconds)}
@@ -437,8 +540,7 @@ export function VideoSection({
                 )}
               </div>
 
-              {/* Share as Reels Toggle */}
-              <div className="flex items-center gap-2 mt-2">
+              <div className="flex items-center gap-2 mt-5">
                 <span
                   className={`text-[10px] font-medium ${
                     isDark ? "text-gray-400" : "text-gray-500"
@@ -449,7 +551,11 @@ export function VideoSection({
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    onToggleReel(v.id);
+                    if (v.is_reel) {
+                      onToggleReel(v.id);
+                    } else {
+                      setReelModalVideoId(v.id);
+                    }
                   }}
                   className={`relative w-9 h-5 rounded-full transition-all duration-300 ${
                     v.is_reel
@@ -470,8 +576,7 @@ export function VideoSection({
           );
         })}
 
-        {/* Add Video Button */}
-        <div className="shrink-0 flex flex-col items-center">
+        <div className="shrink-0 flex flex-col items-center mt-2">
           <button
             type="button"
             onClick={() => {
@@ -508,7 +613,6 @@ export function VideoSection({
         </div>
       </div>
 
-      {/* Upload Modal */}
       {showUploadModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
@@ -523,7 +627,6 @@ export function VideoSection({
             onClick={(e) => e.stopPropagation()}
             style={{ animation: "dropdownFadeIn 0.25s ease-out" }}
           >
-            {/* Close button */}
             <button
               onClick={handleCloseModal}
               className={`absolute top-4 right-4 p-1 rounded-full transition-colors ${
@@ -535,7 +638,6 @@ export function VideoSection({
               <X size={18} />
             </button>
 
-            {/* Modal title */}
             <h3
               className={`text-lg font-bold mb-5 flex items-center gap-2 ${
                 isDark ? "text-white" : "text-gray-900"
@@ -545,7 +647,6 @@ export function VideoSection({
               {t("Upload Video")}
             </h3>
 
-            {/* Title input */}
             <div className="mb-4">
               <label
                 className={`block mb-2 text-sm font-medium ${
@@ -585,7 +686,48 @@ export function VideoSection({
               </div>
             </div>
 
-            {/* File picker */}
+            <div className="mb-4">
+              <label
+                className={`block mb-2 text-sm font-medium ${
+                  isDark ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
+                {t("Video Type")}
+              </label>
+              <div
+                className={`flex items-center rounded-xl px-4 py-3 border transition-all duration-300 ${
+                  isDark
+                    ? "bg-[#060d24] border-[#1e2d5a]"
+                    : "bg-gray-50 border-gray-200"
+                }`}
+              >
+                <select
+                  value={selectedVideoType}
+                  onChange={(e) => setSelectedVideoType(e.target.value)}
+                  className={`bg-transparent outline-none w-full text-sm font-medium ${
+                    isDark ? "text-white" : "text-gray-900"
+                  }`}
+                >
+                  {(videoTypeOptions.length > 0
+                    ? videoTypeOptions
+                    : defaultVideoTypeOptions
+                  ).map((opt) => (
+                    <option
+                      key={opt.value}
+                      value={opt.value}
+                      className={
+                        isDark
+                          ? "bg-[#0b1736] text-white"
+                          : "bg-white text-gray-900"
+                      }
+                    >
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             <div className="mb-5">
               <label
                 className={`block mb-2 text-sm font-medium ${
@@ -619,8 +761,7 @@ export function VideoSection({
                       setSelectedFile(null);
                       if (filePreview) URL.revokeObjectURL(filePreview);
                       setFilePreview(null);
-                      if (fileInputRef.current)
-                        fileInputRef.current.value = "";
+                      if (fileInputRef.current) fileInputRef.current.value = "";
                     }}
                     className="absolute top-2 right-2 bg-red-500/90 text-white p-1 rounded-full hover:bg-red-600 transition"
                   >
@@ -659,7 +800,6 @@ export function VideoSection({
               )}
             </div>
 
-            {/* Action buttons */}
             <div className="flex gap-3">
               <button
                 onClick={handleCloseModal}
@@ -678,6 +818,109 @@ export function VideoSection({
               >
                 <Upload size={14} />
                 {t("Upload")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {reelModalVideoId && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={() => setReelModalVideoId(null)}
+        >
+          <div
+            className={`relative w-full max-w-md mx-4 rounded-2xl border p-6 shadow-2xl ${
+              isDark
+                ? "bg-[#0b1736] border-[#1e2d5a]"
+                : "bg-white border-gray-200"
+            }`}
+            onClick={(e) => e.stopPropagation()}
+            style={{ animation: "dropdownFadeIn 0.25s ease-out" }}
+          >
+            <button
+              onClick={() => setReelModalVideoId(null)}
+              className={`absolute top-4 right-4 p-1 rounded-full transition-colors ${
+                isDark
+                  ? "text-gray-400 hover:bg-white/10"
+                  : "text-gray-500 hover:bg-gray-100"
+              }`}
+            >
+              <X size={18} />
+            </button>
+
+            <h3
+              className={`text-lg font-bold mb-5 flex items-center gap-2 ${
+                isDark ? "text-white" : "text-gray-900"
+              }`}
+            >
+              <Film size={20} className="text-yellow-400" />
+              {t("Select Reel Event Type")}
+            </h3>
+
+            <div className="mb-5">
+              <label
+                className={`block mb-2 text-sm font-medium ${
+                  isDark ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
+                {t("Reel Event Type")}
+              </label>
+              <div
+                className={`flex items-center rounded-xl px-4 py-3 border transition-all duration-300 ${
+                  isDark
+                    ? "bg-[#060d24] border-[#1e2d5a]"
+                    : "bg-gray-50 border-gray-200"
+                }`}
+              >
+                <select
+                  value={selectedReelEventType}
+                  onChange={(e) => setSelectedReelEventType(e.target.value)}
+                  className={`bg-transparent outline-none w-full text-sm font-medium ${
+                    isDark ? "text-white" : "text-gray-900"
+                  }`}
+                >
+                  {(reelEventTypeOptions.length > 0
+                    ? reelEventTypeOptions
+                    : defaultReelEventTypeOptions
+                  ).map((opt) => (
+                    <option
+                      key={opt.value}
+                      value={opt.value}
+                      className={
+                        isDark
+                          ? "bg-[#0b1736] text-white"
+                          : "bg-white text-gray-900"
+                      }
+                    >
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setReelModalVideoId(null)}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                  isDark
+                    ? "bg-gray-700/50 text-gray-300 hover:bg-gray-700"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                {t("Cancel")}
+              </button>
+              <button
+                onClick={() => {
+                  if (reelModalVideoId) {
+                    onToggleReel(reelModalVideoId, selectedReelEventType);
+                    setReelModalVideoId(null);
+                  }
+                }}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-yellow-400 text-black hover:bg-yellow-500 transition-colors flex items-center justify-center gap-2"
+              >
+                {t("Share as Reel")}
               </button>
             </div>
           </div>

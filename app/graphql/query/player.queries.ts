@@ -33,6 +33,24 @@ export const GET_PROFESSIONAL_DEBUT_OPTIONS = `
   }
 `;
 
+export const GET_VIDEO_TYPE_OPTIONS = `
+  query GetVideoTypeOptions($lang: String) {
+    getVideoTypeOptions(lang: $lang) {
+      value
+      label
+    }
+  }
+`;
+
+export const GET_REEL_EVENT_TYPE_OPTIONS = `
+  query GetReelEventTypeOptions($lang: String) {
+    getReelEventTypeOptions(lang: $lang) {
+      value
+      label
+    }
+  }
+`;
+
 // Player Media
 export const GET_MY_VIDEOS = `
   query MyVideos {
