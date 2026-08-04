@@ -151,19 +151,19 @@ export const GET_PLAYER_PROFILE = `
       ratings {
         id
         rater_id
-        scalability
-        mental_stability
-        soccer_intelligence
-        physical_fitness
         technical_skill
-        tactical_vision
-        republican_influence
+        physical_fitness
+        game_intelligence
+        mental_resilience
+        professionalism
+        growth_potential
+        market_readiness
         calculated_stars
         notes
         created_at
         rater {
           id
-         username
+          username
         }
       }
     }
@@ -310,7 +310,6 @@ export const SEARCH_PLAYERS = `
         date_of_birth
         age
         average_rating
-        trust_level
         football_info {
           position {
             id

@@ -20,24 +20,24 @@ interface WriteReviewProps {
 interface ExistingRating {
   id: string;
   calculated_stars: number;
-  scalability: boolean;
-  mental_stability: boolean;
-  soccer_intelligence: boolean;
-  physical_fitness: boolean;
   technical_skill: boolean;
-  tactical_vision: boolean;
-  republican_influence: boolean;
+  physical_fitness: boolean;
+  game_intelligence: boolean;
+  mental_resilience: boolean;
+  professionalism: boolean;
+  growth_potential: boolean;
+  market_readiness: boolean;
   notes: string;
 }
 
 const SKILL_LABELS = {
-  scalability: "Scalability",
-  mental_stability: "Mental Stability",
-  soccer_intelligence: "Soccer Intelligence",
-  physical_fitness: "Physical Fitness",
   technical_skill: "Technical Skill",
-  tactical_vision: "Tactical Vision",
-  republican_influence: "Republican Influence",
+  physical_fitness: "Physical Fitness",
+  game_intelligence: "Soccer Intelligence",
+  mental_resilience: "Mental Stability",
+  professionalism: "Professionalism",
+  growth_potential: "Growth Potential",
+  market_readiness: "Market Readiness",
 };
 
 type SkillKey = keyof typeof SKILL_LABELS;
@@ -59,13 +59,13 @@ export default function WriteReview({
   const [hoveredStars, setHoveredStars] = useState<number>(0);
   const [notes, setNotes] = useState("");
   const [skills, setSkills] = useState<Record<SkillKey, boolean>>({
-    scalability: false,
-    mental_stability: false,
-    soccer_intelligence: false,
-    physical_fitness: false,
     technical_skill: false,
-    tactical_vision: false,
-    republican_influence: false,
+    physical_fitness: false,
+    game_intelligence: false,
+    mental_resilience: false,
+    professionalism: false,
+    growth_potential: false,
+    market_readiness: false,
   });
 
   useEffect(() => {
@@ -81,13 +81,13 @@ export default function WriteReview({
           setSelectedStars(rating.calculated_stars || 0);
           setNotes(rating.notes || "");
           setSkills({
-            scalability: rating.scalability || false,
-            mental_stability: rating.mental_stability || false,
-            soccer_intelligence: rating.soccer_intelligence || false,
-            physical_fitness: rating.physical_fitness || false,
             technical_skill: rating.technical_skill || false,
-            tactical_vision: rating.tactical_vision || false,
-            republican_influence: rating.republican_influence || false,
+            physical_fitness: rating.physical_fitness || false,
+            game_intelligence: rating.game_intelligence || false,
+            mental_resilience: rating.mental_resilience || false,
+            professionalism: rating.professionalism || false,
+            growth_potential: rating.growth_potential || false,
+            market_readiness: rating.market_readiness || false,
           });
         }
       } catch (error) {
@@ -171,13 +171,13 @@ export default function WriteReview({
           input: {
             stars: selectedStars,
             notes: notes || null,
-            scalability: skills.scalability,
-            mental_stability: skills.mental_stability,
-            soccer_intelligence: skills.soccer_intelligence,
-            physical_fitness: skills.physical_fitness,
             technical_skill: skills.technical_skill,
-            tactical_vision: skills.tactical_vision,
-            republican_influence: skills.republican_influence,
+            physical_fitness: skills.physical_fitness,
+            game_intelligence: skills.game_intelligence,
+            mental_resilience: skills.mental_resilience,
+            professionalism: skills.professionalism,
+            growth_potential: skills.growth_potential,
+            market_readiness: skills.market_readiness,
           },
         });
         if (result.errors) {
@@ -193,13 +193,13 @@ export default function WriteReview({
             player_id: playerId,
             stars: selectedStars,
             notes: notes || null,
-            scalability: skills.scalability,
-            mental_stability: skills.mental_stability,
-            soccer_intelligence: skills.soccer_intelligence,
-            physical_fitness: skills.physical_fitness,
             technical_skill: skills.technical_skill,
-            tactical_vision: skills.tactical_vision,
-            republican_influence: skills.republican_influence,
+            physical_fitness: skills.physical_fitness,
+            game_intelligence: skills.game_intelligence,
+            mental_resilience: skills.mental_resilience,
+            professionalism: skills.professionalism,
+            growth_potential: skills.growth_potential,
+            market_readiness: skills.market_readiness,
           },
         });
         if (result.errors) {

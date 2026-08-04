@@ -30,13 +30,13 @@ interface AverageRatings {
   averageStars: number;
   averagePercentage?: number;
   percentile?: number;
-  scalabilityPercent: number;
-  mentalStabilityPercent: number;
-  soccerIntelligencePercent: number;
-  physicalFitnessPercent: number;
   technicalSkillPercent: number;
-  tacticalVisionPercent: number;
-  republicanInfluencePercent: number;
+  physicalFitnessPercent: number;
+  gameIntelligencePercent: number;
+  mentalResiliencePercent: number;
+  professionalismPercent: number;
+  growthPotentialPercent: number;
+  marketReadinessPercent: number;
   totalRatings: number;
 }
 
@@ -100,22 +100,10 @@ export default function Ratings({ ratings = [], playerId }: RatingsProps) {
   const skills = averageRatings
     ? [
         {
-          name: t("Scalability"),
-          value: averageRatings.scalabilityPercent || 0,
-          icon: TrendingUp,
-          color: "#3B82F6",
-        },
-        {
-          name: t("Mental Stability"),
-          value: averageRatings.mentalStabilityPercent || 0,
-          icon: Brain,
-          color: "#8B5CF6",
-        },
-        {
-          name: t("Soccer Intelligence"),
-          value: averageRatings.soccerIntelligencePercent || 0,
-          icon: Eye,
-          color: "#6366F1",
+          name: t("Technical Skill"),
+          value: averageRatings.technicalSkillPercent || 0,
+          icon: Target,
+          color: "#F59E0B",
         },
         {
           name: t("Physical Fitness"),
@@ -124,22 +112,34 @@ export default function Ratings({ ratings = [], playerId }: RatingsProps) {
           color: "#10B981",
         },
         {
-          name: t("Technical Skill"),
-          value: averageRatings.technicalSkillPercent || 0,
-          icon: Target,
-          color: "#F59E0B",
+          name: t("Soccer Intelligence"),
+          value: averageRatings.gameIntelligencePercent || 0,
+          icon: Eye,
+          color: "#6366F1",
         },
         {
-          name: t("Tactical Vision"),
-          value: averageRatings.tacticalVisionPercent || 0,
-          icon: Shield,
-          color: "#EF4444",
+          name: t("Mental Stability"),
+          value: averageRatings.mentalResiliencePercent || 0,
+          icon: Brain,
+          color: "#8B5CF6",
         },
         {
-          name: t("Republican Influence"),
-          value: averageRatings.republicanInfluencePercent || 0,
+          name: t("Professionalism"),
+          value: averageRatings.professionalismPercent || 0,
           icon: Award,
           color: "#EAB308",
+        },
+        {
+          name: t("Growth Potential"),
+          value: averageRatings.growthPotentialPercent || 0,
+          icon: TrendingUp,
+          color: "#3B82F6",
+        },
+        {
+          name: t("Market Readiness"),
+          value: averageRatings.marketReadinessPercent || 0,
+          icon: Shield,
+          color: "#EF4444",
         },
       ]
     : [];

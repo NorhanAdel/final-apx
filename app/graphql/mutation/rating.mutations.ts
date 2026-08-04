@@ -3,13 +3,13 @@ export const CREATE_RATING = `
     createRating(input: $input) {
       id
       player_id
-      scalability
-      mental_stability
-      soccer_intelligence
-      physical_fitness
       technical_skill
-      tactical_vision
-      republican_influence
+      physical_fitness
+      game_intelligence
+      mental_resilience
+      professionalism
+      growth_potential
+      market_readiness
       calculated_stars
       notes
       created_at
@@ -22,13 +22,13 @@ export const UPDATE_RATING = `
     updateRating(id: $id, input: $input) {
       id
       player_id
-      scalability
-      mental_stability
-      soccer_intelligence
-      physical_fitness
       technical_skill
-      tactical_vision
-      republican_influence
+      physical_fitness
+      game_intelligence
+      mental_resilience
+      professionalism
+      growth_potential
+      market_readiness
       calculated_stars
       notes
       updated_at

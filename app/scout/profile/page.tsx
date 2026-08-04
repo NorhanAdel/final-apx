@@ -20,6 +20,7 @@ import {
   X,
   Loader2,
   Building2,
+  ShieldCheck,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -115,7 +116,6 @@ export default function ScoutProfile() {
     null,
   );
 
-  // Separate date fields
   const [birthDay, setBirthDay] = useState("");
   const [birthMonth, setBirthMonth] = useState("");
   const [birthYear, setBirthYear] = useState("");
@@ -133,10 +133,14 @@ export default function ScoutProfile() {
     bio: "",
   });
 
-  // Update birth_date from separate fields
+  const isRTL = lang === "ar";
+
   useEffect(() => {
     if (birthYear && birthMonth && birthDay) {
-      const formattedDate = `${birthYear}-${birthMonth.padStart(2, "0")}-${birthDay.padStart(2, "0")}`;
+      const formattedDate = `${birthYear}-${birthMonth.padStart(
+        2,
+        "0",
+      )}-${birthDay.padStart(2, "0")}`;
       setFormData((prev) => ({ ...prev, birth_date: formattedDate }));
     }
   }, [birthDay, birthMonth, birthYear]);
@@ -157,7 +161,6 @@ export default function ScoutProfile() {
       if (result.data?.myScoutProfile) {
         const p = result.data.myScoutProfile;
 
-        // Parse date of birth
         const dob = p.birth_date?.split("T")[0] || "";
         const [year, month, day] = dob.split("-");
 
@@ -260,7 +263,6 @@ export default function ScoutProfile() {
 
     const isUpdate = !!formData.id && formData.id !== "";
 
-    // Create input object with profile_image inside it (as per backend schema)
     const input: Record<string, unknown> = {
       first_name: formData.first_name,
       last_name: formData.last_name,
@@ -273,7 +275,6 @@ export default function ScoutProfile() {
       bio: formData.bio || null,
     };
 
-    // Add profile_image to input if a file is selected (for both create and update)
     if (profileImageFile) {
       input.profile_image = profileImageFile;
     }
@@ -335,7 +336,6 @@ export default function ScoutProfile() {
           (prev) => ({ ...prev, ...updatedData } as ScoutFormData),
         );
 
-        // Reset file states
         setProfileImageFile(null);
 
         toast.success(
@@ -375,17 +375,32 @@ export default function ScoutProfile() {
       className={`min-h-screen py-40 transition ${
         isDark ? "bg-[#020b1c] text-white" : "bg-gray-50 text-black"
       }`}
+      dir={isRTL ? "rtl" : "ltr"}
     >
       <div className="max-w-6xl mx-auto px-6">
         <h1 className="text-center text-3xl font-bold mb-10 text-yellow-400">
           {t("Scout Profile")}
         </h1>
 
-        {/* Step Indicators */}
+        {/* 3 Steps Navigation Bar */}
         <div className="flex items-center justify-center gap-6 mb-10">
           <Step icon={<User />} active isDark={isDark} />
           <Line isDark={isDark} />
-          <Step icon={<Building2 />} isDark={isDark} />
+          <button
+            type="button"
+            onClick={() => router.push("/scout/profile/clubcareer")}
+            className="cursor-pointer"
+          >
+            <Step icon={<Building2 />} isDark={isDark} />
+          </button>
+          <Line isDark={isDark} />
+          <button
+            type="button"
+            onClick={() => router.push("/scout/profile/legal-status")}
+            className="cursor-pointer"
+          >
+            <Step icon={<ShieldCheck />} isDark={isDark} />
+          </button>
         </div>
 
         {/* Profile Image Upload */}
@@ -452,6 +467,7 @@ export default function ScoutProfile() {
             isDark={isDark}
             inputStyle={inputStyle}
             required
+            isRTL={isRTL}
           />
           <Input
             label={t("Last Name")}
@@ -462,6 +478,7 @@ export default function ScoutProfile() {
             isDark={isDark}
             inputStyle={inputStyle}
             required
+            isRTL={isRTL}
           />
           <Input
             label={t("Email Address")}
@@ -473,6 +490,8 @@ export default function ScoutProfile() {
             inputStyle={inputStyle}
             type="email"
             required
+            dir="ltr"
+            isRTL={isRTL}
           />
           <Input
             label={t("Phone Number")}
@@ -483,9 +502,10 @@ export default function ScoutProfile() {
             isDark={isDark}
             inputStyle={inputStyle}
             type="tel"
+            dir="ltr"
+            isRTL={isRTL}
           />
 
-          {/* Date of Birth - Separated Fields */}
           <div className="space-y-2">
             <label
               className={`block text-sm mb-2 ${
@@ -494,7 +514,7 @@ export default function ScoutProfile() {
             >
               {t("Birth Date")}
             </label>
-            <div className="flex gap-3">
+            <div className="flex gap-3" dir="ltr">
               <div className="flex-1">
                 <div
                   className={`flex items-center rounded-xl px-4 py-3 border transition-colors ${
@@ -588,6 +608,7 @@ export default function ScoutProfile() {
             icon={<MapPin size={18} />}
             isDark={isDark}
             inputStyle={inputStyle}
+            isRTL={isRTL}
           />
           <Input
             label={t("Country")}
@@ -597,6 +618,7 @@ export default function ScoutProfile() {
             icon={<MapPin size={18} />}
             isDark={isDark}
             inputStyle={inputStyle}
+            isRTL={isRTL}
           />
           <Input
             label={t("City")}
@@ -606,9 +628,9 @@ export default function ScoutProfile() {
             icon={<MapPin size={18} />}
             isDark={isDark}
             inputStyle={inputStyle}
+            isRTL={isRTL}
           />
 
-          {/* Bio Field - Full Width */}
           <div className="md:col-span-2">
             <Textarea
               label={t("Bio")}
@@ -619,6 +641,7 @@ export default function ScoutProfile() {
               isDark={isDark}
               textareaStyle={inputStyle}
               rows={4}
+              isRTL={isRTL}
             />
           </div>
 
@@ -632,7 +655,8 @@ export default function ScoutProfile() {
                   : "text-gray-600 bg-gray-100 border-gray-300 hover:bg-gray-200"
               }`}
             >
-              <ChevronLeft className="inline" size={18} /> {t("Previous")}
+              {isRTL ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}{" "}
+              {t("Previous")}
             </button>
 
             <button
@@ -645,7 +669,7 @@ export default function ScoutProfile() {
               ) : (
                 t("Next")
               )}
-              <ChevronRight className="inline ml-2" size={18} />
+              {isRTL ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
             </button>
           </div>
         </form>
@@ -667,7 +691,7 @@ function Step({
     <div
       className={`w-12 h-12 rounded-full flex items-center justify-center transition ${
         active
-          ? "bg-yellow-400 text-black"
+          ? "bg-yellow-400 text-black shadow-[0_0_20px_rgba(250,204,21,0.4)]"
           : isDark
           ? "bg-gray-700 text-gray-300"
           : "bg-gray-200 text-gray-500"
@@ -694,6 +718,8 @@ function Input({
   isDark,
   inputStyle,
   required = false,
+  dir,
+  isRTL = false,
 }: {
   label: string;
   icon: React.ReactNode;
@@ -704,7 +730,11 @@ function Input({
   isDark: boolean;
   inputStyle: React.CSSProperties;
   required?: boolean;
+  dir?: string;
+  isRTL?: boolean;
 }) {
+  const isLTRField = name === "phone" || name === "email_address";
+
   return (
     <div>
       <label
@@ -722,8 +752,11 @@ function Input({
             : "bg-white border-gray-300 focus-within:border-yellow-400"
         }`}
         style={inputStyle}
+        dir={dir || (isLTRField ? "ltr" : undefined)}
       >
-        <span className="text-yellow-400 mr-3">{icon}</span>
+        <span className={`text-yellow-400 ${isRTL ? "ml-3" : "mr-3"}`}>
+          {icon}
+        </span>
         <input
           name={name}
           value={value}
@@ -732,11 +765,14 @@ function Input({
           placeholder={label}
           required={required}
           className={`bg-transparent outline-none w-full text-sm ${
+            isLTRField ? (isRTL ? "text-right" : "text-left") : ""
+          } ${
             isDark
               ? "text-white placeholder-gray-500"
               : "text-black placeholder-gray-400"
           }`}
           style={inputStyle}
+          dir={dir || (isLTRField ? "ltr" : undefined)}
         />
       </div>
     </div>
@@ -752,6 +788,7 @@ function Textarea({
   isDark,
   textareaStyle,
   rows = 4,
+  isRTL = false,
 }: {
   label: string;
   icon: React.ReactNode;
@@ -761,6 +798,7 @@ function Textarea({
   isDark: boolean;
   textareaStyle: React.CSSProperties;
   rows?: number;
+  isRTL?: boolean;
 }) {
   return (
     <div>
@@ -779,7 +817,9 @@ function Textarea({
         }`}
         style={textareaStyle}
       >
-        <span className="text-yellow-400 mr-3 mt-1">{icon}</span>
+        <span className={`text-yellow-400 mt-1 ${isRTL ? "ml-3" : "mr-3"}`}>
+          {icon}
+        </span>
         <textarea
           name={name}
           value={value}

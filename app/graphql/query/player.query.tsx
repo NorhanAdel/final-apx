@@ -22,6 +22,8 @@ export const GET_PLAYER_CLUB_CAREER = `
       current_club
       professional_debut
       previous_clubs
+      created_at
+      updated_at
     }
   }
 `;
@@ -36,24 +38,37 @@ export const GET_PROFESSIONAL_DEBUT_OPTIONS = `
   }
 `;
 
+// Video Type Options
+export const GET_VIDEO_TYPE_OPTIONS = `
+  query GetVideoTypeOptions($lang: String) {
+    getVideoTypeOptions(lang: $lang) {
+      value
+      label
+    }
+  }
+`;
+
+// Reel Event Type Options
+export const GET_REEL_EVENT_TYPE_OPTIONS = `
+  query GetReelEventTypeOptions($lang: String) {
+    getReelEventTypeOptions(lang: $lang) {
+      value
+      label
+    }
+  }
+`;
+
 // Player Media
 export const GET_MY_VIDEOS = gql`
   query MyVideos {
     myVideos {
       id
-
       title
-
       video_url
-
       type
-
       is_approved
-
       views_count
-
       created_at
-
       duration_seconds
     }
   }
@@ -122,7 +137,6 @@ export const GET_PLAYER_PROFILE = `
       profile_image_url
       verification_doc_url
       is_verified
-      trust_level
       views_count
       created_at
       updated_at
@@ -143,8 +157,13 @@ export const GET_PLAYER_PROFILE = `
       }
       ratings {
         id
-        scalability
         technical_skill
+        physical_fitness
+        game_intelligence
+        mental_resilience
+        professionalism
+        growth_potential
+        market_readiness
         calculated_stars
         notes
         created_at
@@ -163,14 +182,26 @@ export const GET_MY_FOOTBALL_INFO = `
     myFootballInfo {
       id
       player_id
-      position {
+      sport_id
+      position_id
+      sport {
         id
         name
       }
+      position {
+        id
+        name
+        category
+        sport_id
+        sport {
+          id
+          name
+        }
+      }
       preferred_foot
       jersey_number
-      playing_style
-      strengths
+      skill_level
+      professional_goals
       market_value
       created_at
       updated_at
@@ -178,7 +209,7 @@ export const GET_MY_FOOTBALL_INFO = `
   }
 `;
 
-// Skill Level Options (dropdown for playing_style)
+// Skill Level Options (dropdown for skill_level)
 export const GET_SKILL_LEVEL_OPTIONS = `
   query GetSkillLevelOptions($lang: String) {
     getSkillLevelOptions(lang: $lang) {
@@ -188,7 +219,7 @@ export const GET_SKILL_LEVEL_OPTIONS = `
   }
 `;
 
-// Professional Goals Options (multi-select dropdown for strengths)
+// Professional Goals Options (multi-select dropdown for professional_goals)
 export const GET_GOAL_OPTIONS = `
   query GetGoalOptions($lang: String) {
     getGoalOptions(lang: $lang) {

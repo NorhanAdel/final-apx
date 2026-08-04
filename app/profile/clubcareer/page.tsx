@@ -58,6 +58,8 @@ export default function ClubCareer() {
     ProfessionalDebutOption[]
   >([]);
 
+  const isRTL = lang === "ar";
+
   const fetchProfessionalDebutOptions = useCallback(async () => {
     try {
       const result = await fetchGraphQL<{
@@ -177,6 +179,7 @@ export default function ClubCareer() {
       className={`min-h-screen py-30 transition ${
         isDark ? "bg-[#020617]" : "bg-gray-50 text-black"
       }`}
+      dir={isRTL ? "rtl" : "ltr"}
     >
       <div className="relative w-full max-w-6xl mx-auto px-6">
         <h1 className="text-center text-3xl font-bold text-yellow-400 mb-10">
@@ -224,6 +227,7 @@ export default function ClubCareer() {
             onChange={handleChange}
             placeholder={t("e.g. Al Nassr FC")}
             isDark={isDark}
+            isRTL={isRTL}
           />
 
           <div>
@@ -243,6 +247,7 @@ export default function ClubCareer() {
                   ? "bg-[#0b1736] border border-[#1e2d5a] focus:border-yellow-400 text-white placeholder-gray-500"
                   : "bg-white border border-gray-300 focus:border-yellow-400 text-black placeholder-gray-400"
               }`}
+              style={{ direction: isRTL ? "rtl" : "ltr" }}
             >
               <option value="">{t("Select years of experience")}</option>
               {professionalDebutOptions.map((option) => (
@@ -273,6 +278,7 @@ export default function ClubCareer() {
                   ? "bg-[#0b1736] border border-[#1e2d5a] focus:border-yellow-400 text-white placeholder-gray-500"
                   : "bg-white border border-gray-300 focus:border-yellow-400 text-black placeholder-gray-400"
               }`}
+              style={{ direction: isRTL ? "rtl" : "ltr" }}
             />
           </div>
 
@@ -286,7 +292,8 @@ export default function ClubCareer() {
                   : "bg-gray-200 border-x border-yellow-400 hover:bg-gray-300 text-black"
               }`}
             >
-              <ChevronLeft size={20} /> {t("Previous")}
+              <ChevronLeft size={20} className={isRTL ? "rotate-180" : ""} />
+              {t("Previous")}
             </button>
             <button
               type="submit"
@@ -297,8 +304,8 @@ export default function ClubCareer() {
                   : "bg-gray-200 border-x border-yellow-400 hover:bg-gray-300 text-yellow-600"
               } disabled:opacity-50`}
             >
-              {loading ? t("Saving...") : t("Next")}{" "}
-              <ChevronRight size={20} />
+              {loading ? t("Saving...") : t("Next")}
+              <ChevronRight size={20} className={isRTL ? "rotate-180" : ""} />
             </button>
           </div>
         </form>
@@ -344,9 +351,10 @@ function Line({ isDark }: { isDark: boolean }) {
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
   isDark: boolean;
+  isRTL?: boolean;
 }
 
-function Input({ label, isDark, ...props }: InputProps) {
+function Input({ label, isDark, isRTL, ...props }: InputProps) {
   return (
     <div>
       <label
@@ -363,6 +371,7 @@ function Input({ label, isDark, ...props }: InputProps) {
             ? "bg-[#0b1736] border border-[#1e2d5a] focus:border-yellow-400 text-white placeholder-gray-500"
             : "bg-white border border-gray-300 focus:border-yellow-400 text-black placeholder-gray-400"
         }`}
+        style={{ direction: isRTL ? "rtl" : "ltr" }}
       />
     </div>
   );

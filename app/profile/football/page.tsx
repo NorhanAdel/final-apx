@@ -121,6 +121,8 @@ export default function FootballInformation() {
 
   const [isRestoringExisting, setIsRestoringExisting] = useState(false);
 
+  const isRTL = lang === "ar";
+
   const fetchSports = useCallback(async () => {
     try {
       const result = await fetchGraphQL<{ sports: Sport[] }>(GET_ALL_SPORTS);
@@ -380,6 +382,7 @@ export default function FootballInformation() {
     <div
       className={`min-h-screen py-30 flex items-center justify-center transition
       ${isDark ? "bg-[#020617] text-white" : "bg-gray-50 text-black"}`}
+      dir={isRTL ? "rtl" : "ltr"}
     >
       <div className="w-full max-w-6xl px-6">
         <h1
@@ -414,6 +417,7 @@ export default function FootballInformation() {
             searchPlaceholder={t("Search sports...")}
             noOptionsText={t("No sports found")}
             t={t}
+            isRTL={isRTL}
           />
 
           <Select
@@ -436,6 +440,7 @@ export default function FootballInformation() {
             searchPlaceholder={t("Search positions...")}
             noOptionsText={t("No positions found")}
             t={t}
+            isRTL={isRTL}
           />
 
           <Select
@@ -454,6 +459,7 @@ export default function FootballInformation() {
             searchPlaceholder={t("Search foot...")}
             noOptionsText={t("No options found")}
             t={t}
+            isRTL={isRTL}
           />
 
           <Input
@@ -465,6 +471,7 @@ export default function FootballInformation() {
             icon={<Hash size={18} />}
             isDark={isDark}
             placeholder={t("Enter jersey number")}
+            isRTL={isRTL}
           />
 
           <Select
@@ -482,6 +489,7 @@ export default function FootballInformation() {
             searchPlaceholder={t("Search...")}
             noOptionsText={t("No options found")}
             t={t}
+            isRTL={isRTL}
           />
 
           <Input
@@ -493,6 +501,7 @@ export default function FootballInformation() {
             icon={<DollarSign size={18} />}
             isDark={isDark}
             placeholder={t("Enter market value")}
+            isRTL={isRTL}
           />
 
           <div>
@@ -521,6 +530,7 @@ export default function FootballInformation() {
               searchPlaceholder={t("Search goals...")}
               noOptionsText={t("No options found")}
               t={t}
+              isRTL={isRTL}
             />
           </div>
 
@@ -534,7 +544,8 @@ export default function FootballInformation() {
                   : "text-gray-600 bg-gray-100 border-gray-300 hover:bg-gray-200"
               }`}
             >
-              <ChevronLeft size={18} /> {t("Back")}
+              <ChevronLeft size={18} className={isRTL ? "rotate-180" : ""} />
+              {t("Back")}
             </button>
 
             <button
@@ -543,7 +554,7 @@ export default function FootballInformation() {
               className="flex items-center gap-2 px-6 py-3 rounded-lg bg-yellow-400 text-black font-bold hover:bg-yellow-500 transition disabled:opacity-50"
             >
               {loading ? t("Saving...") : t("Next")}
-              <ChevronRight size={18} />
+              <ChevronRight size={18} className={isRTL ? "rotate-180" : ""} />
             </button>
           </div>
         </form>
@@ -595,6 +606,7 @@ function Input({
   onChange,
   isDark,
   placeholder,
+  isRTL,
 }: {
   label: string;
   icon: React.ReactNode;
@@ -604,6 +616,7 @@ function Input({
   onChange: (e: ChangeEvent<HTMLInputElement>) => void;
   isDark: boolean;
   placeholder?: string;
+  isRTL?: boolean;
 }) {
   const [isFocused, setIsFocused] = useState(false);
 
@@ -634,6 +647,7 @@ function Input({
                   : "border-gray-200 hover:border-gray-300"
               }`
         }`}
+        style={{ direction: isRTL ? "rtl" : "ltr" }}
       >
         <div
           className={`flex items-center justify-center w-8 h-8 rounded-lg mr-3 transition-all duration-300 ${
@@ -659,6 +673,7 @@ function Input({
               ? "text-white placeholder-gray-500/70"
               : "text-gray-900 placeholder-gray-400"
           }`}
+          style={{ direction: isRTL ? "rtl" : "ltr" }}
         />
       </div>
     </div>
@@ -678,6 +693,8 @@ function Select({
   isLoading,
   searchPlaceholder = "Search...",
   noOptionsText = "No options found",
+  t,
+  isRTL = false,
 }: {
   label: string;
   icon: React.ReactNode;
@@ -692,6 +709,7 @@ function Select({
   searchPlaceholder?: string;
   noOptionsText?: string;
   t: (key: string) => string;
+  isRTL?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -754,7 +772,9 @@ function Select({
         onClick={() => {
           if (!disabled) setIsOpen(!isOpen);
         }}
-        className={`relative w-full flex items-center rounded-xl px-4 py-3.5 border transition-all duration-300 text-left ${
+        className={`relative w-full flex items-center rounded-xl px-4 py-3.5 border transition-all duration-300 ${
+          isRTL ? "text-right" : "text-left"
+        } ${
           isDark
             ? `bg-[#0b1736]/80 backdrop-blur-sm ${
                 isOpen
@@ -767,9 +787,12 @@ function Select({
                   : "border-gray-200 hover:border-gray-300"
               }`
         } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+        style={{ direction: isRTL ? "rtl" : "ltr" }}
       >
         <div
-          className={`flex items-center justify-center w-8 h-8 rounded-lg mr-3 transition-all duration-300 shrink-0 ${
+          className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-300 shrink-0 ${
+            isRTL ? "ml-3" : "mr-3"
+          } ${
             isOpen
               ? "bg-yellow-400/20 text-yellow-400"
               : isDark
@@ -815,7 +838,10 @@ function Select({
               ? "bg-[#0b1736] border-[#1e2d5a] shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
               : "bg-white border-gray-200 shadow-[0_8px_32px_rgba(0,0,0,0.12)]"
           }`}
-          style={{ animation: "dropdownFadeIn 0.2s ease-out" }}
+          style={{
+            animation: "dropdownFadeIn 0.2s ease-out",
+            direction: isRTL ? "rtl" : "ltr",
+          }}
         >
           {showSearch && (
             <div
@@ -838,6 +864,7 @@ function Select({
                     ? "text-white placeholder-gray-500"
                     : "text-gray-900 placeholder-gray-400"
                 }`}
+                style={{ direction: isRTL ? "rtl" : "ltr" }}
               />
             </div>
           )}
@@ -859,7 +886,9 @@ function Select({
                     key={opt.value}
                     type="button"
                     onClick={() => handleSelect(opt.value)}
-                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors duration-150 ${
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors duration-150 ${
+                      isRTL ? "text-right" : "text-left"
+                    } ${
                       isSelected
                         ? isDark
                           ? "bg-yellow-400/10 text-yellow-400"
@@ -868,6 +897,7 @@ function Select({
                         ? "text-gray-300 hover:bg-white/5"
                         : "text-gray-700 hover:bg-gray-50"
                     }`}
+                    style={{ direction: isRTL ? "rtl" : "ltr" }}
                   >
                     <span className="flex-1 font-medium">{opt.label}</span>
                     {isSelected && (

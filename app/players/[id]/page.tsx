@@ -145,8 +145,11 @@ console.log(JSON.stringify(playerResult.errors, null, 2));
 
   useEffect(() => {
     getCurrentUser();
+  }, [getCurrentUser]);
+
+  useEffect(() => {
     fetchPlayer();
-  }, [fetchPlayer, lang, getCurrentUser]);
+  }, [fetchPlayer]);
 
   useEffect(() => {
     setShowContact(canViewContactInfo());

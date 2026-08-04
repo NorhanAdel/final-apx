@@ -139,12 +139,12 @@ export default function PersonalInfo({
           <li className={textColor}>
             <strong>{t("Height")}:</strong>{" "}
             {player.height_cm
-              ? `${(player.height_cm / 100).toFixed(2)} m`
+              ? `${(player.height_cm / 100).toFixed(2)} ${t("cm")}`
               : t("N/A")}
           </li>
           <li className={textColor}>
             <strong>{t("Weight")}:</strong>{" "}
-            {player.weight_kg ? `${player.weight_kg} kg` : t("N/A")}
+            {player.weight_kg ? `${player.weight_kg} ${t("kg")}` : t("N/A")}
           </li>
           {player.contract_status_info?.contract_status_label && (
             <li className={textColor}>
@@ -154,11 +154,13 @@ export default function PersonalInfo({
               </span>
             </li>
           )}
-          {player.contract_status_info?.has_official_agent && player.contract_status_info?.official_agent_name && (
-            <li className={textColor}>
-              <strong>{t("Official Agent")}:</strong> {player.contract_status_info.official_agent_name}
-            </li>
-          )}
+          {player.contract_status_info?.has_official_agent &&
+            player.contract_status_info?.official_agent_name && (
+              <li className={textColor}>
+                <strong>{t("Official Agent")}:</strong>{" "}
+                {player.contract_status_info.official_agent_name}
+              </li>
+            )}
           {showContact && (
             <li className={textColor}>
               <strong>{t("Email")}:</strong> {player.email_address || t("N/A")}

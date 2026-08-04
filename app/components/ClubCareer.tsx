@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { fetchGraphQL } from "@/app/lib/fetchGraphQL";
-import { GET_PLAYER_CLUB_CAREER } from "@/app/graphql/query/player.queries";
+import {
+  GET_PLAYER_CLUB_CAREER,
+  GET_PROFESSIONAL_DEBUT_OPTIONS,
+} from "@/app/graphql/query/player.queries";
 import { useTheme } from "@/app/context/ThemeContext";
 import useTranslate from "@/app/hooks/useTranslate";
 
@@ -11,6 +14,11 @@ interface ClubCareerData {
   current_club?: string | null;
   professional_debut?: string | null;
   previous_clubs?: string | null;
+}
+
+interface OptionItem {
+  value: string;
+  label: string;
 }
 
 interface ClubCareerProps {
@@ -23,6 +31,9 @@ export default function ClubCareer({ playerId }: ClubCareerProps) {
   const isDark = theme === "dark";
   const isRTL = lang === "ar";
   const [clubCareer, setClubCareer] = useState<ClubCareerData | null>(null);
+  const [professionalDebutOptions, setProfessionalDebutOptions] = useState<
+    OptionItem[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,17 +63,33 @@ export default function ClubCareer({ playerId }: ClubCareerProps) {
     fetchClubCareer();
   }, [playerId, t]);
 
+  // Fetch backend-translated labels for professional debut (years of experience),
+  // same source of truth used in the edit form (GET_PROFESSIONAL_DEBUT_OPTIONS)
+  useEffect(() => {
+    const fetchOptions = async () => {
+      try {
+        const result = await fetchGraphQL<{
+          getProfessionalDebutOptions: OptionItem[];
+        }>(GET_PROFESSIONAL_DEBUT_OPTIONS, { lang });
+        if (result.data?.getProfessionalDebutOptions) {
+          setProfessionalDebutOptions(result.data.getProfessionalDebutOptions);
+        }
+      } catch (err) {
+        console.error("Error fetching professional debut options:", err);
+      }
+    };
+    fetchOptions();
+  }, [lang]);
+
+  // Look up the human-readable, backend-translated label for a professional debut code
+  // (e.g. "1_TO_3" -> "من 1 إلى 3 سنوات (خبرة متوسطة)")
   const formatProfessionalDebut = (debut?: string | null) => {
     if (!debut) return t("N/A");
-    
-    const debutMap: Record<string, string> = {
-      "LESS_THAN_1": t("Less than a year"),
-      "1_TO_3": t("1-3 years"),
-      "4_TO_7": t("4-7 years"),
-      "MORE_THAN_7": t("More than 7 years"),
-    };
-
-    return debutMap[debut] || debut;
+    const code = debut.trim().toUpperCase();
+    const match = professionalDebutOptions.find(
+      (o) => o.value.toUpperCase() === code,
+    );
+    return match?.label || debut;
   };
 
   const textColor = isDark ? "text-gray-300" : "text-gray-700";

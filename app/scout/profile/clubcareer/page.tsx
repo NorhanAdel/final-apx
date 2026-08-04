@@ -10,6 +10,7 @@ import {
   Save,
   Loader2,
   User,
+  ShieldCheck,
 } from "lucide-react";
 import { useTheme } from "@/app/context/ThemeContext";
 import useTranslate from "@/app/hooks/useTranslate";
@@ -37,7 +38,7 @@ function Step({
     <div
       className={`w-12 h-12 rounded-full flex items-center justify-center transition ${
         active
-          ? "bg-yellow-400 text-black"
+          ? "bg-yellow-400 text-black shadow-[0_0_20px_rgba(250,204,21,0.4)]"
           : isDark
           ? "bg-gray-700 text-gray-300"
           : "bg-gray-200 text-gray-500"
@@ -113,7 +114,7 @@ export default function ScoutClubCareerPage() {
     e.preventDefault();
 
     if (!hasChanges()) {
-      router.push("/scout");
+      router.push("/scout/profile/legal-status");
       return;
     }
 
@@ -138,7 +139,7 @@ export default function ScoutClubCareerPage() {
           previous_clubs: data.previous_clubs || "",
         });
         toast.success(t("Club career saved successfully!"));
-        router.push("/scout");
+        router.push("/scout/profile/legal-status");
       }
     } catch (error) {
       console.error("Error saving club career:", error);
@@ -171,15 +172,28 @@ export default function ScoutClubCareerPage() {
       </h1>
 
       <div className="max-w-4xl mx-auto px-6">
-        {/* Step Indicators */}
+        {/* 3 Steps Navigation Bar */}
         <div className="flex items-center justify-center gap-6 mb-10">
-          <Step icon={<User />} isDark={isDark} />
+          <button
+            type="button"
+            onClick={() => router.push("/scout/profile")}
+            className="cursor-pointer"
+          >
+            <Step icon={<User />} isDark={isDark} />
+          </button>
           <Line isDark={isDark} />
           <Step icon={<Building2 />} active isDark={isDark} />
+          <Line isDark={isDark} />
+          <button
+            type="button"
+            onClick={() => router.push("/scout/profile/legal-status")}
+            className="cursor-pointer"
+          >
+            <Step icon={<ShieldCheck />} isDark={isDark} />
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Current Club */}
           <div>
             <label
               className={`block text-sm font-medium mb-2 ${
@@ -210,7 +224,6 @@ export default function ScoutClubCareerPage() {
             </div>
           </div>
 
-          {/* Previous Clubs */}
           <div>
             <label
               className={`block text-sm font-medium mb-2 ${
@@ -253,7 +266,7 @@ export default function ScoutClubCareerPage() {
           <div className="flex justify-between mt-10">
             <button
               type="button"
-              onClick={() => router.back()}
+              onClick={() => router.push("/scout/profile")}
               className={`flex items-center gap-2 px-6 py-3 rounded-lg border transition ${
                 isDark
                   ? "text-gray-400 bg-[#090B6E]/20 border-gray-500/30 hover:bg-[#090B6E]/40"
@@ -273,7 +286,7 @@ export default function ScoutClubCareerPage() {
               ) : (
                 <Save size={18} />
               )}
-              {loading ? t("Saving...") : t("Save")}
+              {loading ? t("Saving...") : t("Next")}
               <ChevronRight size={18} />
             </button>
           </div>

@@ -2,7 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { fetchGraphQL } from "@/app/lib/fetchGraphQL";
-import { GET_PLAYER_FOOTBALL_INFO, GET_MY_FOOTBALL_INFO } from "@/app/graphql/query/player.queries";
+import {
+  GET_PLAYER_FOOTBALL_INFO,
+  GET_MY_FOOTBALL_INFO,
+  GET_SKILL_LEVEL_OPTIONS,
+  GET_GOAL_OPTIONS,
+} from "@/app/graphql/query/player.queries";
 import { useTheme } from "@/app/context/ThemeContext";
 import useTranslate from "@/app/hooks/useTranslate";
 
@@ -26,6 +31,11 @@ interface FootballData {
   description?: string | null;
 }
 
+interface OptionItem {
+  value: string;
+  label: string;
+}
+
 interface FootballInfoProps {
   playerId?: string;
 }
@@ -36,6 +46,8 @@ export default function FootballInfo({ playerId }: FootballInfoProps) {
   const isDark = theme === "dark";
   const isRTL = lang === "ar";
   const [footballInfo, setFootballInfo] = useState<FootballData | null>(null);
+  const [skillLevelOptions, setSkillLevelOptions] = useState<OptionItem[]>([]);
+  const [goalOptions, setGoalOptions] = useState<OptionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,10 +59,9 @@ export default function FootballInfo({ playerId }: FootballInfoProps) {
         let data = null;
 
         if (playerId) {
-          const result = await fetchGraphQL<any>(
-            GET_PLAYER_FOOTBALL_INFO,
-            { playerId },
-          );
+          const result = await fetchGraphQL<any>(GET_PLAYER_FOOTBALL_INFO, {
+            playerId,
+          });
           if (!result.errors && result.data?.playerFootballInfo) {
             data = result.data.playerFootballInfo;
           }
@@ -74,55 +85,86 @@ export default function FootballInfo({ playerId }: FootballInfoProps) {
     fetchFootballInfo();
   }, [playerId]);
 
+  // Fetch backend-translated labels for skill level and professional goals,
+  // same source of truth used in the edit form (GET_SKILL_LEVEL_OPTIONS / GET_GOAL_OPTIONS)
+  useEffect(() => {
+    const fetchOptions = async () => {
+      try {
+        const [skillRes, goalRes] = await Promise.all([
+          fetchGraphQL<{ getSkillLevelOptions: OptionItem[] }>(
+            GET_SKILL_LEVEL_OPTIONS,
+            { lang },
+          ),
+          fetchGraphQL<{ getGoalOptions: OptionItem[] }>(GET_GOAL_OPTIONS, {
+            lang,
+          }),
+        ]);
+        if (skillRes.data?.getSkillLevelOptions) {
+          setSkillLevelOptions(skillRes.data.getSkillLevelOptions);
+        }
+        if (goalRes.data?.getGoalOptions) {
+          setGoalOptions(goalRes.data.getGoalOptions);
+        }
+      } catch (err) {
+        console.error("Error fetching skill level/goal options:", err);
+      }
+    };
+    fetchOptions();
+  }, [lang]);
+
   const formatFoot = (foot?: string | null) => {
     if (!foot) return t("N/A");
     const formatted = foot.trim();
     const upper = formatted.toUpperCase();
-    
-    if (upper === "RIGHT" || upper === "RIGHT FOOT" || formatted === "يمنى" || formatted === "القدم اليمنى") {
+
+    if (
+      upper === "RIGHT" ||
+      upper === "RIGHT FOOT" ||
+      formatted === "يمنى" ||
+      formatted === "القدم اليمنى"
+    ) {
       return t("Right Foot");
     }
-    if (upper === "LEFT" || upper === "LEFT FOOT" || formatted === "يسرى" || formatted === "القدم اليسرى") {
+    if (
+      upper === "LEFT" ||
+      upper === "LEFT FOOT" ||
+      formatted === "يسرى" ||
+      formatted === "القدم اليسرى"
+    ) {
       return t("Left Foot");
     }
-    if (upper === "BOTH" || upper === "BOTH FEET" || formatted === "كلا القدمين" || formatted === "كلتاهما") {
+    if (
+      upper === "BOTH" ||
+      upper === "BOTH FEET" ||
+      formatted === "كلا القدمين" ||
+      formatted === "كلتاهما"
+    ) {
       return t("Both Feet");
     }
-    
+
     return t(formatted);
   };
 
+  // Look up the human-readable, backend-translated label for a skill level code
+  // (e.g. "ADVANCED" -> "متطور: ألعب بشكل جيد ومتصاعد في المباريات.")
   const formatSkillLevel = (level?: string | null) => {
     if (!level) return t("N/A");
-    const formatted = level.trim();
-    const upper = formatted.toUpperCase();
-
-    const levelMap: Record<string, string> = {
-      BEGINNER: t("مبتدئ"),
-      INTERMEDIATE: t("متوسط"),
-      ADVANCED: t("متطور"),
-      EXPERT: t("متقدم"),
-      COMPETITIVE: t("منافس"),
-      SEMI_PRO: t("شبه محترف"),
-      PROFESSIONAL: t("محترف"),
-    };
-
-    return levelMap[upper] || t(formatted);
+    const code = level.trim().toUpperCase();
+    const match = skillLevelOptions.find((o) => o.value === code);
+    return match?.label || level;
   };
 
+  // Look up the human-readable, backend-translated labels for professional goal codes
+  // (e.g. ["SKILL_DEVELOPMENT", "JOIN_ACADEMY"] -> translated labels joined)
   const formatProfessionalGoals = (goals?: string[] | null) => {
     if (!goals || goals.length === 0) return t("N/A");
-    const goalMap: Record<string, string> = {
-      DEVELOP_SKILLS: t("تطوير المهارات الرياضية"),
-      JOIN_ACADEMY: t("الانضمام لأكاديمية محترفة"),
-      SIGN_CONTRACT: t("توقيع عقد احترافي"),
-      FIRST_TEAM_CONTRACT: t("توقيع عقد مع فريق أول"),
-      NATIONAL_TEAM: t("تمثيل المنتخب الوطني"),
-      EUROPEAN_TRANSFER: t("الاحتراف الخارجي / الأوروبي"),
-      INTERNATIONAL_TRANSFER: t("الاحتراف الخارجي"),
-      SERIOUS_OFFERS: t("تلقي عروض من أندية رسمية"),
-    };
-    return goals.map((g) => goalMap[g.trim().toUpperCase()] || t(g)).join(", ");
+    return goals
+      .map((g) => {
+        const code = g.trim().toUpperCase();
+        const match = goalOptions.find((o) => o.value === code);
+        return match?.label || g;
+      })
+      .join(isRTL ? "، " : ", ");
   };
 
   const textColor = isDark ? "text-gray-300" : "text-gray-700";
@@ -203,12 +245,19 @@ export default function FootballInfo({ playerId }: FootballInfoProps) {
           {isRTL ? (
             <span>
               <strong>{t("Skill Level")}: </strong>
-              {formatSkillLevel(footballInfo.skill_level || footballInfo.playing_style)}
+              {formatSkillLevel(
+                footballInfo.skill_level || footballInfo.playing_style,
+              )}
             </span>
           ) : (
             <>
               <strong>{t("Skill Level")}:</strong>
-              <span> {formatSkillLevel(footballInfo.skill_level || footballInfo.playing_style)}</span>
+              <span>
+                {" "}
+                {formatSkillLevel(
+                  footballInfo.skill_level || footballInfo.playing_style,
+                )}
+              </span>
             </>
           )}
         </li>
@@ -216,22 +265,31 @@ export default function FootballInfo({ playerId }: FootballInfoProps) {
           {isRTL ? (
             <span>
               <strong>{t("Professional Goals")}: </strong>
-              {formatProfessionalGoals(footballInfo.professional_goals || footballInfo.strengths)}
+              {formatProfessionalGoals(
+                footballInfo.professional_goals || footballInfo.strengths,
+              )}
             </span>
           ) : (
             <>
               <strong>{t("Professional Goals")}:</strong>
-              <span> {formatProfessionalGoals(footballInfo.professional_goals || footballInfo.strengths)}</span>
+              <span>
+                {" "}
+                {formatProfessionalGoals(
+                  footballInfo.professional_goals || footballInfo.strengths,
+                )}
+              </span>
             </>
           )}
         </li>
-        
+
         {footballInfo.description && (
           <li className={`${textColor} ${isRTL ? "text-right" : "text-left"}`}>
             <strong>{t("Description")}:</strong>
-            <p className={`mt-1 ${secondaryTextColor} leading-relaxed ${
-              isRTL ? "text-right" : "text-left"
-            }`}>
+            <p
+              className={`mt-1 ${secondaryTextColor} leading-relaxed ${
+                isRTL ? "text-right" : "text-left"
+              }`}
+            >
               {footballInfo.description}
             </p>
           </li>

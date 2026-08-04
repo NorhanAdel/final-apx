@@ -149,3 +149,12 @@ export const INCREMENT_UPLOAD_COUNT = `
     }
   }
 `;
+
+export const INCREMENT_PLAYER_VIEWS = `
+  mutation IncrementPlayerViews($playerId: String!) {
+    incrementPlayerViews(playerId: $playerId) {
+      id
+      views_count
+    }
+  }
+`;

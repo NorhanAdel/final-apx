@@ -12,6 +12,7 @@ import {
   AlignLeft,
   X,
   User,
+  ShieldCheck,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -217,7 +218,7 @@ export default function ClubProfilePage() {
     e.preventDefault();
 
     if (!hasChanges()) {
-      router.push("/clubprofile");
+      router.push("/clubprofile/legal-status");
       return;
     }
 
@@ -258,7 +259,7 @@ export default function ClubProfilePage() {
       } else if (result.data) {
         toast.success(isUpdate ? t("Profile Updated!") : t("Profile Created!"));
         await fetchClubProfile();
-        router.push("/clubprofile");
+        router.push("/clubprofile/legal-status");
       }
     } catch (error) {
       console.error("=== SUBMIT ERROR ===", error);
@@ -287,8 +288,9 @@ export default function ClubProfilePage() {
       </h1>
       
       <div className="max-w-6xl mx-auto px-6">
-        {/* User Icon at top */}
-        <div className="flex justify-center mb-10">
+        {/* User + Legal Status Icons with Line */}
+        <div className="flex justify-center items-center gap-6 mb-10">
+          {/* User Profile Icon */}
           <div
             className={`w-20 h-20 rounded-full flex items-center justify-center border-2 ${
               isDark
@@ -301,6 +303,25 @@ export default function ClubProfilePage() {
               size={30}
             />
           </div>
+
+          {/* Line between icons */}
+          <div className={`w-12 h-[2px] ${isDark ? "bg-yellow-500/30" : "bg-yellow-400/50"}`} />
+
+          {/* Legal Status Icon */}
+          <button
+            onClick={() => router.push("/clubprofile/legal-status")}
+            className={`w-20 h-20 rounded-full flex items-center justify-center border-2 transition-all hover:scale-105 ${
+              isDark
+                ? "border-yellow-500/30 bg-yellow-500/10 hover:bg-yellow-500/20"
+                : "border-yellow-400/50 bg-yellow-100/50 hover:bg-yellow-100"
+            }`}
+            title={t("Legal Status")}
+          >
+            <ShieldCheck
+              className={`${isDark ? "text-yellow-500" : "text-yellow-600"}`}
+              size={30}
+            />
+          </button>
         </div>
 
         <div className="mb-12">
@@ -415,7 +436,7 @@ export default function ClubProfilePage() {
           <div className="md:col-span-2 flex justify-between mt-10">
             <button
               type="button"
-              onClick={() => router.push("/clubprofile")}
+              onClick={() => router.back()}
               className={`flex items-center gap-2 px-6 py-3 rounded-lg border transition ${
                 isDark
                   ? "text-gray-400 bg-[#090B6E]/20 border-gray-500/30 hover:bg-[#090B6E]/40"
@@ -430,7 +451,7 @@ export default function ClubProfilePage() {
               disabled={loading}
               className="flex items-center gap-2 px-6 py-3 rounded-lg bg-yellow-400 text-black font-bold hover:bg-yellow-500 transition disabled:opacity-50"
             >
-              {loading ? t("Saving...") : t("Save")}
+              {loading ? t("Saving...") : t("Next")}
               <ChevronRight size={18} />
             </button>
           </div>

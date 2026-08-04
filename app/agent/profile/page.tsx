@@ -15,17 +15,19 @@ import {
   X,
   Loader2,
   AlignLeft,
+  ShieldCheck,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useTheme } from "../../context/ThemeContext";
-import { uploadGraphQL } from "../../lib/uploadGraphQL";
-import useTranslate from "../../hooks/useTranslate";
+import { useTheme } from "@/app/context/ThemeContext";
+import { uploadGraphQL } from "@/app/lib/uploadGraphQL";
+import useTranslate from "@/app/hooks/useTranslate";
 import { toast } from "sonner";
 import { GET_MY_AGENT_PROFILE } from "@/app/graphql/query/agent.queries";
 import {
   CREATE_AGENT_PROFILE,
   UPDATE_MY_AGENT_PROFILE_WITH_IMAGE,
 } from "@/app/graphql/mutation/agent.mutations";
+import { GET_MY_AGENT_LEGAL_STATUS } from "@/app/graphql/query/legal-verification.queries";
 
 interface AgentProfile {
   id: string;
@@ -45,8 +47,9 @@ interface AgentProfile {
 export default function AgentPersonalInformation() {
   const router = useRouter();
   const { theme } = useTheme();
-  const { t } = useTranslate();
+  const { t, lang } = useTranslate();
   const isDark = theme === "dark";
+  const isRTL = lang === "ar";
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -130,6 +133,13 @@ export default function AgentPersonalInformation() {
           setImagePreview(getFullImageUrl(profile.profile_image_url));
         }
       }
+
+      await uploadGraphQL<{
+        myAgentLegalStatus: {
+          is_fifa_certified: boolean;
+          fifa_license_id?: string;
+        };
+      }>(GET_MY_AGENT_LEGAL_STATUS);
     } catch (error) {
       console.error("Error fetching agent profile:", error);
     } finally {
@@ -181,7 +191,7 @@ export default function AgentPersonalInformation() {
     e.preventDefault();
 
     if (!hasChanges()) {
-      router.push("/agent");
+      router.push("/agent/legal-status");
       return;
     }
 
@@ -231,7 +241,7 @@ export default function AgentPersonalInformation() {
           );
         }
         await fetchMyProfile();
-        router.push("/agent");
+        router.push("/agent/legal-status");
       }
     } catch (error) {
       console.error("Error saving profile:", error);
@@ -258,26 +268,44 @@ export default function AgentPersonalInformation() {
       className={`min-h-screen py-40 transition ${
         isDark ? "bg-[#020b1c] text-white" : "bg-gray-50 text-black"
       }`}
+      dir={isRTL ? "rtl" : "ltr"}
     >
       <h1 className="text-center text-3xl font-bold mb-5 text-yellow-400">
         {t("Agent Profile")}
       </h1>
 
       <div className="max-w-6xl mx-auto px-6">
-        <div className="flex justify-center mb-10">
+        {/* Steps Navigation Icons */}
+        <div className="flex justify-center items-center gap-6 mb-10">
           <div
-            className={`w-20 h-20 rounded-full flex items-center justify-center border-2
-            ${
+            className={`w-20 h-20 rounded-full flex items-center justify-center border-2 ${
               isDark
-                ? "bg-yellow-500/20 border-yellow-500"
-                : "bg-yellow-100 border-yellow-400"
+                ? "bg-yellow-500/20 border-yellow-500 text-yellow-500 shadow-[0_0_20px_rgba(234,179,8,0.4)] scale-105"
+                : "bg-yellow-100 border-yellow-400 text-yellow-600 shadow-md scale-105"
             }`}
+            title={t("Agent Profile")}
           >
-            <User
-              className={`${isDark ? "text-yellow-500" : "text-yellow-600"}`}
-              size={36}
-            />
+            <User size={30} />
           </div>
+
+          <div
+            className={`w-12 h-[2px] ${
+              isDark ? "bg-yellow-500/30" : "bg-yellow-400/50"
+            }`}
+          />
+
+          <button
+            type="button"
+            onClick={() => router.push("/agent/legal-status")}
+            className={`w-20 h-20 rounded-full flex items-center justify-center border-2 transition-all hover:scale-105 ${
+              isDark
+                ? "border-yellow-500/30 bg-yellow-500/10 text-gray-400 hover:bg-yellow-500/20 hover:text-yellow-500"
+                : "border-yellow-400/50 bg-yellow-100/50 text-gray-500 hover:bg-yellow-100 hover:text-yellow-600"
+            }`}
+            title={t("Legal Status")}
+          >
+            <ShieldCheck size={30} />
+          </button>
         </div>
 
         <div className="mb-12">
@@ -342,6 +370,7 @@ export default function AgentPersonalInformation() {
             icon={<User size={18} />}
             isDark={isDark}
             required
+            isRTL={isRTL}
           />
           <InputWithIcon
             label={t("Last Name")}
@@ -351,6 +380,7 @@ export default function AgentPersonalInformation() {
             icon={<User size={18} />}
             isDark={isDark}
             required
+            isRTL={isRTL}
           />
           <InputWithIcon
             label={t("Email Address")}
@@ -361,6 +391,7 @@ export default function AgentPersonalInformation() {
             isDark={isDark}
             type="email"
             required
+            isRTL={isRTL}
           />
           <InputWithIcon
             label={t("Phone Number")}
@@ -370,6 +401,7 @@ export default function AgentPersonalInformation() {
             icon={<Phone size={18} />}
             isDark={isDark}
             type="tel"
+            isRTL={isRTL}
           />
 
           {/* Date of Birth - Separated Fields */}
@@ -381,7 +413,7 @@ export default function AgentPersonalInformation() {
             >
               {t("Birth Date")}
             </label>
-            <div className="flex gap-3">
+            <div className="flex gap-3" dir="ltr">
               <div className="flex-1">
                 <div
                   className={`flex items-center rounded-xl px-4 py-3 border transition-colors ${
@@ -468,6 +500,7 @@ export default function AgentPersonalInformation() {
             onChange={handleInputChange}
             icon={<Globe size={18} />}
             isDark={isDark}
+            isRTL={isRTL}
           />
           <InputWithIcon
             label={t("Country")}
@@ -476,6 +509,7 @@ export default function AgentPersonalInformation() {
             onChange={handleInputChange}
             icon={<MapPin size={18} />}
             isDark={isDark}
+            isRTL={isRTL}
           />
           <InputWithIcon
             label={t("City")}
@@ -484,6 +518,7 @@ export default function AgentPersonalInformation() {
             onChange={handleInputChange}
             icon={<MapPin size={18} />}
             isDark={isDark}
+            isRTL={isRTL}
           />
 
           <div className="md:col-span-2">
@@ -495,6 +530,7 @@ export default function AgentPersonalInformation() {
               icon={<AlignLeft size={18} />}
               isDark={isDark}
               rows={4}
+              isRTL={isRTL}
             />
           </div>
 
@@ -508,7 +544,8 @@ export default function AgentPersonalInformation() {
                   : "text-gray-600 bg-gray-100 border-gray-300 hover:bg-gray-200"
               }`}
             >
-              <ChevronLeft size={18} /> {t("Back")}
+              {isRTL ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}{" "}
+              {t("Back")}
             </button>
 
             <button
@@ -523,7 +560,7 @@ export default function AgentPersonalInformation() {
               ) : (
                 t("Save")
               )}
-              <ChevronRight size={18} />
+              {isRTL ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
             </button>
           </div>
         </form>
@@ -542,6 +579,7 @@ interface InputProps {
   type?: string;
   required?: boolean;
   placeholder?: string;
+  isRTL?: boolean;
 }
 
 function InputWithIcon({
@@ -554,7 +592,10 @@ function InputWithIcon({
   type = "text",
   required = false,
   placeholder,
+  isRTL = false,
 }: InputProps) {
+  const isLTRField = name === "phone" || name === "email_address";
+
   return (
     <div>
       <label
@@ -571,8 +612,11 @@ function InputWithIcon({
             ? "bg-[#0b1736] border-[#1e2d5a] focus-within:border-yellow-400"
             : "bg-white border-gray-300 focus-within:border-yellow-400"
         }`}
+        dir={isLTRField ? "ltr" : undefined}
       >
-        <span className="text-yellow-400 mr-3">{icon}</span>
+        <span className={`text-yellow-400 ${isRTL ? "ml-3" : "mr-3"}`}>
+          {icon}
+        </span>
         <input
           name={name}
           value={value}
@@ -581,10 +625,13 @@ function InputWithIcon({
           placeholder={placeholder || label}
           required={required}
           className={`bg-transparent outline-none w-full text-sm ${
+            isLTRField ? (isRTL ? "text-right" : "text-left") : ""
+          } ${
             isDark
               ? "text-white placeholder-gray-500"
               : "text-black placeholder-gray-400"
           }`}
+          dir={isLTRField ? "ltr" : undefined}
         />
       </div>
     </div>
@@ -600,6 +647,7 @@ interface TextareaProps {
   isDark: boolean;
   rows?: number;
   placeholder?: string;
+  isRTL?: boolean;
 }
 
 function TextareaWithIcon({
@@ -611,6 +659,7 @@ function TextareaWithIcon({
   isDark,
   rows = 4,
   placeholder,
+  isRTL = false,
 }: TextareaProps) {
   return (
     <div>
@@ -628,7 +677,9 @@ function TextareaWithIcon({
             : "bg-white border-gray-300 focus-within:border-yellow-400"
         }`}
       >
-        <span className="text-yellow-400 mr-3 mt-1">{icon}</span>
+        <span className={`text-yellow-400 mt-1 ${isRTL ? "ml-3" : "mr-3"}`}>
+          {icon}
+        </span>
         <textarea
           name={name}
           value={value}

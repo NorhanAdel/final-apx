@@ -83,13 +83,14 @@ interface MenuButton {
 export default function ClubProfile() {
   const router = useRouter();
   const { theme } = useTheme();
-  const { t } = useTranslate();
+  const { t, lang } = useTranslate();
   const [clubData, setClubData] = useState<ClubProfileData | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasProfile, setHasProfile] = useState<boolean>(false);
 
   const isDark = theme === "dark";
+  const isRTL = lang === "ar";
 
   useEffect(() => {
     fetchClubData();
@@ -103,7 +104,6 @@ export default function ClubProfile() {
       );
       if (result.data?.myClubProfile) {
         const club = result.data.myClubProfile;
-        // Check if club has completed their profile (has club_name)
         if (club.club_name) {
           setClubData(club);
           setHasProfile(true);
@@ -212,12 +212,12 @@ export default function ClubProfile() {
     );
   }
 
-  // If no profile exists, show message to complete registration
   if (!hasProfile) {
     return (
       <div
         className={`min-h-screen flex flex-col items-center justify-center transition
         ${isDark ? "bg-[#020617] text-white" : "bg-white text-black"}`}
+        dir={isRTL ? "rtl" : "ltr"}
       >
         <div className="text-center max-w-md px-6">
           <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-yellow-400/20 flex items-center justify-center">
@@ -244,11 +244,16 @@ export default function ClubProfile() {
     <div
       className={`min-h-screen font-sans py-40 px-4 sm:px-6 md:p-10 flex justify-center relative transition
       ${isDark ? "bg-[#020617] text-white" : "bg-gray-100 text-black"}`}
+      dir={isRTL ? "rtl" : "ltr"}
     >
       <div className="max-w-6xl w-full py-16 sm:py-20">
-        {/* Club Info */}
-        <div className="flex flex-col md:flex-row gap-6 items-center md:items-start mb-6">
-          <div className="relative w-full max-w-[280px] sm:max-w-[320px] md:w-[350px] aspect-square rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-800">
+        {/* Club Info - في العربي الصورة على اليمين والكلام على اليسار */}
+        <div className={`flex flex-col md:flex-row gap-6 items-center md:items-start mb-6 ${
+          isRTL ? "md:flex-row" : ""
+        }`}>
+          <div className={`relative w-full max-w-[280px] sm:max-w-[320px] md:w-[350px] aspect-square rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-800 ${
+            isRTL ? "order-1" : "order-1"
+          }`}>
             {clubData?.logo_url ? (
               <Image
                 src={getFullImageUrl(clubData.logo_url)}
@@ -263,7 +268,9 @@ export default function ClubProfile() {
             )}
           </div>
 
-          <div className="flex-1 text-center md:text-left space-y-3">
+          <div className={`flex-1 text-center md:text-left space-y-3 ${
+            isRTL ? "md:text-right order-2" : "md:text-left order-2"
+          }`}>
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">
               {clubData?.club_name || ""}
             </h1>
@@ -274,7 +281,9 @@ export default function ClubProfile() {
               } space-y-2`}
             >
               {(clubData?.country || clubData?.city) && (
-                <div className="flex items-center justify-center md:justify-start gap-2">
+                <div className={`flex items-center justify-center md:justify-start gap-2 ${
+                  isRTL ? "md:justify-start" : "md:justify-start"
+                }`}>
                   <MapPin size={14} />
                   {[clubData?.country, clubData?.city]
                     .filter(Boolean)
@@ -283,7 +292,9 @@ export default function ClubProfile() {
               )}
 
               {(clubData?.email_address || clubData?.phone) && (
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-6 items-center md:items-start">
+                <div className={`flex flex-col sm:flex-row gap-2 sm:gap-6 items-center ${
+                  isRTL ? "md:items-start" : "md:items-start"
+                }`}>
                   {clubData?.email_address && (
                     <span className="flex items-center gap-1">
                       <Mail size={14} /> {clubData.email_address}
@@ -309,7 +320,9 @@ export default function ClubProfile() {
             )}
 
             {/* Verification Badge */}
-            <div className="flex justify-center md:justify-start mt-2">
+            <div className={`flex justify-center md:justify-start mt-2 ${
+              isRTL ? "md:justify-start" : "md:justify-start"
+            }`}>
               {clubData?.is_verified ? (
                 <span className="bg-green-500/20 text-green-500 text-xs px-2 py-1 rounded-full flex items-center gap-1">
                   <CheckCircle size={12} />
@@ -338,7 +351,7 @@ export default function ClubProfile() {
           {t("Edit Profile")}
         </button>
 
-        {/* Menu Buttons with border-x-3 */}
+        {/* Menu Buttons with RTL support */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-10">
           {menuButtons.map((btn, idx) => (
             <button
@@ -347,14 +360,18 @@ export default function ClubProfile() {
                 if (btn.path) router.push(btn.path);
                 if (btn.action) btn.action();
               }}
-              className={`p-3 rounded-md flex justify-between items-center transition border-x-3 border-[#F0B100]
-                ${isDark ? "bg-[#051139]" : "bg-white shadow"}`}
+              className={`p-3 rounded-md flex items-center transition border-x-3 border-[#F0B100]
+                ${isDark ? "bg-[#051139]" : "bg-white shadow"} ${
+                  isRTL ? "flex-row-reverse justify-between" : "justify-between"
+                }`}
             >
-              <span className="text-sm">{btn.label}</span>
+              <span className={`text-sm ${isRTL ? "order-2" : "order-1"}`}>
+                {btn.label}
+              </span>
               <span
-                className={
+                className={`${isRTL ? "order-1" : "order-2"} ${
                   btn.color || (isDark ? "text-yellow-400" : "text-yellow-600")
-                }
+                }`}
               >
                 {btn.icon}
               </span>
@@ -371,7 +388,7 @@ export default function ClubProfile() {
             <h2
               className={`text-xl font-bold mb-4 ${
                 isDark ? "text-white" : "text-gray-800"
-              }`}
+              } ${isRTL ? "text-right" : "text-left"}`}
             >
               {t("Players")}
             </h2>
