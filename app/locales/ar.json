@@ -1039,5 +1039,11 @@
   "Legal verification saved successfully!": "تم حفظ التحقق القانوني بنجاح!",
   "Legal Status": "الحالة القانونية",
   "Legal Verification": "التحقق القانوني",
-  "Back to Profile": "العودة إلى الملف الشخصي"
+  "Back to Profile": "العودة إلى الملف الشخصي",
+  "Extra video purchased successfully!": "تم شراء فيديو إضافي بنجاح!",
+  "Extra photo purchased successfully!": "تم شراء صورة إضافية بنجاح!",
+  "Purchase Extra Video Slot": "شراء مساحة فيديو إضافية",
+  "Purchase Extra Photo Slot": "شراء مساحة صورة إضافية",
+  "You are about to purchase an extra video slot": "أنت على وشك شراء مساحة فيديو إضافية",
+  "You are about to purchase an extra photo slot": "أنت على وشك شراء مساحة صورة إضافية"
 }

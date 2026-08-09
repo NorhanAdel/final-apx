@@ -1045,5 +1045,11 @@
   "Legal verification saved successfully!": "法律验证保存成功！",
   "Legal Status": "法律状态",
   "Legal Verification": "法律验证",
-  "Back to Profile": "返回个人资料"
+  "Back to Profile": "返回个人资料",
+  "Extra video purchased successfully!": "额外视频购买成功！",
+  "Extra photo purchased successfully!": "额外照片购买成功！",
+  "Purchase Extra Video Slot": "购买额外视频位",
+  "Purchase Extra Photo Slot": "购买额外照片位",
+  "You are about to purchase an extra video slot": "您即将购买额外视频位",
+  "You are about to purchase an extra photo slot": "您即将购买额外照片位"
 }

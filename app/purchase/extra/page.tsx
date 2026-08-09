@@ -7,20 +7,21 @@ import { fetchGraphQL } from "@/app/lib/fetchGraphQL";
 import { PaymentForm } from "@/app/components/PaymentForm";
 import { PURCHASE_EXTRA_ITEM } from "@/app/graphql/mutation/purchase.mutations";
 import { CardData, PurchaseExtraResponse } from "@/app/types/purchase.types";
-
+import useTranslate from "@/app/hooks/useTranslate";
 
 function PurchaseExtraContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { t } = useTranslate();
   const type = searchParams.get("type") as "PHOTO" | "VIDEO";
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     if (!type || (type !== "PHOTO" && type !== "VIDEO")) {
-      toast.error("Invalid purchase type");
+      toast.error(t("Invalid purchase type"));
       router.push("/profile/imagesreels");
     }
-  }, [type, router]);
+  }, [type, router, t]);
 
   const handlePurchase = async (cardData: CardData) => {
     setIsProcessing(true);
@@ -41,14 +42,14 @@ function PurchaseExtraContent() {
       if (result?.data?.purchaseExtraItem?.success) {
         toast.success(
           type === "PHOTO"
-            ? "Extra photo purchased successfully!"
-            : "Extra video purchased successfully!",
+            ? t("Extra photo purchased successfully!")
+            : t("Extra video purchased successfully!"),
         );
         router.push("/profile/imagesreels");
       }
     } catch (error) {
       console.error(error);
-      toast.error("Purchase failed");
+      toast.error(t("Purchase failed"));
     } finally {
       setIsProcessing(false);
     }
@@ -58,14 +59,15 @@ function PurchaseExtraContent() {
     <div className="min-h-screen py-32 px-6 bg-gray-50 dark:bg-gray-900">
       <div className="max-w-md mx-auto">
         <h1 className="text-3xl font-bold text-center mb-8">
-          Purchase Extra {type === "PHOTO" ? "Photo" : "Video"} Slot
+          {type === "PHOTO" ? t("Purchase Extra Photo Slot") : t("Purchase Extra Video Slot")}
         </h1>
 
         <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
           <div className="mb-6 p-4 bg-yellow-400/10 rounded-xl">
             <p className="text-center">
-              You are about to purchase an extra{" "}
-              <strong>{type === "PHOTO" ? "photo" : "video"}</strong> slot
+              {type === "PHOTO"
+                ? t("You are about to purchase an extra photo slot")
+                : t("You are about to purchase an extra video slot")}
             </p>
           </div>
 
