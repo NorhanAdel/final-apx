@@ -1046,5 +1046,11 @@
   "Purchase Extra Video Slot": "Comprar Slot de Vídeo Extra",
   "Purchase Extra Photo Slot": "Comprar Slot de Foto Extra",
   "You are about to purchase an extra video slot": "Você está prestes a comprar um slot de vídeo extra",
-  "You are about to purchase an extra photo slot": "Você está prestes a comprar um slot de foto extra"
+  "You are about to purchase an extra photo slot": "Você está prestes a comprar um slot de foto extra",
+  "Super7 Score Breakdown": "Detalhes da Pontuação Super7",
+    "Player Self Rating": "Autoavaliação do Jogador",
+    "Admin Rating": "Avaliação do Administrador",
+    "External Rating": "Avaliação Externa",
+    "AI Analysis": "Análise de IA",
+    "BMI": "IMC"
 }

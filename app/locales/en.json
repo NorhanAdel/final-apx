@@ -1044,5 +1044,11 @@
   "Extra photo purchased successfully!": "Extra photo purchased successfully!",
   "Purchase Extra Video Slot": "Purchase Extra Video Slot",
   "Purchase Extra Photo Slot": "Purchase Extra Photo Slot",
-  "You are about to purchase an extra video slot": "You are about to purchase an extra video slot"
+  "You are about to purchase an extra video slot": "You are about to purchase an extra video slot",
+  "Super7 Score Breakdown": "Super7 Score Breakdown",
+    "Player Self Rating": "Player Self Rating",
+    "Admin Rating": "Admin Rating",
+    "External Rating": "External Rating",
+    "AI Analysis": "AI Analysis",
+    "BMI": "BMI"
 }

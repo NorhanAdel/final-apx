@@ -1045,5 +1045,11 @@
   "Purchase Extra Video Slot": "شراء مساحة فيديو إضافية",
   "Purchase Extra Photo Slot": "شراء مساحة صورة إضافية",
   "You are about to purchase an extra video slot": "أنت على وشك شراء مساحة فيديو إضافية",
-  "You are about to purchase an extra photo slot": "أنت على وشك شراء مساحة صورة إضافية"
+  "You are about to purchase an extra photo slot": "أنت على وشك شراء مساحة صورة إضافية",
+  "Super7 Score Breakdown": "تفاصيل نقاط سوبر 7",
+    "Player Self Rating": "تقييم اللاعب لنفسه",
+    "Admin Rating": "تقييم الأدمن",
+    "External Rating": "التقييم الخارجي",
+    "AI Analysis": "تحليل الذكاء الاصطناعي",
+    "BMI": "مؤشر كتلة الجسم"
 }

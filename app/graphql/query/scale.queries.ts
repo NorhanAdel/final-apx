@@ -1,5 +1,3 @@
-// Super7 Scale Queries
-
 export const GET_SUPER7_LEVELS = `
   query Super7Levels {
     super7Levels {
@@ -29,10 +27,16 @@ export const GET_PLAYERS_BY_LEVEL = `
         levelTitle
         super7Score
         super7Breakdown {
-          userRating
+          playerSelfRating
+          adminRating
+          externalGroupRating
+          aiAnalysisScore
           transferValue
           favoriteCount
           profileViews
+          idealHeight
+          idealWeight
+          bmiScore
         }
         viewsCount
         createdAt
@@ -41,13 +45,13 @@ export const GET_PLAYERS_BY_LEVEL = `
           totalRatings
           averageStars
           averagePercentage
-          scalabilityPercent
-          mentalStabilityPercent
-          soccerIntelligencePercent
-          physicalFitnessPercent
           technicalSkillPercent
-          tacticalVisionPercent
-          republicanInfluencePercent
+          physicalFitnessPercent
+          gameIntelligencePercent
+          mentalResiliencePercent
+          professionalismPercent
+          growthPotentialPercent
+          marketReadinessPercent
         }
       }
       total
@@ -64,10 +68,16 @@ export const GET_PLAYER_SUPER7_SCORE = `
       level
       title
       breakdown {
-        userRating
+        playerSelfRating
+        adminRating
+        externalGroupRating
+        aiAnalysisScore
         transferValue
         favoriteCount
         profileViews
+        idealHeight
+        idealWeight
+        bmiScore
       }
     }
   }

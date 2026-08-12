@@ -48,10 +48,16 @@ interface LevelPlayer {
   levelTitle: string;
   super7Score: number;
   super7Breakdown?: {
-    userRating: number;
+    playerSelfRating: number;
+    adminRating: number;
+    externalGroupRating: number;
+    aiAnalysisScore: number;
     transferValue: number;
     favoriteCount: number;
     profileViews: number;
+    idealHeight: number;
+    idealWeight: number;
+    bmiScore: number;
   };
   viewsCount: number;
   createdAt: string;
@@ -77,7 +83,6 @@ export default function PlayersByLevelPage() {
   const [currentPage, setCurrentPage] = useState(0);
   const [levelInfo, setLevelInfo] = useState<Super7Level | null>(null);
 
-  // Fetch level info
   useEffect(() => {
     const fetchLevelInfo = async () => {
       try {
@@ -108,13 +113,18 @@ export default function PlayersByLevelPage() {
         limit: PAGE_SIZE,
         skip: currentPage * PAGE_SIZE,
       });
+
       if (result.data?.playersByLevel) {
         setPlayers(result.data.playersByLevel.data || []);
         setTotal(result.data.playersByLevel.total || 0);
+      } else {
+        setPlayers([]);
+        setTotal(0);
       }
     } catch (error) {
       console.error("Failed to fetch players by level:", error);
       setPlayers([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
@@ -124,7 +134,6 @@ export default function PlayersByLevelPage() {
     fetchPlayers();
   }, [fetchPlayers]);
 
-  // Reset page when search changes
   useEffect(() => {
     setCurrentPage(0);
   }, [searchTerm]);
@@ -146,7 +155,6 @@ export default function PlayersByLevelPage() {
       className={`min-h-screen pt-28 pb-16 px-4 sm:px-6 md:px-8 transition-colors ${bg} ${text}`}
     >
       <div className="max-w-7xl mx-auto">
-        {/* Back button */}
         <motion.button
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -157,7 +165,6 @@ export default function PlayersByLevelPage() {
           {t("Back to Scales")}
         </motion.button>
 
-        {/* Level Header */}
         {levelInfo && (
           <motion.div
             initial={{ opacity: 0, y: -15 }}
@@ -186,7 +193,6 @@ export default function PlayersByLevelPage() {
           </motion.div>
         )}
 
-        {/* Search & Stats */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -216,7 +222,6 @@ export default function PlayersByLevelPage() {
           </div>
         </motion.div>
 
-        {/* Players Grid */}
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {[...Array(8)].map((_, i) => (
@@ -278,7 +283,6 @@ export default function PlayersByLevelPage() {
               ))}
             </div>
 
-            {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex items-center justify-center gap-3 mt-10">
                 <button
