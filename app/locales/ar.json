@@ -1051,5 +1051,9 @@
     "Admin Rating": "تقييم الأدمن",
     "External Rating": "التقييم الخارجي",
     "AI Analysis": "تحليل الذكاء الاصطناعي",
-    "BMI": "مؤشر كتلة الجسم"
+    "BMI": "مؤشر كتلة الجسم",
+    "Game Intelligence": "الذكاء في الملعب",
+    "Mental Resilience": "الصلابة النفسية",
+        "Overall Score": "النقاط العامة"
+
 }

@@ -1052,5 +1052,9 @@
     "Admin Rating": "Avaliação do Administrador",
     "External Rating": "Avaliação Externa",
     "AI Analysis": "Análise de IA",
-    "BMI": "IMC"
+    "BMI": "IMC",
+    "Game Intelligence": "Inteligência de Jogo",
+    "Mental Resilience": "Resiliência Mental",
+        "Overall Score": "Pontuação Geral"
+
 }

@@ -1050,5 +1050,9 @@
     "Admin Rating": "Admin Rating",
     "External Rating": "External Rating",
     "AI Analysis": "AI Analysis",
-    "BMI": "BMI"
+    "BMI": "BMI",
+    "Game Intelligence": "Game Intelligence",
+    "Mental Resilience": "Mental Resilience",
+        "Overall Score": "Overall Score"
+
 }
