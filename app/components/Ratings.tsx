@@ -15,6 +15,7 @@ import useTranslate from "../hooks/useTranslate";
 import { fetchGraphQL } from "../lib/fetchGraphQL";
 import { GET_PLAYER_AVERAGE_RATINGS } from "@/app/graphql/query/rating.queries";
 import { useTheme } from "@/app/context/ThemeContext";
+import CircularScoreGauge from "./CircularScoreGauge";
 
 interface Rating {
   id?: string | number;
@@ -80,6 +81,8 @@ export default function Ratings({ ratings = [], playerId }: RatingsProps) {
       : 0);
 
   const percentile = averageRatings?.percentile ?? 0;
+  const averagePercentage =
+    averageRatings?.averagePercentage || Math.round((avgRating / 7) * 100);
 
   const ratingStatus =
     avgRating < 3
@@ -146,7 +149,10 @@ export default function Ratings({ ratings = [], playerId }: RatingsProps) {
 
   if (loading) {
     return (
-      <div dir={isRTL ? "rtl" : "ltr"} className={isRTL ? "text-right mt-8" : "text-left mt-8"}>
+      <div
+        dir={isRTL ? "rtl" : "ltr"}
+        className={isRTL ? "text-right mt-8" : "text-left mt-8"}
+      >
         <div className="flex justify-center items-center py-12">
           <div className="relative">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-400"></div>
@@ -163,7 +169,10 @@ export default function Ratings({ ratings = [], playerId }: RatingsProps) {
   }
 
   return (
-    <div dir={isRTL ? "rtl" : "ltr"} className={isRTL ? "text-right mt-8" : "text-left mt-8"}>
+    <div
+      dir={isRTL ? "rtl" : "ltr"}
+      className={isRTL ? "text-right mt-8" : "text-left mt-8"}
+    >
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -182,86 +191,21 @@ export default function Ratings({ ratings = [], playerId }: RatingsProps) {
         </div>
       </div>
 
-      {/* Main Content - dir="rtl" on the parent flips this automatically, no manual reverse needed */}
+      {/* Main Content */}
       <div className="flex flex-col lg:flex-row gap-8 items-center">
-        {/* Circle Rating Side */}
+        {/* Circle Rating Side - using CircularScoreGauge */}
         <div className="lg:w-2/5 flex flex-col items-center justify-center">
-          {/* Circular Progress */}
-          <div className="relative w-72 h-72 mb-6">
-            <svg className="w-full h-full transform -rotate-90">
-              {/* Outer circle shadow */}
-              <circle
-                cx="144"
-                cy="144"
-                r="132"
-                stroke={isDark ? "#1f2937" : "#e5e7eb"}
-                strokeWidth="16"
-                fill="none"
-                className="transition-all duration-300"
-              />
-              {/* Progress circle */}
-              <circle
-                cx="144"
-                cy="144"
-                r="132"
-                stroke="url(#gradient)"
-                strokeWidth="16"
-                fill="none"
-                strokeDasharray={`${2 * Math.PI * 132}`}
-                strokeDashoffset={`${2 * Math.PI * 132 * (1 - avgRating / 7)}`}
-                strokeLinecap="round"
-                className="transition-all duration-1000 ease-out"
-              />
-              {/* Inner circle glow effect */}
-              <circle
-                cx="144"
-                cy="144"
-                r="124"
-                fill={isDark ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.5)"}
-                className="transition-all duration-300"
-              />
-              <defs>
-                <linearGradient
-                  id="gradient"
-                  x1="0%"
-                  y1="0%"
-                  x2="100%"
-                  y2="100%"
-                >
-                  <stop offset="0%" stopColor="#FBBF24" />
-                  <stop offset="100%" stopColor="#F59E0B" />
-                </linearGradient>
-              </defs>
-            </svg>
+          <CircularScoreGauge
+            score={avgRating}
+            maxScore={7}
+            percentage={averagePercentage}
+            size={280}
+          />
 
-            {/* Content inside circle */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              {/* Large rating number */}
-              <span className="text-7xl font-black bg-gradient-to-r from-yellow-400 to-yellow-600 bg-clip-text text-transparent">
-                {avgRating.toFixed(1)}
-              </span>
-
-              {/* Stars row */}
-              <div className="flex items-center gap-1.5 mt-3 px-0 sm:px-3">
-                {[1, 2, 3, 4, 5, 6, 7].map((star) => (
-                  <Star
-                    key={star}
-                    size={18}
-                    className={`${
-                      star <= Math.round(avgRating)
-                        ? "fill-yellow-400 text-yellow-400"
-                        : "text-gray-300 dark:text-gray-600"
-                    }`}
-                  />
-                ))}
-              </div>
-
-              {/* Reviews count */}
-              <p className={`text-sm ${secondaryTextColor} mt-3`}>
-                {total} {t("reviews")}
-              </p>
-            </div>
-          </div>
+          {/* Reviews count */}
+          <p className={`text-sm ${secondaryTextColor} mt-2`}>
+            {total} {t("reviews")}
+          </p>
 
           {/* Percentile info - dynamic from API */}
           {percentile > 0 && (

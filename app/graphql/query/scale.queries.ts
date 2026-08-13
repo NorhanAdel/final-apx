@@ -27,15 +27,12 @@ export const GET_PLAYERS_BY_LEVEL = `
         levelTitle
         super7Score
         super7Breakdown {
-          playerSelfRating
           adminRating
           externalGroupRating
           aiAnalysisScore
           transferValue
           favoriteCount
           profileViews
-          idealHeight
-          idealWeight
           bmiScore
         }
         viewsCount
@@ -68,15 +65,12 @@ export const GET_PLAYER_SUPER7_SCORE = `
       level
       title
       breakdown {
-        playerSelfRating
         adminRating
         externalGroupRating
         aiAnalysisScore
         transferValue
         favoriteCount
         profileViews
-        idealHeight
-        idealWeight
         bmiScore
       }
     }
@@ -107,6 +101,37 @@ export const GET_SUPER7_LEADERBOARD = `
       averageRating
       viewsCount
       profileImageUrl
+    }
+  }
+`;
+
+export const GET_SUPER7_SCORE_PERCENTAGES = `
+  query Super7ScorePercentages {
+    super7ScorePercentages {
+      ADMIN
+      EXTERNAL_GROUPS
+      AI_ANALYSIS
+      TRANSFER_VALUE
+      FAVORITE_COUNT
+      PROFILE_VIEWS
+      BMI_SCORE
+    }
+  }
+`;
+
+export const GET_PLAYER_SKILLS = `
+  query PlayerSkills($playerId: String!) {
+    playerSkills(playerId: $playerId) {
+      technicalSkill
+      physicalFitness
+      gameIntelligence
+      mentalResilience
+      professionalism
+      growthPotential
+      marketReadiness
+      totalRatings
+      averageStars
+      averagePercentage
     }
   }
 `;

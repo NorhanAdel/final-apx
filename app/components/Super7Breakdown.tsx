@@ -1,16 +1,5 @@
 import { motion } from "framer-motion";
-import {
-  Star,
-  Shield,
-  Users,
-  Brain,
-  Zap,
-  Heart,
-  Eye,
-  TrendingUp,
-  Activity,
-  Target,
-  Crown,
+import {  Crown
 } from "lucide-react";
 import useTranslate from "@/app/hooks/useTranslate";
 
