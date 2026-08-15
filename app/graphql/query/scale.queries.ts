@@ -30,10 +30,20 @@ export const GET_PLAYERS_BY_LEVEL = `
           adminRating
           externalGroupRating
           aiAnalysisScore
+          playerSelfRating
           transferValue
           favoriteCount
           profileViews
           bmiScore
+        }
+        alignmentScore {
+          score
+          status
+          label
+          description
+          selfRatingPercentage
+          objectiveConsensusScore
+          gap
         }
         viewsCount
         createdAt
@@ -68,10 +78,20 @@ export const GET_PLAYER_SUPER7_SCORE = `
         adminRating
         externalGroupRating
         aiAnalysisScore
+        playerSelfRating
         transferValue
         favoriteCount
         profileViews
         bmiScore
+      }
+      alignmentScore {
+        score
+        status
+        label
+        description
+        selfRatingPercentage
+        objectiveConsensusScore
+        gap
       }
     }
   }
@@ -111,6 +131,7 @@ export const GET_SUPER7_SCORE_PERCENTAGES = `
       ADMIN
       EXTERNAL_GROUPS
       AI_ANALYSIS
+      PLAYER_SELF
       TRANSFER_VALUE
       FAVORITE_COUNT
       PROFILE_VIEWS

@@ -62,21 +62,6 @@ export default function RatingSummarySection({
                 {t("PLAYER RATING")}
               </span>
             </div>
-
-            <div className="flex items-center gap-4">
-              <h2
-                className={`text-2xl font-black ${
-                  isDark ? "text-white" : "text-slate-900"
-                }`}
-              >
-                {avgRating.toFixed(1)}
-                <span className="text-sm text-slate-400 font-bold"> / 7</span>
-              </h2>
-
-              <span className={`text-sm font-bold ${ratingStatusColor}`}>
-                {ratingStatus}
-              </span>
-            </div>
           </div>
 
           <div className="flex-1 max-w-2xl">

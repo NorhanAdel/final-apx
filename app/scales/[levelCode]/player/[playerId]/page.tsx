@@ -16,6 +16,7 @@ import {
   Users,
   Zap,
   Heart,
+  UserCheck,
 } from "lucide-react";
 
 import { useTheme } from "@/app/context/ThemeContext";
@@ -306,6 +307,16 @@ export default function ScalePlayerDetailPage() {
             icon: Brain,
             color: "#10B981",
             bgColor: "rgba(16,185,129,0.13)",
+          },
+          {
+            name: t("Player Self Rating"),
+            value: getBreakdownValue(
+              breakdownData.playerSelfRating || 0,
+              scorePercentages.PLAYER_SELF || 5,
+            ),
+            icon: UserCheck,
+            color: "#3B82F6",
+            bgColor: "rgba(59,130,246,0.13)",
           },
           {
             name: t("Transfer Value"),

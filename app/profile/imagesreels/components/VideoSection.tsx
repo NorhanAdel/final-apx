@@ -16,6 +16,7 @@ import {
   Upload,
   Film,
   Type,
+  AlertCircle,
 } from "lucide-react";
 import { ChangeEvent, useRef, useState, useEffect, useCallback } from "react";
 
@@ -619,7 +620,7 @@ export function VideoSection({
           onClick={handleCloseModal}
         >
           <div
-            className={`relative w-full max-w-md mx-4 rounded-2xl border p-6 shadow-2xl ${
+            className={`relative w-full max-w-xl mx-4 rounded-2xl border p-6 shadow-2xl max-h-[90vh] overflow-y-auto ${
               isDark
                 ? "bg-[#0b1736] border-[#1e2d5a]"
                 : "bg-white border-gray-200"
@@ -639,13 +640,29 @@ export function VideoSection({
             </button>
 
             <h3
-              className={`text-lg font-bold mb-5 flex items-center gap-2 ${
+              className={`text-lg font-bold mb-4 flex items-center gap-2 ${
                 isDark ? "text-white" : "text-gray-900"
               }`}
             >
               <Film size={20} className="text-yellow-400" />
               {t("Upload Video")}
             </h3>
+
+            {/* RED VIDEO UPLOAD RULES BANNER */}
+            <div className="mb-5 p-4 rounded-xl border border-red-500/40 bg-red-500/10 text-red-600 dark:text-red-400 text-xs leading-relaxed">
+              <div className="flex items-center gap-2 font-bold text-sm text-red-600 dark:text-red-400 border-b border-red-500/20 pb-2 mb-2">
+                <AlertCircle size={17} className="flex-shrink-0 text-red-500" />
+                <span>{t("video_upload_rules_title")}</span>
+              </div>
+              <p className="mb-2 font-semibold text-red-700 dark:text-red-300">
+                {t("video_upload_rules_intro")}
+              </p>
+              <ul className="space-y-1.5 font-medium text-red-600 dark:text-red-300">
+                <li>{t("video_upload_rule_1")}</li>
+                <li>{t("video_upload_rule_2")}</li>
+                <li>{t("video_upload_rule_3")}</li>
+              </ul>
+            </div>
 
             <div className="mb-4">
               <label

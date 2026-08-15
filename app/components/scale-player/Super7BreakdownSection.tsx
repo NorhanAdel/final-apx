@@ -1,7 +1,14 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Crown } from "lucide-react";
+import {
+  Crown,
+  ShieldCheck,
+  CheckCircle,
+  AlertTriangle,
+  AlertOctagon,
+  Scale,
+} from "lucide-react";
 import useTranslate from "@/app/hooks/useTranslate";
 import CircularScoreGauge from "./CircularScoreGauge";
 import BreakdownCard from "./BreakdownCard";
@@ -32,6 +39,47 @@ export default function Super7BreakdownSection({
   const { t } = useTranslate();
 
   if (!scoreData || breakdownItems.length === 0) return null;
+
+  const alignment = scoreData.alignmentScore;
+
+  const getStatusBadge = () => {
+    if (!alignment) return null;
+
+    switch (alignment.status) {
+      case "GOLD_VERIFIED":
+        return {
+          icon: ShieldCheck,
+          bgColor: "bg-emerald-500/10 border-emerald-500/30",
+          textColor: "text-emerald-500 dark:text-emerald-400",
+          badgeBg: "bg-emerald-500 text-slate-950",
+        };
+      case "STANDARD":
+        return {
+          icon: CheckCircle,
+          bgColor: "bg-blue-500/10 border-blue-500/30",
+          textColor: "text-blue-500 dark:text-blue-400",
+          badgeBg: "bg-blue-500 text-white",
+        };
+      case "FLAGGED":
+        return {
+          icon: AlertTriangle,
+          bgColor: "bg-amber-500/10 border-amber-500/30",
+          textColor: "text-amber-500 dark:text-amber-400",
+          badgeBg: "bg-amber-500 text-slate-950",
+        };
+      case "CREDIBILITY_ALERT":
+      default:
+        return {
+          icon: AlertOctagon,
+          bgColor: "bg-red-500/10 border-red-500/30",
+          textColor: "text-red-500 dark:text-red-400",
+          badgeBg: "bg-red-500 text-white",
+        };
+    }
+  };
+
+  const statusConfig = getStatusBadge();
+  const StatusIcon = statusConfig?.icon || Scale;
 
   return (
     <motion.section
@@ -88,7 +136,7 @@ export default function Super7BreakdownSection({
             </div>
           </div>
 
-          {/* Breakdown */}
+          {/* Breakdown & Alignment */}
           <div className="flex-1">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
               <div>
@@ -115,7 +163,7 @@ export default function Super7BreakdownSection({
               </div>
             </div>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
               {breakdownItems.map((item, index) => (
                 <BreakdownCard
                   key={item.name}
@@ -125,6 +173,89 @@ export default function Super7BreakdownSection({
                 />
               ))}
             </div>
+
+            {/* PHASE 6: SUPER7 ALIGNMENT SCORE (DATA GOVERNANCE LAYER) */}
+            {alignment && (
+              <div
+                className={`p-5 rounded-2xl border ${statusConfig?.bgColor} backdrop-blur-xl relative overflow-hidden transition-all duration-300`}
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-400/10 flex items-center justify-center flex-shrink-0">
+                      <Scale size={20} className="text-amber-500" />
+                    </div>
+
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] uppercase tracking-[0.25em] font-black text-amber-500">
+                          {t("PHASE 6 DATA GOVERNANCE LAYER")}
+                        </span>
+                      </div>
+                      <h3
+                        className={`text-base font-black ${
+                          isDark ? "text-white" : "text-slate-900"
+                        }`}
+                      >
+                        {t("Super7 Alignment Score™")}
+                      </h3>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <span className="text-2xl font-black text-amber-500">
+                        {alignment.score}%
+                      </span>
+                      <span className="block text-[9px] uppercase font-bold text-slate-400">
+                        {t("ALIGNMENT SCORE")}
+                      </span>
+                    </div>
+
+                    <div
+                      className={`px-3 py-1.5 rounded-full text-xs font-black flex items-center gap-1.5 shadow-md ${statusConfig?.badgeBg}`}
+                    >
+                      <StatusIcon size={14} />
+                      <span>{t(alignment.label)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <p
+                  className={`text-xs font-medium leading-relaxed mb-3 ${
+                    isDark ? "text-slate-300" : "text-slate-700"
+                  }`}
+                >
+                  {t(alignment.description)}
+                </p>
+
+                <div className="grid grid-cols-3 gap-2 pt-3 border-t border-slate-500/20 text-center text-xs">
+                  <div>
+                    <span className="block text-[10px] text-slate-400 font-bold uppercase">
+                      {t("Self Rating (Self)")}
+                    </span>
+                    <span className="font-black text-blue-400">
+                      {alignment.selfRatingPercentage}%
+                    </span>
+                  </div>
+                  <div>
+                    <span className="block text-[10px] text-slate-400 font-bold uppercase">
+                      {t("Objective Consensus (OCS)")}
+                    </span>
+                    <span className="font-black text-emerald-400">
+                      {alignment.objectiveConsensusScore}%
+                    </span>
+                  </div>
+                  <div>
+                    <span className="block text-[10px] text-slate-400 font-bold uppercase">
+                      {t("Alignment Gap (Gap)")}
+                    </span>
+                    <span className="font-black text-amber-400">
+                      {alignment.gap}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
