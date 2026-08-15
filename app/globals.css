@@ -101,3 +101,308 @@ html:not(.dark) input:-webkit-autofill:active {
   box-shadow: inset 0 0 0px 1000px rgba(0, 0, 0, 0.05) !important;
   -webkit-text-fill-color: black !important;
 }
+
+/* =========================
+   FOOTBALL KICK BUTTON & BALL ANIMATIONS
+   ========================= */
+
+/* Button hover effect */
+.kick-btn {
+  cursor: pointer;
+  transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: transform, box-shadow;
+}
+
+.kick-btn:hover {
+  transform: scale(1.06);
+  box-shadow: 0 0 60px rgba(250, 204, 21, 0.6),
+    0 0 120px rgba(250, 204, 21, 0.25),
+    0 0 200px rgba(250, 204, 21, 0.08);
+}
+
+/* Football ball - idle animation (super smooth gentle float) */
+.football-ball {
+  transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  animation: ball-float-smooth 4s ease-in-out infinite;
+  transform-origin: center center;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+/* Football ball - kick animation on button hover (super smooth) */
+.kick-btn:hover .football-ball {
+  animation: ball-kick-ultra-smooth 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+/* Football ball - return animation when hover ends (smooth return) */
+.kick-btn:not(:hover) .football-ball {
+  animation: ball-return-smooth 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+/* Kick trail - hidden by default, shows on hover with super smooth transition */
+.kick-trail {
+  opacity: 0;
+  transform: scale(0.2) rotate(-15deg);
+  transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: transform, opacity;
+}
+
+.kick-btn:hover .kick-trail {
+  opacity: 1;
+  transform: scale(2) rotate(0deg);
+  transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.kick-btn:not(:hover) .kick-trail {
+  opacity: 0;
+  transform: scale(0.2) rotate(-15deg);
+  transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* =========================
+   BALL ANIMATIONS (ULTRA SMOOTH)
+   ========================= */
+
+/* Super smooth floating animation */
+@keyframes ball-float-smooth {
+  0% {
+    transform: translateY(0px) rotate(0deg) scale(1);
+  }
+
+  12% {
+    transform: translateY(-5px) rotate(3deg) scale(1.015);
+  }
+
+  25% {
+    transform: translateY(-1px) rotate(-1deg) scale(0.99);
+  }
+
+  37% {
+    transform: translateY(-7px) rotate(4deg) scale(1.01);
+  }
+
+  50% {
+    transform: translateY(0px) rotate(0deg) scale(1);
+  }
+
+  62% {
+    transform: translateY(-3px) rotate(-2deg) scale(1.01);
+  }
+
+  75% {
+    transform: translateY(-1px) rotate(1deg) scale(0.995);
+  }
+
+  87% {
+    transform: translateY(-4px) rotate(-3deg) scale(1.005);
+  }
+
+  100% {
+    transform: translateY(0px) rotate(0deg) scale(1);
+  }
+}
+
+/* Ultra smooth kick animation - ball flies with fluid motion */
+@keyframes ball-kick-ultra-smooth {
+  0% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+
+  10% {
+    transform: translate(-6px, -10px) scale(0.95) rotate(-20deg);
+    opacity: 1;
+  }
+
+  25% {
+    transform: translate(-15px, -18px) scale(0.8) rotate(-50deg);
+    opacity: 1;
+  }
+
+  40% {
+    transform: translate(-28px, -24px) scale(0.6) rotate(-90deg);
+    opacity: 0.98;
+  }
+
+  55% {
+    transform: translate(-40px, -28px) scale(0.45) rotate(-130deg);
+    opacity: 0.95;
+  }
+
+  70% {
+    transform: translate(-50px, -31px) scale(0.35) rotate(-170deg);
+    opacity: 0.85;
+  }
+
+  85% {
+    transform: translate(-56px, -33px) scale(0.28) rotate(-200deg);
+    opacity: 0.7;
+  }
+
+  100% {
+    transform: translate(-60px, -35px) scale(0.22) rotate(-220deg);
+    opacity: 0.5;
+  }
+}
+
+/* Smooth return animation - ball comes back with fluid motion */
+@keyframes ball-return-smooth {
+  0% {
+    transform: translate(-60px, -35px) scale(0.22) rotate(-220deg);
+    opacity: 0.5;
+  }
+
+  20% {
+    transform: translate(-45px, -28px) scale(0.35) rotate(-160deg);
+    opacity: 0.7;
+  }
+
+  40% {
+    transform: translate(-30px, -18px) scale(0.55) rotate(-100deg);
+    opacity: 0.9;
+  }
+
+  60% {
+    transform: translate(-15px, -10px) scale(0.8) rotate(-40deg);
+    opacity: 1;
+  }
+
+  80% {
+    transform: translate(-5px, -3px) scale(0.95) rotate(-10deg);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+/* Sparkle shine animation - ultra smooth */
+.sparkle-shine {
+  opacity: 0;
+  transition: opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.kick-btn:hover .sparkle-shine {
+  opacity: 1;
+  transition: opacity 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.kick-btn:not(:hover) .sparkle-shine {
+  opacity: 0;
+  transition: opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Sparkle pulse animation - super smooth and elegant */
+@keyframes sparkle-glow-smooth {
+  0% {
+    transform: scale(0.9) rotate(0deg);
+    opacity: 0.4;
+  }
+
+  20% {
+    transform: scale(1.15) rotate(72deg);
+    opacity: 0.9;
+  }
+
+  40% {
+    transform: scale(0.95) rotate(144deg);
+    opacity: 0.5;
+  }
+
+  60% {
+    transform: scale(1.1) rotate(216deg);
+    opacity: 0.8;
+  }
+
+  80% {
+    transform: scale(0.85) rotate(288deg);
+    opacity: 0.4;
+  }
+
+  100% {
+    transform: scale(0.9) rotate(360deg);
+    opacity: 0.4;
+  }
+}
+
+.sparkle-shine {
+  animation: sparkle-glow-smooth 4s ease-in-out infinite;
+}
+
+/* =========================
+   GLOW RING ANIMATIONS
+   ========================= */
+
+/* Glow ring - smooth rotation with fluid motion */
+.kick-btn .glow-ring {
+  transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.kick-btn:hover .glow-ring {
+  opacity: 1;
+  transform: scale(1.08);
+  transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.kick-btn:not(:hover) .glow-ring {
+  opacity: 0;
+  transform: scale(0.9);
+  transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* =========================
+   EXISTING ANIMATIONS (keep these)
+   ========================= */
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ping-slow {
+  0% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+
+  50% {
+    transform: scale(1.1);
+    opacity: 0.6;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 4s linear infinite;
+}
+
+.animate-ping-slow {
+  animation: ping-slow 2s ease-in-out infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes spin-reverse {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(1); opacity: 0.3; }
+  50% { transform: scale(1.05); opacity: 0; }
+  100% { transform: scale(1); opacity: 0.3; }
+}

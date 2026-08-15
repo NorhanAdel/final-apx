@@ -3,7 +3,13 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Search, ArrowLeft, Users, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Search,
+  ArrowLeft,
+  Users,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { useTheme } from "@/app/context/ThemeContext";
 import useTranslate from "@/app/hooks/useTranslate";
 import { fetchGraphQL } from "@/app/lib/fetchGraphQL";
@@ -159,7 +165,11 @@ export default function PlayersByLevelPage() {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           onClick={() => router.push("/scales")}
-          className={`flex items-center gap-2 mb-6 text-sm font-medium ${isDark ? "text-gray-400 hover:text-yellow-400" : "text-gray-500 hover:text-yellow-600"} transition-colors`}
+          className={`flex items-center gap-2 mb-6 text-sm font-medium ${
+            isDark
+              ? "text-gray-400 hover:text-yellow-400"
+              : "text-gray-500 hover:text-yellow-600"
+          } transition-colors`}
         >
           <ArrowLeft size={18} />
           {t("Back to Scales")}
@@ -177,7 +187,9 @@ export default function PlayersByLevelPage() {
                 {levelCode.replace("_", " ")}
               </span>
               <span
-                className={`text-xs font-medium ${isDark ? "text-gray-500" : "text-gray-400"}`}
+                className={`text-xs font-medium ${
+                  isDark ? "text-gray-500" : "text-gray-400"
+                }`}
               >
                 {t("Score Range")}: {levelInfo.minScore} — {levelInfo.maxScore}
               </span>
@@ -186,7 +198,9 @@ export default function PlayersByLevelPage() {
               {levelInfo.title}
             </h1>
             <p
-              className={`text-sm max-w-3xl ${isDark ? "text-gray-400" : "text-gray-500"}`}
+              className={`text-sm max-w-3xl ${
+                isDark ? "text-gray-400" : "text-gray-500"
+              }`}
             >
               {levelInfo.description}
             </p>
@@ -213,7 +227,9 @@ export default function PlayersByLevelPage() {
             />
           </div>
           <div
-            className={`flex items-center gap-2 px-4 py-3 rounded-lg ${isDark ? "bg-white/5" : "bg-gray-100"}`}
+            className={`flex items-center gap-2 px-4 py-3 rounded-lg ${
+              isDark ? "bg-white/5" : "bg-gray-100"
+            }`}
           >
             <Users size={16} className="text-yellow-500" />
             <span className={`text-sm font-bold ${accent}`}>
@@ -241,16 +257,22 @@ export default function PlayersByLevelPage() {
           <div className="text-center py-20">
             <Users
               size={48}
-              className={`mx-auto mb-4 ${isDark ? "text-gray-600" : "text-gray-300"}`}
+              className={`mx-auto mb-4 ${
+                isDark ? "text-gray-600" : "text-gray-300"
+              }`}
             />
             <p
-              className={`text-lg font-medium ${isDark ? "text-gray-400" : "text-gray-500"}`}
+              className={`text-lg font-medium ${
+                isDark ? "text-gray-400" : "text-gray-500"
+              }`}
             >
               {t("No players found in this level")}
             </p>
             {searchTerm && (
               <p
-                className={`text-sm mt-2 ${isDark ? "text-gray-500" : "text-gray-400"}`}
+                className={`text-sm mt-2 ${
+                  isDark ? "text-gray-500" : "text-gray-400"
+                }`}
               >
                 {t("Try adjusting your search term")}
               </p>
@@ -286,15 +308,17 @@ export default function PlayersByLevelPage() {
             {totalPages > 1 && (
               <div className="flex items-center justify-center gap-3 mt-10">
                 <button
-                  onClick={() =>
-                    setCurrentPage((p) => Math.max(0, p - 1))
-                  }
+                  onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
                   disabled={currentPage === 0}
                   className={`p-2 rounded-lg border transition-colors ${
                     currentPage === 0
                       ? "opacity-30 cursor-not-allowed"
                       : "hover:border-yellow-400/50"
-                  } ${isDark ? "border-white/10 text-gray-300" : "border-gray-300 text-gray-600"}`}
+                  } ${
+                    isDark
+                      ? "border-white/10 text-gray-300"
+                      : "border-gray-300 text-gray-600"
+                  }`}
                 >
                   <ChevronLeft size={18} />
                 </button>
@@ -318,8 +342,8 @@ export default function PlayersByLevelPage() {
                             currentPage === pageNum
                               ? "bg-gradient-to-r from-yellow-400 to-amber-500 text-black"
                               : isDark
-                                ? "text-gray-400 hover:bg-white/10"
-                                : "text-gray-600 hover:bg-gray-100"
+                              ? "text-gray-400 hover:bg-white/10"
+                              : "text-gray-600 hover:bg-gray-100"
                           }`}
                         >
                           {pageNum + 1}
@@ -331,16 +355,18 @@ export default function PlayersByLevelPage() {
 
                 <button
                   onClick={() =>
-                    setCurrentPage((p) =>
-                      Math.min(totalPages - 1, p + 1),
-                    )
+                    setCurrentPage((p) => Math.min(totalPages - 1, p + 1))
                   }
                   disabled={currentPage >= totalPages - 1}
                   className={`p-2 rounded-lg border transition-colors ${
                     currentPage >= totalPages - 1
                       ? "opacity-30 cursor-not-allowed"
                       : "hover:border-yellow-400/50"
-                  } ${isDark ? "border-white/10 text-gray-300" : "border-gray-300 text-gray-600"}`}
+                  } ${
+                    isDark
+                      ? "border-white/10 text-gray-300"
+                      : "border-gray-300 text-gray-600"
+                  }`}
                 >
                   <ChevronRight size={18} />
                 </button>

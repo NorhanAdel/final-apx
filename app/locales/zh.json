@@ -1060,6 +1060,24 @@
   "BMI": "身体质量指数",
   "Game Intelligence": "比赛智慧",
   "Mental Resilience": "心理韧性",
-      "Overall Score": "综合评分"
-
+  "Overall Score": "综合评分",
+  "Super7 Score": "超级7评分",
+  "PLAYER SCOUTING PROFILE": "球员球探分析档案",
+  "EXPLORE": "探索",
+  "Rating": "评分",
+  "Performance": "表现",
+  "Ratings": "评估数",
+  "AI ANALYSIS": "人工智能分析",
+  "07 DIMENSIONS": "07 维度",
+  "Skill Breakdown": "技能细分",
+  "LIVE ANALYTICS": "实时数据分析",
+  "PLAYER RATING": "球员综合评分",
+  "Overall performance": "总体表现",
+  "ELITE INDEX": "精英指数",
+  "SUPER7": "超級 7",
+  "PERFORMANCE": "性能/表现",
+  "PERFORMANCE MATRIX": "表现矩阵",
+  "AI POWERED": "人工智能驱动",
+  "BMI Score": "体质指数评分",
+  "PLAYER ANALYTICS": "球员分析"
 }
