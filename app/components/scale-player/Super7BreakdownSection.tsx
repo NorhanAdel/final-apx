@@ -188,7 +188,7 @@ export default function Super7BreakdownSection({
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] uppercase tracking-[0.25em] font-black text-amber-500">
-                          {t("PHASE 6 DATA GOVERNANCE LAYER")}
+                          {t("DATA GOVERNANCE LAYER")}
                         </span>
                       </div>
                       <h3
