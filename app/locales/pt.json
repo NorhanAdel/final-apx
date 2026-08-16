@@ -1061,12 +1061,10 @@
   "EXPLORE": "EXPLORAR",
   "Rating": "Classificação",
   "Performance": "Desempenho",
-  "Ratings": "Avaliações",
   "AI ANALYSIS": "ANÁLISE DE IA",
   "07 DIMENSIONS": "07 DIMENSÕES",
   "Skill Breakdown": "Detalhamento de Habilidades",
   "LIVE ANALYTICS": "ANÁLISES EM TEMPO REAL",
-  "PLAYER RATING": "AVALIAÇÃO DO JOGADOR",
   "Overall performance": "Desempenho geral",
   "ELITE INDEX": "ÍNDICE DE ELITE",
   "SUPER7": "SUPER7",
@@ -1093,5 +1091,14 @@
   "alignment_desc_gold": "Forte alinhamento entre a autopercepção do jogador e o julgamento objetivo — Totalmente Verificado.",
   "alignment_desc_standard": "Variação natural dentro da margem esperada — Sem necessidade de revisão.",
   "alignment_desc_flagged": "Lacuna notável que requer revisão manual por um analista de dados antes da publicação.",
-  "alignment_desc_alert": "Grave inflação própria ou erro de entrada — Publicação do perfil suspensa aguardando revisão."
+  "alignment_desc_alert": "Grave inflação própria ou erro de entrada — Publicação do perfil suspensa aguardando revisão.",
+  "U11": "Sub-11 - Infantis",
+  "U13": "Sub-13 - Iniciantes",
+  "U15": "Sub-15 - Juvenis",
+  "U17": "Sub-17 - Juvenil",
+  "U19": "Sub-19 - Olímpico",
+  "SENIOR": "19+ - Equipe Principal",
+  "YOUTH": "Juvenis",
+  "No AI analysis available": "Nenhuma análise de IA disponível",
+  "No skill data available": "Nenhum dado de habilidade disponível"
 }

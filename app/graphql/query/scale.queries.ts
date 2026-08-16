@@ -140,9 +140,9 @@ export const GET_SUPER7_SCORE_PERCENTAGES = `
   }
 `;
 
-export const GET_PLAYER_SKILLS = `
-  query PlayerSkills($playerId: String!) {
-    playerSkills(playerId: $playerId) {
+export const GET_PLAYER_AI_SKILLS = `
+  query PlayerAISkills($playerId: String!) {
+    playerAISkills(playerId: $playerId) {
       technicalSkill
       physicalFitness
       gameIntelligence
@@ -150,8 +150,6 @@ export const GET_PLAYER_SKILLS = `
       professionalism
       growthPotential
       marketReadiness
-      totalRatings
-      averageStars
       averagePercentage
     }
   }

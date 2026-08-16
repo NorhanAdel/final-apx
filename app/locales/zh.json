@@ -1066,12 +1066,10 @@
   "EXPLORE": "探索",
   "Rating": "评分",
   "Performance": "表现",
-  "Ratings": "评估数",
   "AI ANALYSIS": "人工智能分析",
   "07 DIMENSIONS": "07 维度",
   "Skill Breakdown": "技能细分",
   "LIVE ANALYTICS": "实时数据分析",
-  "PLAYER RATING": "球员综合评分",
   "Overall performance": "总体表现",
   "ELITE INDEX": "精英指数",
   "SUPER7": "超級 7",
@@ -1098,5 +1096,14 @@
   "alignment_desc_gold": "球员自我认知与客观评估高度一致 — 档案完全通过验证。",
   "alignment_desc_standard": "在预期合理的范围内存在自然差异 — 无需人工复核。",
   "alignment_desc_flagged": "存在明显差距，发布前需由数据分析师进行人工复核。",
-  "alignment_desc_alert": "存在严重自我夸大或输入错误的可能性 — 在完成复核前暂停发布档案。"
+  "alignment_desc_alert": "存在严重自我夸大或输入错误的可能性 — 在完成复核前暂停发布档案。",
+  "U11": "11岁以下 - 青训",
+  "U13": "13岁以下 - 少儿",
+  "U15": "15岁以下 - 少年",
+  "U17": "17岁以下 - 青年",
+  "U19": "19岁以下 - 国奥",
+  "SENIOR": "19岁及以上 - 一线队",
+  "YOUTH": "青年队",
+  "No AI analysis available": "没有可用的AI分析",
+  "No skill data available": "没有可用的技能数据"
 }

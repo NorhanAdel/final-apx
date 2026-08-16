@@ -27,7 +27,7 @@ import {
   GET_PLAYER_SUPER7_SCORE,
   GET_PLAYERS_BY_LEVEL,
   GET_SUPER7_SCORE_PERCENTAGES,
-  GET_PLAYER_SKILLS,
+  GET_PLAYER_AI_SKILLS,
 } from "@/app/graphql/query/scale.queries";
 
 import LoadingPlayer from "@/app/components/scale-player/LoadingPlayer";
@@ -39,11 +39,20 @@ import Super7BreakdownSection from "@/app/components/scale-player/Super7Breakdow
 
 import {
   PlayerData,
-  PlayerSkillsResponse,
-  RatingsDetails,
   Super7Score,
   Super7ScorePercentages,
 } from "@/app/components/scale-player/types";
+
+interface PlayerAISkillsResponse {
+  technicalSkill: number;
+  physicalFitness: number;
+  gameIntelligence: number;
+  mentalResilience: number;
+  professionalism: number;
+  growthPotential: number;
+  marketReadiness: number;
+  averagePercentage: number;
+}
 
 export default function ScalePlayerDetailPage() {
   const params = useParams();
@@ -72,9 +81,7 @@ export default function ScalePlayerDetailPage() {
   const [scoreData, setScoreData] = useState<Super7Score | null>(null);
   const [scorePercentages, setScorePercentages] =
     useState<Super7ScorePercentages | null>(null);
-  const [playerSkills, setPlayerSkills] = useState<PlayerSkillsResponse | null>(
-    null,
-  );
+  const [playerAISkills, setPlayerAISkills] = useState<PlayerAISkillsResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
   /* =========================================================
@@ -86,7 +93,7 @@ export default function ScalePlayerDetailPage() {
       setLoading(true);
 
       try {
-        const [playerResult, scoreResult, percentagesResult, skillsResult] =
+        const [playerResult, scoreResult, percentagesResult, aiSkillsResult] =
           await Promise.all([
             fetchGraphQL<{ playersByLevel: { data: PlayerData[] } }>(
               GET_PLAYERS_BY_LEVEL,
@@ -109,8 +116,8 @@ export default function ScalePlayerDetailPage() {
             }>(GET_SUPER7_SCORE_PERCENTAGES),
 
             fetchGraphQL<{
-              playerSkills: PlayerSkillsResponse;
-            }>(GET_PLAYER_SKILLS, {
+              playerAISkills: PlayerAISkillsResponse;
+            }>(GET_PLAYER_AI_SKILLS, {
               playerId,
             }),
           ]);
@@ -133,8 +140,8 @@ export default function ScalePlayerDetailPage() {
           setScorePercentages(percentagesResult.data.super7ScorePercentages);
         }
 
-        if (skillsResult.data?.playerSkills) {
-          setPlayerSkills(skillsResult.data.playerSkills);
+        if (aiSkillsResult.data?.playerAISkills) {
+          setPlayerAISkills(aiSkillsResult.data.playerAISkills);
         }
       } catch (error) {
         console.error("Failed to fetch player details:", error);
@@ -152,121 +159,63 @@ export default function ScalePlayerDetailPage() {
      DERIVED DATA
   ========================================================= */
 
-  const ratings = playerSkills || player?.ratingsDetails;
-
-  const getSkillValue = (
-    skillName: keyof PlayerSkillsResponse | keyof RatingsDetails,
-  ): number => {
-    if (!ratings) return 0;
-
-    if (playerSkills && skillName in playerSkills) {
-      return (playerSkills as any)[skillName] || 0;
-    }
-
-    if (
-      player?.ratingsDetails &&
-      `${skillName}Percent` in player.ratingsDetails
-    ) {
-      const percentKey = `${skillName}Percent` as keyof RatingsDetails;
-      return (player.ratingsDetails as any)[percentKey] || 0;
-    }
-
-    return 0;
-  };
-
-  const avgRating =
-    playerSkills?.averageStars || player?.ratingsDetails?.averageStars || 0;
-
-  const totalPercentage =
-    playerSkills?.averagePercentage ||
-    player?.ratingsDetails?.averagePercentage ||
-    Math.round((avgRating / 7) * 100);
-
-  const totalRatings =
-    playerSkills?.totalRatings || player?.ratingsDetails?.totalRatings || 0;
-
-  const ratingStatus =
-    avgRating < 3
-      ? t("BELOW AVERAGE")
-      : avgRating < 5
-      ? t("AVERAGE")
-      : t("ABOVE AVERAGE");
-
-  const ratingStatusColor =
-    avgRating < 3
-      ? "text-red-500"
-      : avgRating < 5
-      ? "text-yellow-500"
-      : "text-emerald-500";
+  const aiSkills = playerAISkills;
 
   const skills = useMemo(
     () =>
-      ratings
+      aiSkills
         ? [
             {
               name: t("Technical Skill"),
-              value: Math.min(Math.round(getSkillValue("technicalSkill")), 100),
+              value: aiSkills.technicalSkill,
               icon: Target,
               color: "#F59E0B",
             },
             {
               name: t("Physical Fitness"),
-              value: Math.min(
-                Math.round(getSkillValue("physicalFitness")),
-                100,
-              ),
+              value: aiSkills.physicalFitness,
               icon: Activity,
               color: "#10B981",
             },
             {
               name: t("Game Intelligence"),
-              value: Math.min(
-                Math.round(getSkillValue("gameIntelligence")),
-                100,
-              ),
+              value: aiSkills.gameIntelligence,
               icon: Brain,
               color: "#6366F1",
             },
             {
               name: t("Mental Resilience"),
-              value: Math.min(
-                Math.round(getSkillValue("mentalResilience")),
-                100,
-              ),
+              value: aiSkills.mentalResilience,
               icon: Shield,
               color: "#8B5CF6",
             },
             {
               name: t("Professionalism"),
-              value: Math.min(
-                Math.round(getSkillValue("professionalism")),
-                100,
-              ),
+              value: aiSkills.professionalism,
               icon: Award,
               color: "#EAB308",
             },
             {
               name: t("Growth Potential"),
-              value: Math.min(
-                Math.round(getSkillValue("growthPotential")),
-                100,
-              ),
+              value: aiSkills.growthPotential,
               icon: TrendingUp,
               color: "#3B82F6",
             },
             {
               name: t("Market Readiness"),
-              value: Math.min(
-                Math.round(getSkillValue("marketReadiness")),
-                100,
-              ),
+              value: aiSkills.marketReadiness,
               icon: Eye,
               color: "#EF4444",
             },
           ]
         : [],
-    [ratings, t],
+    [aiSkills, t],
   );
+
+  const totalPercentage = aiSkills?.averagePercentage || 0;
+
+  const ratingStatus = t("AI ANALYSIS");
+  const ratingStatusColor = "text-emerald-500";
 
   const breakdownData = scoreData?.breakdown || player?.super7Breakdown;
 
@@ -495,21 +444,21 @@ export default function ScalePlayerDetailPage() {
         {/* HERO SECTION */}
         <PlayerHeaderSection
           player={player}
-          avgRating={avgRating}
+          avgRating={0}
           totalPercentage={totalPercentage}
-          totalRatings={totalRatings}
+          totalRatings={0}
           isDark={isDark}
           isRTL={isRTL}
           shouldReduceMotion={shouldReduceMotion}
           onExploreClick={() => router.push(`/players/${playerId}`)}
         />
 
-        {/* PERFORMANCE & SKILLS SECTION */}
+        {/* PERFORMANCE & SKILLS SECTION - Now using AI skills */}
         <SkillsRadarSection skills={skills} isDark={isDark} />
 
-        {/* RATING SUMMARY SECTION */}
+        {/* RATING SUMMARY SECTION - Now showing AI analysis */}
         <RatingSummarySection
-          avgRating={avgRating}
+          avgRating={0}
           totalPercentage={totalPercentage}
           ratingStatus={ratingStatus}
           ratingStatusColor={ratingStatusColor}

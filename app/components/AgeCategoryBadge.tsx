@@ -3,25 +3,65 @@
 import React from "react";
 import { Award } from "lucide-react";
 import { getAgeCategory } from "../utils/ageCategory";
+import useTranslate from "@/app/hooks/useTranslate";
 
 interface AgeCategoryBadgeProps {
   dateOfBirth?: string | Date | null;
   ageCategoryName?: string | null;
-  lang?: string;
   className?: string;
   showIcon?: boolean;
+  lang?: string;
 }
 
 export default function AgeCategoryBadge({
   dateOfBirth,
   ageCategoryName,
-  lang = "ar",
   className = "",
   showIcon = true,
+  lang: propLang,
 }: AgeCategoryBadgeProps) {
-  const categoryInfo = getAgeCategory(dateOfBirth, lang, ageCategoryName);
+  const { t, lang: contextLang } = useTranslate();
+  
+  const lang = propLang || contextLang;
 
-  if (!categoryInfo) return null;
+  // Get category code
+  const categoryInfo = getAgeCategory(dateOfBirth);
+
+  // Map ageCategoryName to code if provided from server
+  const getCodeFromName = (name: string): string => {
+    const map: Record<string, string> = {
+      "فريق أول": "SENIOR",
+      "الكبار": "SENIOR",
+      "First Team": "SENIOR",
+      "Senior": "SENIOR",
+      "تحت 23": "U23",
+      "Under 23": "U23",
+      "تحت 21": "U21",
+      "Under 21": "U21",
+      "تحت 19": "U19",
+      "Under 19": "U19",
+      "تحت 17": "U17",
+      "Under 17": "U17",
+      "تحت 15": "U15",
+      "Under 15": "U15",
+      "تحت 13": "U13",
+      "Under 13": "U13",
+      "تحت 11": "U11",
+      "Under 11": "U11",
+      "الناشئين": "YOUTH",
+      "Youth": "YOUTH",
+    };
+    return map[name] || "SENIOR";
+  };
+
+  // Determine the code
+  let code = categoryInfo?.code || "SENIOR";
+  if (ageCategoryName) {
+    code = getCodeFromName(ageCategoryName) as any;
+  }
+
+  // Get translated name using useTranslate
+  const translatedName = t(code);
 
   const getBadgeColors = (code: string) => {
     switch (code) {
@@ -44,11 +84,11 @@ export default function AgeCategoryBadge({
   return (
     <span
       className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full border backdrop-blur-md shadow-sm transition-all ${getBadgeColors(
-        categoryInfo.code,
+        code,
       )} ${className}`}
     >
       {showIcon && <Award size={13} className="shrink-0" />}
-      <span>{categoryInfo.name}</span>
+      <span>{translatedName}</span>
     </span>
   );
 }

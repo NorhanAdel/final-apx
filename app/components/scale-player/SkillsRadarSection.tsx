@@ -38,6 +38,8 @@ export default function SkillsRadarSection({
 }: SkillsRadarSectionProps) {
   const { t } = useTranslate();
 
+  const hasSkills = skills.length > 0 && skills.some((s) => s.value > 0);
+
   return (
     <motion.section
       initial="hidden"
@@ -48,11 +50,11 @@ export default function SkillsRadarSection({
       }}
       variants={fadeUp}
       transition={{ duration: 0.7 }}
-      className="grid xl:grid-cols-[0.85fr_1.15fr] gap-6 mb-6"
+      className="grid xl:grid-cols-[0.85fr_1.15fr] gap-6 mb-6 items-stretch"
     >
       {/* Radar */}
       <div
-        className={`relative overflow-hidden rounded-[28px] border p-6 lg:p-8 ${
+        className={`relative overflow-hidden rounded-[28px] border p-6 lg:p-8 flex flex-col h-full ${
           isDark
             ? "bg-[#07101F]/90 border-white/[0.07]"
             : "bg-white border-slate-200"
@@ -60,8 +62,8 @@ export default function SkillsRadarSection({
       >
         <div className="absolute top-0 right-0 w-56 h-56 bg-indigo-500/10 blur-[90px] rounded-full" />
 
-        <div className="relative">
-          <div className="flex items-start justify-between mb-6">
+        <div className="relative flex flex-col flex-1">
+          <div className="flex items-start justify-between mb-6 min-h-[96px]">
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
@@ -93,33 +95,48 @@ export default function SkillsRadarSection({
             <Sparkles size={18} className="text-amber-400" />
           </div>
 
-          <div className="flex justify-center py-4">
-            <motion.div
-              initial={{
-                opacity: 0,
-                scale: 0.8,
-              }}
-              whileInView={{
-                opacity: 1,
-                scale: 1,
-              }}
-              viewport={{
-                once: true,
-              }}
-              transition={{
-                duration: 0.8,
-                type: "spring",
-              }}
-            >
-              <SevenSkillsRadar skills={skills} size={350} />
-            </motion.div>
-          </div>
+          {hasSkills ? (
+            <div className="flex flex-1 items-center justify-center py-4">
+              <motion.div
+                initial={{
+                  opacity: 0,
+                  scale: 0.8,
+                }}
+                whileInView={{
+                  opacity: 1,
+                  scale: 1,
+                }}
+                viewport={{
+                  once: true,
+                }}
+                transition={{
+                  duration: 0.8,
+                  type: "spring",
+                }}
+              >
+                <SevenSkillsRadar skills={skills} size={350} />
+              </motion.div>
+            </div>
+          ) : (
+            <div className="flex flex-1 flex-col items-center justify-center text-center">
+              <div className="w-16 h-16 rounded-full bg-slate-500/10 flex items-center justify-center mb-4">
+                <Video size={28} className="text-slate-400" />
+              </div>
+              <p
+                className={`text-sm font-medium ${
+                  isDark ? "text-slate-300" : "text-slate-600"
+                }`}
+              >
+                {t("No AI analysis available")}
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Skills */}
       <div
-        className={`relative overflow-hidden rounded-[28px] border p-6 lg:p-8 ${
+        className={`relative overflow-hidden rounded-[28px] border p-6 lg:p-8 flex flex-col h-full ${
           isDark
             ? "bg-[#07101F]/90 border-white/[0.07]"
             : "bg-white border-slate-200"
@@ -127,8 +144,8 @@ export default function SkillsRadarSection({
       >
         <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-amber-500/5 blur-[90px] rounded-full" />
 
-        <div className="relative">
-          <div className="flex items-end justify-between mb-6">
+        <div className="relative flex flex-col flex-1">
+          <div className="flex items-end justify-between mb-6 min-h-[96px]">
             <div>
               <p className="text-[10px] uppercase tracking-[0.25em] text-amber-500 font-black mb-2">
                 {t("07 DIMENSIONS")}
@@ -153,19 +170,34 @@ export default function SkillsRadarSection({
             </div>
           </div>
 
-          <motion.div
-            variants={staggerContainer}
-            className="grid sm:grid-cols-2 gap-3"
-          >
-            {skills.map((skill, index) => (
-              <SkillCard
-                key={skill.name}
-                skill={skill}
-                index={index}
-                isDark={isDark}
-              />
-            ))}
-          </motion.div>
+          {hasSkills ? (
+            <motion.div
+              variants={staggerContainer}
+              className="grid sm:grid-cols-2 gap-3"
+            >
+              {skills.map((skill, index) => (
+                <SkillCard
+                  key={skill.name}
+                  skill={skill}
+                  index={index}
+                  isDark={isDark}
+                />
+              ))}
+            </motion.div>
+          ) : (
+            <div className="flex flex-1 flex-col items-center justify-center text-center">
+              <div className="w-16 h-16 rounded-full bg-slate-500/10 flex items-center justify-center mb-4">
+                <Video size={28} className="text-slate-400" />
+              </div>
+              <p
+                className={`text-sm font-medium ${
+                  isDark ? "text-slate-300" : "text-slate-600"
+                }`}
+              >
+                {t("No skill data available")}
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </motion.section>
