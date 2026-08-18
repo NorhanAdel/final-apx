@@ -179,10 +179,6 @@ export function VideoSection({
     try {
       const durationSeconds = await validateVideoDurationFrontend(selectedFile);
       if (durationSeconds > 0) {
-        if (durationSeconds < 30) {
-          toast.error(t("Video duration must be at least 30 seconds."));
-          return;
-        }
         if (durationSeconds > 180) {
           toast.error(t("Video duration cannot exceed 3 minutes."));
           return;

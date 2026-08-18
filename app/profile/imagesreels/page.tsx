@@ -233,7 +233,7 @@ export default function ImagesReels() {
           title: title || "Highlight",
           type: videoType || "HIGHLIGHT",
           sport_id: selectedSportId,
-          duration_seconds: durationSeconds || 30,
+          duration_seconds: durationSeconds,
           create_reel: false,
         },
       });
