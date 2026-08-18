@@ -188,7 +188,7 @@ export function VideoSection({
         selectedFile,
         uploadTitle,
         selectedVideoType,
-        durationSeconds > 0 ? Math.round(durationSeconds) : 30,
+        durationSeconds > 0 ? Math.max(1, Math.round(durationSeconds)) : 10,
       );
       setShowUploadModal(false);
       setUploadTitle("");
@@ -197,7 +197,7 @@ export function VideoSection({
       setFilePreview(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
     } catch {
-      onUpload(selectedFile, uploadTitle, selectedVideoType, 30);
+      onUpload(selectedFile, uploadTitle, selectedVideoType, 10);
       setShowUploadModal(false);
       setUploadTitle("");
       setSelectedFile(null);
