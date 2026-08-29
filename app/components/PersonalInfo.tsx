@@ -10,6 +10,8 @@ interface Player {
   last_name: string;
   date_of_birth?: string | Date | null;
   age?: number | null;
+  age_category_code?: string | null;
+  age_category_name?: string | null;
   city?: string | null;
   country?: string | null;
   nationality?: string | null;
@@ -37,7 +39,7 @@ export default function PersonalInfo({
   showContact = false,
 }: PersonalInfoProps) {
   const { theme } = useTheme();
-  const { t, lang } = useTranslate();
+  const { t } = useTranslate();
   const isDark = theme === "dark";
 
   if (!player) return null;
@@ -126,7 +128,10 @@ export default function PersonalInfo({
           </li>
           <li className={`flex items-center gap-2 ${textColor}`}>
             <strong>{t("Age Category")}:</strong>{" "}
-            <AgeCategoryBadge dateOfBirth={player.date_of_birth} lang={lang} />
+            <AgeCategoryBadge
+              ageCategoryCode={player.age_category_code}
+              ageCategoryName={player.age_category_name}
+            />
           </li>
           <li className={textColor}>
             <strong>{t("Place of Birth")}:</strong>{" "}

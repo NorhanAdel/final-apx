@@ -118,7 +118,10 @@ export default function RoleGuard({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen flex items-center justify-center bg-[#020617] text-yellow-400">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-4 border-yellow-400/20 border-t-yellow-400 rounded-full animate-spin" />
-          <span className="text-xs font-semibold tracking-wider">
+          <span
+            className="text-xs font-semibold tracking-wider"
+            suppressHydrationWarning
+          >
             {t("checking_permissions")}
           </span>
         </div>

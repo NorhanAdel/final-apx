@@ -15,7 +15,7 @@ interface PlayerCardProps {
   country: string;
   super7Score: number;
   position: string;
-  dateOfBirth?: string | Date | null;
+  ageCategoryCode?: string | null;
   ageCategoryName?: string | null;
 }
 
@@ -27,7 +27,7 @@ export const PlayerCard = ({
   country,
   age,
   super7Score,
-  dateOfBirth,
+  ageCategoryCode,
   ageCategoryName,
 }: PlayerCardProps) => {
   const { theme } = useTheme();
@@ -72,7 +72,7 @@ export const PlayerCard = ({
           >
             {name}
           </h3>
-          
+
           <div className="flex gap-0.5">
             {[...Array(maxStars)].map((_, i) => (
               <Star
@@ -85,7 +85,7 @@ export const PlayerCard = ({
         </div>
         <div className="flex flex-wrap items-center gap-2 mb-3">
           <AgeCategoryBadge
-            dateOfBirth={dateOfBirth}
+            ageCategoryCode={ageCategoryCode}
             ageCategoryName={ageCategoryName}
           />
         </div>

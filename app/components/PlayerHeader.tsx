@@ -12,6 +12,7 @@ interface Player {
   age?: number;
   date_of_birth?: string;
   average_rating?: number;
+  age_category_code?: string;
   age_category_name?: string;
 }
 
@@ -51,9 +52,8 @@ export default function PlayerHeader({ player }: PlayerHeaderProps) {
           {player.first_name} {player.last_name}
         </h1>
         <AgeCategoryBadge
-          dateOfBirth={player.date_of_birth}
+          ageCategoryCode={player.age_category_code}
           ageCategoryName={player.age_category_name}
-          lang={lang}
         />
       </div>
 

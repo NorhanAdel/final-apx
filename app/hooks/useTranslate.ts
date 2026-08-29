@@ -38,14 +38,7 @@ const FALLBACK_STRINGS: Record<string, Record<string, string>> = {
 };
 
 export default function useTranslate(langFromProps?: string) {
-  const [lang, setLang] = useState(() => {
-    if (langFromProps) return langFromProps;
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("lang") || "en";
-    }
-    return "en";
-  });
-
+  const [lang, setLang] = useState(langFromProps || "en");
   const [translations, setTranslations] = useState<Record<string, string>>({});
 
   const loadTranslations = useCallback(async (code: string) => {

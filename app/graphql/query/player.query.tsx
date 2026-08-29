@@ -138,6 +138,9 @@ export const GET_PLAYER_PROFILE = `
       verification_doc_url
       is_verified
       views_count
+      age
+      age_category_code
+      age_category_name
       created_at
       updated_at
       photos {

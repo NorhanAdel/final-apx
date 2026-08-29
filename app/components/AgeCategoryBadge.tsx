@@ -2,69 +2,36 @@
 
 import React from "react";
 import { Award } from "lucide-react";
-import { getAgeCategory } from "../utils/ageCategory";
-import useTranslate from "@/app/hooks/useTranslate";
 
 interface AgeCategoryBadgeProps {
-  dateOfBirth?: string | Date | null;
   ageCategoryName?: string | null;
+  ageCategoryCode?: string | null;
   className?: string;
   showIcon?: boolean;
-  lang?: string;
 }
 
+const VALID_CODES = ["U11", "U13", "U15", "U17", "U19", "SENIOR"] as const;
+type AgeCode = (typeof VALID_CODES)[number];
+
 export default function AgeCategoryBadge({
-  dateOfBirth,
   ageCategoryName,
+  ageCategoryCode,
   className = "",
   showIcon = true,
-  lang: propLang,
 }: AgeCategoryBadgeProps) {
-  const { t, lang: contextLang } = useTranslate();
-  
-  const lang = propLang || contextLang;
-
-  // Get category code
-  const categoryInfo = getAgeCategory(dateOfBirth);
-
-  // Map ageCategoryName to code if provided from server
-  const getCodeFromName = (name: string): string => {
-    const map: Record<string, string> = {
-      "فريق أول": "SENIOR",
-      "الكبار": "SENIOR",
-      "First Team": "SENIOR",
-      "Senior": "SENIOR",
-      "تحت 23": "U23",
-      "Under 23": "U23",
-      "تحت 21": "U21",
-      "Under 21": "U21",
-      "تحت 19": "U19",
-      "Under 19": "U19",
-      "تحت 17": "U17",
-      "Under 17": "U17",
-      "تحت 15": "U15",
-      "Under 15": "U15",
-      "تحت 13": "U13",
-      "Under 13": "U13",
-      "تحت 11": "U11",
-      "Under 11": "U11",
-      "الناشئين": "YOUTH",
-      "Youth": "YOUTH",
-    };
-    return map[name] || "SENIOR";
-  };
-
-  // Determine the code
-  let code = categoryInfo?.code || "SENIOR";
-  if (ageCategoryName) {
-    code = getCodeFromName(ageCategoryName) as any;
+  if (!ageCategoryName && !ageCategoryCode) {
+    return null;
   }
 
-  // Get translated name using useTranslate
-  const translatedName = t(code);
+  const code: AgeCode =
+    ageCategoryCode && (VALID_CODES as readonly string[]).includes(ageCategoryCode.toUpperCase())
+      ? (ageCategoryCode.toUpperCase() as AgeCode)
+      : "SENIOR";
 
-  const getBadgeColors = (code: string) => {
-    switch (code) {
+  const displayName = ageCategoryName || code;
+
+  const getBadgeColors = (c: AgeCode) => {
+    switch (c) {
       case "U11":
         return "bg-emerald-500/15 text-emerald-400 border-emerald-500/30";
       case "U13":
@@ -88,7 +55,7 @@ export default function AgeCategoryBadge({
       )} ${className}`}
     >
       {showIcon && <Award size={13} className="shrink-0" />}
-      <span>{translatedName}</span>
+      <span>{displayName}</span>
     </span>
   );
 }

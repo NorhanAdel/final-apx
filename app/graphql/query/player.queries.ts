@@ -108,7 +108,6 @@ export const GET_PLAYER_PROFILE = `
   query GetPlayerProfile($id: String!) {
     playerProfile(id: $id) {
       id
-    
       first_name
       last_name
       bio
@@ -123,7 +122,6 @@ export const GET_PLAYER_PROFILE = `
       profile_image_url
       verification_doc_url
       is_verified
-     
       views_count
       age
       age_category_code
