@@ -87,7 +87,7 @@ export default function PlayerHeaderSection({
           initial={{ scale: 1.05 }}
           animate={{ scale: 1 }}
           transition={{ duration: 1.2 }}
-          className="absolute inset-0"
+          className="absolute inset-0 w-full h-full"
         >
           <Image
             src={playerImage}
@@ -292,11 +292,7 @@ export default function PlayerHeaderSection({
                   className="group relative w-32 h-32 sm:w-36 sm:h-36 rounded-full bg-gradient-to-br from-yellow-300 via-amber-400 to-orange-500 shadow-2xl shadow-amber-500/30 flex items-center justify-center overflow-hidden"
                 >
                   <motion.div
-                    animate={
-                      shouldReduceMotion
-                        ? undefined
-                        : { rotate: 360 }
-                    }
+                    animate={shouldReduceMotion ? undefined : { rotate: 360 }}
                     transition={{
                       duration: 8,
                       repeat: Infinity,

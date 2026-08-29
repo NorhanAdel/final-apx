@@ -1,3 +1,4 @@
+// ScalePlayerDetailPage.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -81,12 +82,28 @@ export default function ScalePlayerDetailPage() {
   const [scoreData, setScoreData] = useState<Super7Score | null>(null);
   const [scorePercentages, setScorePercentages] =
     useState<Super7ScorePercentages | null>(null);
-  const [playerAISkills, setPlayerAISkills] = useState<PlayerAISkillsResponse | null>(null);
+  const [playerAISkills, setPlayerAISkills] =
+    useState<PlayerAISkillsResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
-  /* =========================================================
-     FETCH DATA
-  ========================================================= */
+  const avgRating = useMemo(() => {
+    if (player?.ratingsDetails?.averageStars) {
+      return player.ratingsDetails.averageStars;
+    }
+    if (scoreData?.breakdown?.externalGroupRating) {
+      return parseFloat(
+        ((scoreData.breakdown.externalGroupRating / 15) * 7).toFixed(1),
+      );
+    }
+    return 0;
+  }, [player, scoreData]);
+
+  const totalRatings = useMemo(() => {
+    if (player?.ratingsDetails?.totalRatings) {
+      return player.ratingsDetails.totalRatings;
+    }
+    return 0;
+  }, [player]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -154,10 +171,6 @@ export default function ScalePlayerDetailPage() {
       fetchData();
     }
   }, [levelCode, playerId]);
-
-  /* =========================================================
-     DERIVED DATA
-  ========================================================= */
 
   const aiSkills = playerAISkills;
 
@@ -310,22 +323,11 @@ export default function ScalePlayerDetailPage() {
         ]
       : [];
 
-  /* =========================================================
-     LOADING STATE
-  ========================================================= */
-
   if (loading) {
     return (
-      <LoadingPlayer
-        isDark={isDark}
-        text={t("Loading player details...")}
-      />
+      <LoadingPlayer isDark={isDark} text={t("Loading player details...")} />
     );
   }
-
-  /* =========================================================
-     NOT FOUND STATE
-  ========================================================= */
 
   if (!player) {
     return (
@@ -338,10 +340,6 @@ export default function ScalePlayerDetailPage() {
     );
   }
 
-  /* =========================================================
-     PAGE RENDER
-  ========================================================= */
-
   return (
     <main
       dir={isRTL ? "rtl" : "ltr"}
@@ -349,7 +347,6 @@ export default function ScalePlayerDetailPage() {
         isDark ? "bg-[#020617] text-white" : "bg-[#F7F8FA] text-slate-900"
       }`}
     >
-      {/* BACKGROUND SYSTEM */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <motion.div
           animate={
@@ -393,7 +390,6 @@ export default function ScalePlayerDetailPage() {
           }`}
         />
 
-        {/* Grid */}
         <div
           className={`absolute inset-0 opacity-[0.035] ${
             isDark ? "block" : "hidden"
@@ -407,7 +403,6 @@ export default function ScalePlayerDetailPage() {
       </div>
 
       <div className="relative z-10 max-w-[1450px] mx-auto px-4 sm:px-6 lg:px-8">
-        {/* BACK BUTTON */}
         <motion.button
           initial={{
             opacity: 0,
@@ -441,31 +436,27 @@ export default function ScalePlayerDetailPage() {
           </span>
         </motion.button>
 
-        {/* HERO SECTION */}
         <PlayerHeaderSection
           player={player}
-          avgRating={0}
+          avgRating={avgRating}
           totalPercentage={totalPercentage}
-          totalRatings={0}
+          totalRatings={totalRatings}
           isDark={isDark}
           isRTL={isRTL}
           shouldReduceMotion={shouldReduceMotion}
           onExploreClick={() => router.push(`/players/${playerId}`)}
         />
 
-        {/* PERFORMANCE & SKILLS SECTION - Now using AI skills */}
         <SkillsRadarSection skills={skills} isDark={isDark} />
 
-        {/* RATING SUMMARY SECTION - Now showing AI analysis */}
         <RatingSummarySection
-          avgRating={0}
+          avgRating={avgRating}
           totalPercentage={totalPercentage}
           ratingStatus={ratingStatus}
           ratingStatusColor={ratingStatusColor}
           isDark={isDark}
         />
 
-        {/* SUPER7 BREAKDOWN SECTION */}
         {scoreData && breakdownItems.length > 0 && (
           <Super7BreakdownSection
             scoreData={scoreData}
@@ -474,7 +465,6 @@ export default function ScalePlayerDetailPage() {
           />
         )}
 
-        {/* FOOTER DECORATION */}
         <motion.div
           initial={{
             opacity: 0,
