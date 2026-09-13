@@ -24,6 +24,7 @@ import {
 } from "@/app/graphql/mutation/auth.mutations";
 import { fetchGraphQL } from "@/app/lib/fetchGraphQL";
 import useTranslate from "@/app/hooks/useTranslate";
+import { getPostAuthRedirect } from "@/app/lib/auth-redirect";
 
 interface AutoLoginResponse {
   autoLogin: {
@@ -103,7 +104,7 @@ export default function LoginPage() {
               localStorage.setItem("remember_token", newRememberToken);
             }
             toast.success(t("Welcome back!"));
-            router.push("/");
+            router.replace(await getPostAuthRedirect(user));
           } else {
             localStorage.removeItem("remember_token");
           }

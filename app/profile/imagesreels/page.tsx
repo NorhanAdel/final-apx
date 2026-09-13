@@ -184,6 +184,14 @@ export default function ImagesReels() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (file.type.startsWith("video/")) {
+      toast.error(
+        t("This section is for photo uploads only. Please use the Videos section below to upload your video.")
+      );
+      e.target.value = "";
+      return;
+    }
+
     if ((limits?.remaining_photos || 0) <= 0) {
       toast.error(t("Photo limit reached. Please purchase extra photos."));
       e.target.value = "";
@@ -220,6 +228,11 @@ export default function ImagesReels() {
     videoType: string,
     durationSeconds?: number
   ) => {
+    if (file.type.startsWith("image/")) {
+      toast.error(t("Please select a valid video file (MP4, MOV, WEBM, AVI)."));
+      return;
+    }
+
     if ((limits?.remaining_videos || 0) <= 0) {
       toast.error(t("Video limit reached. Please purchase extra videos."));
       return;

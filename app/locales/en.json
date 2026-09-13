@@ -1100,5 +1100,7 @@
   "SENIOR": "19+ - First Team",
   "YOUTH": "Youth",
   "No AI analysis available": "No AI analysis available",
-  "No skill data available": "No skill data available"
+  "No skill data available": "No skill data available",
+  "This section is for photo uploads only. Please use the Videos section below to upload your video.": "This section is for photo uploads only. Please use the Videos section below to upload your video.",
+  "Please select a valid video file (MP4, MOV, WEBM, AVI).": "Please select a valid video file (MP4, MOV, WEBM, AVI)."
 }

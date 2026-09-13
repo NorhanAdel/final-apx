@@ -1100,5 +1100,7 @@
   "SENIOR": "19+ - Equipe Principal",
   "YOUTH": "Juvenis",
   "No AI analysis available": "Nenhuma análise de IA disponível",
-  "No skill data available": "Nenhum dado de habilidade disponível"
+  "No skill data available": "Nenhum dado de habilidade disponível",
+  "This section is for photo uploads only. Please use the Videos section below to upload your video.": "Esta seção é apenas para fotos. Para enviar um vídeo, use a seção de vídeos abaixo.",
+  "Please select a valid video file (MP4, MOV, WEBM, AVI).": "Por favor, selecione um arquivo de vídeo válido (MP4, MOV, WEBM, AVI)."
 }

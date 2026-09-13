@@ -1099,5 +1099,7 @@
   "SENIOR": "فئة 19 سنة وما فوق - الفريق الأول",
   "YOUTH": "الناشئين",
   "No AI analysis available": "لا يوجد تحليل ذكاء اصطناعي متاح",
-  "No skill data available": "لا توجد بيانات مهارات متاحة"
+  "No skill data available": "لا توجد بيانات مهارات متاحة",
+  "This section is for photo uploads only. Please use the Videos section below to upload your video.": "عذراً، هذا القسم مخصص لرفع الصور فقط. لرفع فيديو، يرجى استخدام قسم الفيديوهات في الأسفل.",
+  "Please select a valid video file (MP4, MOV, WEBM, AVI).": "يرجى اختيار ملف فيديو صالح (MP4, MOV, WEBM, AVI)."
 }

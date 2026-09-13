@@ -14,6 +14,7 @@ import {
 } from "@/app/graphql/mutation/auth.mutations";
 import { fetchGraphQL } from "@/app/lib/fetchGraphQL";
 import useTranslate from "@/app/hooks/useTranslate";
+import { getPostAuthRedirect } from "@/app/lib/auth-redirect";
 
 type UserRole = "PLAYER" | "CLUB" | "SCOUT" | "AGENT" | "USER";
 
@@ -28,53 +29,6 @@ interface User {
   is_active?: boolean;
   has_active_subscription?: boolean;
 }
-
-const GET_PLAYER_PROFILE_EXISTS = `
-  query GetPlayerProfileExists {
-    myPlayerProfile {
-      id
-    }
-  }
-`;
-
-const GET_CLUB_PROFILE_EXISTS = `
-  query GetClubProfileExists {
-    myClubProfile {
-      id
-      club_name
-    }
-  }
-`;
-
-const GET_SCOUT_PROFILE_EXISTS = `
-  query GetScoutProfileExists {
-    myScoutProfile {
-      id
-      first_name
-      last_name
-    }
-  }
-`;
-
-const GET_AGENT_PROFILE_EXISTS = `
-  query GetAgentProfileExists {
-    myAgentProfile {
-      id
-      first_name
-      last_name
-    }
-  }
-`;
-
-const GET_USER_PROFILE_EXISTS = `
-  query GetUserProfileExists {
-    myUserProfile {
-      id
-      first_name
-      last_name
-    }
-  }
-`;
 
 type OtpFormData = z.infer<
   z.ZodObject<{
@@ -175,91 +129,6 @@ export default function VerifyOtpPage() {
 
       const lastIndex = Math.min(pastedNumbers.length - 1, 5);
       inputRefs.current[lastIndex]?.focus();
-    }
-  };
-
-  const checkProfileExists = async (role: string): Promise<boolean> => {
-    try {
-      switch (role) {
-        case "PLAYER":
-          const playerResult = await fetchGraphQL<{
-            myPlayerProfile: { id: string } | null;
-          }>(GET_PLAYER_PROFILE_EXISTS);
-          return !!playerResult.data?.myPlayerProfile?.id;
-
-        case "CLUB":
-          const clubResult = await fetchGraphQL<{
-            myClubProfile: { id: string } | null;
-          }>(GET_CLUB_PROFILE_EXISTS);
-          return !!clubResult.data?.myClubProfile?.id;
-
-        case "SCOUT":
-          const scoutResult = await fetchGraphQL<{
-            myScoutProfile: { id: string } | null;
-          }>(GET_SCOUT_PROFILE_EXISTS);
-          return !!scoutResult.data?.myScoutProfile?.id;
-
-        case "AGENT":
-          const agentResult = await fetchGraphQL<{
-            myAgentProfile: { id: string } | null;
-          }>(GET_AGENT_PROFILE_EXISTS);
-          return !!agentResult.data?.myAgentProfile?.id;
-
-        case "USER":
-          const userResult = await fetchGraphQL<{
-            myUserProfile: { id: string } | null;
-          }>(GET_USER_PROFILE_EXISTS);
-          return !!userResult.data?.myUserProfile?.id;
-
-        default:
-          return false;
-      }
-    } catch (error) {
-      console.error("Error checking profile:", error);
-      return false;
-    }
-  };
-
-  const getRedirectPath = (
-    role: string,
-    hasSubscription: boolean,
-  ): string => {
-    // 1. If user does NOT have an active subscription: redirect to subscription/packages page for their role
-    if (!hasSubscription && role !== "ADMIN" && role !== "USER") {
-      switch (role) {
-        case "PLAYER":
-          return "/profile/participationprime";
-        case "CLUB":
-          return "/clubprofile/participationprime";
-        case "SCOUT":
-          return "/scout/profile/participationprime";
-        case "AGENT":
-          return "/agent/participationprime";
-        case "COACH":
-          return "/profile/participationprime";
-        case "MANAGER":
-          return "/profile/participationprime";
-        default:
-          return "/";
-      }
-    }
-
-    // 2. If user HAS an active subscription: redirect to role profile page
-    switch (role) {
-      case "PLAYER":
-        return "/profile/player";
-      case "CLUB":
-        return "/clubprofile";
-      case "SCOUT":
-        return "/scout";
-      case "AGENT":
-        return "/agent";
-      case "USER":
-        return "/user";
-      case "ADMIN":
-        return "/admin";
-      default:
-        return "/";
     }
   };
 
@@ -365,12 +234,10 @@ export default function VerifyOtpPage() {
 
         toast.success(t("Email verified successfully!"));
 
-        const hasSubscription = !!user.has_active_subscription;
-        const redirectPath = getRedirectPath(user.role, hasSubscription);
+        const redirectPath = await getPostAuthRedirect(user);
 
         console.log("Redirecting to:", redirectPath);
         console.log("User role:", user.role);
-        console.log("Has subscription:", hasSubscription);
 
         router.replace(redirectPath);
         router.refresh();

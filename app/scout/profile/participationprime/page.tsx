@@ -117,9 +117,7 @@ export default function ScoutPackagesPage() {
       setLoadingSubscription(true);
 
       try {
-        // =========================
-        // جلب الباقات
-        // =========================
+
         const res: any = await fetchGraphQL(GET_PACKAGES_QUERY);
 
         console.log("📦 Full API Response:", res);
@@ -129,9 +127,6 @@ export default function ScoutPackagesPage() {
 
         setPackages(allPackages);
 
-        // =========================
-        // جلب الاشتراك الحالي
-        // =========================
         const subRes: any = await fetchGraphQL(GET_SUBSCRIPTION_QUERY);
         console.log("📋 Subscription response:", subRes);
         setSubscription(subRes?.data?.myOrganizationSubscription || null);
@@ -148,9 +143,6 @@ export default function ScoutPackagesPage() {
     load();
   }, [lang]);
 
-  // =========================
-  // 🔥 تصفية الباقات - بس الـ Scout
-  // =========================
   const scoutPackages = packages.filter(
     (p) => p.package_type.includes("SCOUT") || p.package_type.includes("كشاف")
   );
@@ -166,7 +158,7 @@ export default function ScoutPackagesPage() {
     }
 
     localStorage.setItem(
-      "selectedPackage",
+      "selectedScoutPackage",
       JSON.stringify({
         ...item,
         package_type: enumValue,

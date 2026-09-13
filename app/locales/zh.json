@@ -1105,5 +1105,7 @@
   "SENIOR": "19岁及以上 - 一线队",
   "YOUTH": "青年队",
   "No AI analysis available": "没有可用的AI分析",
-  "No skill data available": "没有可用的技能数据"
+  "No skill data available": "没有可用的技能数据",
+  "This section is for photo uploads only. Please use the Videos section below to upload your video.": "此区域仅限上传照片。如需上传视频，请使用下方的视频区域。",
+  "Please select a valid video file (MP4, MOV, WEBM, AVI).": "请选择有效的视频文件（MP4、MOV、WEBM、AVI）。"
 }

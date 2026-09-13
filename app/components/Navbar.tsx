@@ -275,6 +275,10 @@ export default function Navbar({ lang, setLang }: NavbarProps) {
   const getProfileLink = (): string => {
     if (!activeUser) return "/auth/login";
 
+    if (requiresSubscription()) {
+      return getCheckoutRoute();
+    }
+
     switch (activeUser.role) {
       case "PLAYER":
         return "/profile/player";
